@@ -1,8 +1,8 @@
-import {createContext, useContext, useState, useEffect} from 'react';
+import {createContext, useContext, useState, useEffect, useRef} from 'react';
 import type {ReactNode} from 'react';
 import type {User} from '../types';
 import {authApi} from '../services/api';
-import {setAuthToken, removeAuthToken} from '../lib/request';
+import {setAuthToken, removeAuthToken, RequestError} from '../lib/request';
 
 interface AuthContextType {
     user: User | null;
@@ -30,6 +30,7 @@ interface AuthProviderProps {
 export const AuthProvider = ({children}: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const authCheckRef = useRef<Promise<void> | null>(null);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -41,14 +42,24 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
                     setUser(userData);
                 } catch (error) {
                     console.error('Auth check failed:', error);
-                    removeAuthToken();
-                    setUser(null);
+
+                    if (error instanceof RequestError && (error.status === 401 || error.status === 403)) {
+                        console.log('Token is invalid, removing...');
+                        removeAuthToken();
+                        setUser(null);
+                    } else {
+                        console.log('Network or server error, keeping token for retry...');
+                    }
                 }
             }
             setIsLoading(false);
         };
 
-        checkAuth();
+        if (!authCheckRef.current) {
+            authCheckRef.current = checkAuth().finally(() => {
+                authCheckRef.current = null;
+            });
+        }
     }, []);
 
     const login = async (email: string, password: string) => {
