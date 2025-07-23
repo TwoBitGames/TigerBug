@@ -36,10 +36,13 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
             const token = localStorage.getItem('auth_token');
             if (token) {
                 try {
+                    setAuthToken(token);
                     const userData = await authApi.getProfile();
                     setUser(userData);
                 } catch (error) {
+                    console.error('Auth check failed:', error);
                     removeAuthToken();
+                    setUser(null);
                 }
             }
             setIsLoading(false);

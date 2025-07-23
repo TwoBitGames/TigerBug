@@ -21,7 +21,7 @@ export const authApi = {
     post<{ token: string; user: User }>('/auth/register', data),
   
   getProfile: () => 
-    get<User>('/auth/profile'),
+    get<{ user: User }>('/auth/profile').then(response => response.user),
 };
 
 export const projectsApi = {
