@@ -138,6 +138,10 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Database files
+*.db
+*.sqlite
+
 # Code editors
 .vscode
 .idea
