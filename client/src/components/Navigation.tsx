@@ -25,7 +25,7 @@ interface NavigationProps {
     onShowAdminDashboard: () => void;
 }
 
-export function Navigation({
+export const Navigation = ({
                                selectedProject,
                                projects,
                                showCreateIssue,
@@ -36,7 +36,7 @@ export function Navigation({
                                onCreateIssue,
                                onViewModeChange,
                                onShowAdminDashboard,
-                           }: NavigationProps) {
+                           }: NavigationProps) => {
     const {user, logout} = useAuth();
 
     return (
