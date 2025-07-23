@@ -1,14 +1,16 @@
 const {body, validationResult} = require('express-validator');
-const { Comment, Post, User, Project, ProjectMembership, Attachment } = require('../models/associations');
-const {checkProjectPermission, canViewPrivatePost} = require('../utils/permissions');
-const {sendCommentNotification} = require('../utils/email');
+const { Comment, Post, User, Project } = require('../models/associations');
 
 const validateComment = [
-    body('message').trim().isLength({min: 1}).withMessage('Comment message is required'),
+    body('message').trim().isLength({min: 1}).withMessage('Message is required'),
 ];
 
 const createComment = async (req, res) => {
     try {
+        if (!req.user) {
+            return res.status(401).json({error: 'Authentication required'});
+        }
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({errors: errors.array()});
@@ -17,24 +19,20 @@ const createComment = async (req, res) => {
         const {projectId, postId} = req.params;
         const {message} = req.body;
 
-        const {hasAccess, role} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
+        const project = await Project.findByPk(projectId);
+        if (!project) {
+            return res.status(404).json({error: 'Project not found'});
         }
 
         const post = await Post.findOne({
             where: {id: postId, project_id: projectId},
-            include: [
-                {model: User, as: 'author', attributes: ['id', 'email']},
-                {model: Project, attributes: ['id', 'name']},
-            ],
         });
 
         if (!post) {
             return res.status(404).json({error: 'Post not found'});
         }
 
-        if (!canViewPrivatePost(req.user, post, role)) {
+        if (post.is_private && post.author_id !== req.user.id) {
             return res.status(403).json({error: 'Access denied'});
         }
 
@@ -50,25 +48,6 @@ const createComment = async (req, res) => {
             ],
         });
 
-        const members = await User.findAll({
-            include: [
-                {
-                    model: ProjectMembership,
-                    where: {project_id: projectId},
-                    attributes: ['role'],
-                },
-            ],
-            attributes: ['email'],
-        });
-
-        const recipients = members
-            .filter(member => member.email !== req.user.email)
-            .map(member => member.email);
-
-        if (recipients.length > 0) {
-            await sendCommentNotification(fullComment, post, recipients);
-        }
-
         res.status(201).json({
             message: 'Comment created successfully',
             comment: fullComment,
@@ -82,11 +61,11 @@ const createComment = async (req, res) => {
 const getComments = async (req, res) => {
     try {
         const {projectId, postId} = req.params;
-        const {page = 1, limit = 20} = req.query;
+        const {page = 1, limit = 50} = req.query;
 
-        const {hasAccess, role} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
+        const project = await Project.findByPk(projectId);
+        if (!project) {
+            return res.status(404).json({error: 'Project not found'});
         }
 
         const post = await Post.findOne({
@@ -97,7 +76,11 @@ const getComments = async (req, res) => {
             return res.status(404).json({error: 'Post not found'});
         }
 
-        if (!canViewPrivatePost(req.user, post, role)) {
+        if (!req.user && post.is_private) {
+            return res.status(403).json({error: 'Access denied'});
+        }
+
+        if (req.user && post.is_private && post.author_id !== req.user.id) {
             return res.status(403).json({error: 'Access denied'});
         }
 
@@ -107,11 +90,6 @@ const getComments = async (req, res) => {
             where: {post_id: postId},
             include: [
                 {model: User, as: 'author', attributes: ['id', 'email']},
-                {
-                    model: Attachment,
-                    as: 'attachments',
-                    attributes: ['id', 'original_filename', 'file_path', 'uploaded_at'],
-                },
             ],
             order: [['created_at', 'ASC']],
             limit: parseInt(limit),
@@ -135,6 +113,10 @@ const getComments = async (req, res) => {
 
 const updateComment = async (req, res) => {
     try {
+        if (!req.user) {
+            return res.status(401).json({error: 'Authentication required'});
+        }
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({errors: errors.array()});
@@ -143,28 +125,32 @@ const updateComment = async (req, res) => {
         const {projectId, postId, id} = req.params;
         const {message} = req.body;
 
-        const {hasAccess} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
-        }
-
         const comment = await Comment.findOne({
             where: {id, post_id: postId},
+            include: [
+                {model: Post, where: {project_id: projectId}},
+            ],
         });
 
         if (!comment) {
             return res.status(404).json({error: 'Comment not found'});
         }
 
-        if (comment.author_id !== req.user.id) {
+        if (comment.author_id !== req.user.id && !req.user.is_admin) {
             return res.status(403).json({error: 'Access denied'});
         }
 
         await comment.update({message});
 
+        const updatedComment = await Comment.findByPk(comment.id, {
+            include: [
+                {model: User, as: 'author', attributes: ['id', 'email']},
+            ],
+        });
+
         res.json({
             message: 'Comment updated successfully',
-            comment,
+            comment: updatedComment,
         });
     } catch (error) {
         console.error('Update comment error:', error);
@@ -174,25 +160,24 @@ const updateComment = async (req, res) => {
 
 const deleteComment = async (req, res) => {
     try {
-        const {projectId, postId, id} = req.params;
-
-        const {hasAccess, role} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
+        if (!req.user) {
+            return res.status(401).json({error: 'Authentication required'});
         }
+
+        const {projectId, postId, id} = req.params;
 
         const comment = await Comment.findOne({
             where: {id, post_id: postId},
+            include: [
+                {model: Post, where: {project_id: projectId}},
+            ],
         });
 
         if (!comment) {
             return res.status(404).json({error: 'Comment not found'});
         }
 
-        const canDelete = comment.author_id === req.user.id ||
-            ['Manager', 'Administrator'].includes(role);
-
-        if (!canDelete) {
+        if (comment.author_id !== req.user.id && !req.user.is_admin) {
             return res.status(403).json({error: 'Access denied'});
         }
 
@@ -214,3 +199,4 @@ module.exports = {
     updateComment,
     deleteComment,
 };
+

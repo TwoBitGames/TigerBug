@@ -20,6 +20,10 @@ const validateUpdatePost = [
 
 const createPost = async (req, res) => {
     try {
+        if (!req.user) {
+            return res.status(401).json({error: 'Authentication required'});
+        }
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({errors: errors.array()});
@@ -28,9 +32,9 @@ const createPost = async (req, res) => {
         const {projectId} = req.params;
         const {title, description, is_private = false} = req.body;
 
-        const {hasAccess} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
+        const project = await Project.findByPk(projectId);
+        if (!project) {
+            return res.status(404).json({error: 'Project not found'});
         }
 
         const post = await Post.create({
@@ -48,27 +52,6 @@ const createPost = async (req, res) => {
             ],
         });
 
-        if (!is_private) {
-            const members = await User.findAll({
-                include: [
-                    {
-                        model: ProjectMembership,
-                        where: {project_id: projectId},
-                        attributes: ['role'],
-                    },
-                ],
-                attributes: ['email'],
-            });
-
-            const recipients = members
-                .filter(member => member.email !== req.user.email)
-                .map(member => member.email);
-
-            if (recipients.length > 0) {
-                await sendPostNotification(fullPost, 'Created', recipients);
-            }
-        }
-
         res.status(201).json({
             message: 'Post created successfully',
             post: fullPost,
@@ -84,9 +67,9 @@ const getPosts = async (req, res) => {
         const {projectId} = req.params;
         const {page = 1, limit = 10, status, search} = req.query;
 
-        const {hasAccess, role} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
+        const project = await Project.findByPk(projectId);
+        if (!project) {
+            return res.status(404).json({error: 'Project not found'});
         }
 
         const offset = (page - 1) * limit;
@@ -103,10 +86,12 @@ const getPosts = async (req, res) => {
             ];
         }
 
-        if (!['Manager', 'Administrator'].includes(role)) {
+        if (!req.user) {
+            where.is_private = false;
+        } else {
             where[Op.or] = [
                 {is_private: false},
-                {author_id: req.user.id},
+                {author_id: req.user.id, is_private: true},
             ];
         }
 
@@ -114,9 +99,10 @@ const getPosts = async (req, res) => {
             where,
             include: [
                 {model: User, as: 'author', attributes: ['id', 'email']},
-                {model: PostVote, attributes: ['user_id']},
+                {model: PostVote, as: 'votes', attributes: ['user_id']},
                 {
                     model: Comment,
+                    as: 'comments',
                     attributes: ['id'],
                     separate: true,
                 },
@@ -128,9 +114,9 @@ const getPosts = async (req, res) => {
 
         const postsWithVotes = posts.map(post => ({
             ...post.toJSON(),
-            vote_count: post.PostVotes.length,
-            user_voted: post.PostVotes.some(vote => vote.user_id === req.user.id),
-            comment_count: post.Comments.length,
+            vote_count: post.votes.length,
+            user_voted: req.user ? post.votes.some(vote => vote.user_id === req.user.id) : false,
+            comment_count: post.comments.length,
         }));
 
         res.json({
@@ -152,9 +138,9 @@ const getPost = async (req, res) => {
     try {
         const {projectId, id} = req.params;
 
-        const {hasAccess, role} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
+        const project = await Project.findByPk(projectId);
+        if (!project) {
+            return res.status(404).json({error: 'Project not found'});
         }
 
         const post = await Post.findOne({
@@ -162,7 +148,7 @@ const getPost = async (req, res) => {
             include: [
                 {model: User, as: 'author', attributes: ['id', 'email']},
                 {model: Project, attributes: ['id', 'name']},
-                {model: PostVote, attributes: ['user_id']},
+                {model: PostVote, as: 'votes', attributes: ['user_id']},
                 {
                     model: Attachment,
                     as: 'attachments',
@@ -175,15 +161,19 @@ const getPost = async (req, res) => {
             return res.status(404).json({error: 'Post not found'});
         }
 
-        if (!canViewPrivatePost(req.user, post, role)) {
+        if (!req.user && post.is_private) {
+            return res.status(403).json({error: 'Access denied'});
+        }
+
+        if (req.user && post.is_private && post.author_id !== req.user.id) {
             return res.status(403).json({error: 'Access denied'});
         }
 
         const postWithVotes = {
             ...post.toJSON(),
-            vote_count: post.PostVotes.length,
-            user_voted: post.PostVotes.some(vote => vote.user_id === req.user.id),
-            can_manage: canManagePost(req.user, post, role),
+            vote_count: post.votes.length,
+            user_voted: req.user ? post.votes.some(vote => vote.user_id === req.user.id) : false,
+            can_manage: req.user ? (post.author_id === req.user.id || req.user.is_admin) : false,
         };
 
         res.json({post: postWithVotes});
@@ -195,6 +185,10 @@ const getPost = async (req, res) => {
 
 const updatePost = async (req, res) => {
     try {
+        if (!req.user) {
+            return res.status(401).json({error: 'Authentication required'});
+        }
+
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({errors: errors.array()});
@@ -202,11 +196,6 @@ const updatePost = async (req, res) => {
 
         const {projectId, id} = req.params;
         const updates = req.body;
-
-        const {hasAccess, role} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
-        }
 
         const post = await Post.findOne({
             where: {id, project_id: projectId},
@@ -220,33 +209,11 @@ const updatePost = async (req, res) => {
             return res.status(404).json({error: 'Post not found'});
         }
 
-        if (!canManagePost(req.user, post, role)) {
+        if (post.author_id !== req.user.id && !req.user.is_admin) {
             return res.status(403).json({error: 'Access denied'});
         }
 
-        const oldStatus = post.status;
         await post.update(updates);
-
-        if (updates.status && updates.status !== oldStatus) {
-            const members = await User.findAll({
-                include: [
-                    {
-                        model: ProjectMembership,
-                        where: {project_id: projectId},
-                        attributes: ['role'],
-                    },
-                ],
-                attributes: ['email'],
-            });
-
-            const recipients = members
-                .filter(member => member.email !== req.user.email)
-                .map(member => member.email);
-
-            if (recipients.length > 0) {
-                await sendPostNotification(post, 'Updated', recipients);
-            }
-        }
 
         res.json({
             message: 'Post updated successfully',
@@ -260,12 +227,11 @@ const updatePost = async (req, res) => {
 
 const deletePost = async (req, res) => {
     try {
-        const {projectId, id} = req.params;
-
-        const {hasAccess, role} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
+        if (!req.user) {
+            return res.status(401).json({error: 'Authentication required'});
         }
+
+        const {projectId, id} = req.params;
 
         const post = await Post.findOne({
             where: {id, project_id: projectId},
@@ -275,7 +241,7 @@ const deletePost = async (req, res) => {
             return res.status(404).json({error: 'Post not found'});
         }
 
-        if (!canManagePost(req.user, post, role)) {
+        if (post.author_id !== req.user.id && !req.user.is_admin) {
             return res.status(403).json({error: 'Access denied'});
         }
 
@@ -292,12 +258,11 @@ const deletePost = async (req, res) => {
 
 const toggleVote = async (req, res) => {
     try {
-        const {projectId, id} = req.params;
-
-        const {hasAccess} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
+        if (!req.user) {
+            return res.status(401).json({error: 'Authentication required'});
         }
+
+        const {projectId, id} = req.params;
 
         const post = await Post.findOne({
             where: {id, project_id: projectId},
@@ -305,6 +270,10 @@ const toggleVote = async (req, res) => {
 
         if (!post) {
             return res.status(404).json({error: 'Post not found'});
+        }
+
+        if (post.is_private && post.author_id !== req.user.id) {
+            return res.status(403).json({error: 'Access denied'});
         }
 
         const existingVote = await PostVote.findOne({

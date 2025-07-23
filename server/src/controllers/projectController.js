@@ -20,12 +20,6 @@ const createProject = async (req, res) => {
             description,
         });
 
-        await ProjectMembership.create({
-            user_id: req.user.id,
-            project_id: project.id,
-            role: 'Administrator',
-        });
-
         res.status(201).json({
             message: 'Project created successfully',
             project,
@@ -38,36 +32,10 @@ const createProject = async (req, res) => {
 
 const getProjects = async (req, res) => {
     try {
-        let projects;
-
-        if (req.user.is_admin) {
-            projects = await Project.findAll({
-                include: [
-                    {
-                        model: User,
-                        as: 'members',
-                        through: {
-                            attributes: ['role'],
-                        },
-                        attributes: ['id', 'email'],
-                    },
-                ],
-            });
-        } else {
-            projects = await Project.findAll({
-                include: [
-                    {
-                        model: User,
-                        as: 'members',
-                        through: {
-                            where: {user_id: req.user.id},
-                            attributes: ['role'],
-                        },
-                        attributes: ['id', 'email'],
-                    },
-                ],
-            });
-        }
+        const projects = await Project.findAll({
+            attributes: ['id', 'name', 'description', 'created_at'],
+            order: [['created_at', 'DESC']],
+        });
 
         res.json({projects});
     } catch (error) {
@@ -81,25 +49,11 @@ const getProject = async (req, res) => {
         const {id} = req.params;
 
         const project = await Project.findByPk(id, {
-            include: [
-                {
-                    model: User,
-                    as: 'members',
-                    through: {
-                        attributes: ['role'],
-                    },
-                    attributes: ['id', 'email'],
-                },
-            ],
+            attributes: ['id', 'name', 'description', 'created_at'],
         });
 
         if (!project) {
             return res.status(404).json({error: 'Project not found'});
-        }
-
-        const isMember = project.members.some(member => member.id === req.user.id);
-        if (!isMember) {
-            return res.status(403).json({error: 'Access denied'});
         }
 
         res.json({project});
@@ -117,18 +71,10 @@ const updateProject = async (req, res) => {
         }
 
         const {id} = req.params;
-        const {name, description, status} = req.body;
+        const {name, description} = req.body;
 
-        const membership = await ProjectMembership.findOne({
-            where: {
-                user_id: req.user.id,
-                project_id: id,
-                role: 'Administrator',
-            },
-        });
-
-        if (!membership && !req.user.is_admin) {
-            return res.status(403).json({error: 'Administrator privileges required'});
+        if (!req.user.is_admin) {
+            return res.status(403).json({error: 'Admin privileges required'});
         }
 
         const project = await Project.findByPk(id);
@@ -136,12 +82,7 @@ const updateProject = async (req, res) => {
             return res.status(404).json({error: 'Project not found'});
         }
 
-        const updates = {name, description};
-        if (status && req.user.is_admin) {
-            updates.status = status;
-        }
-
-        await project.update(updates);
+        await project.update({name, description});
 
         res.json({
             message: 'Project updated successfully',

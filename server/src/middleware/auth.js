@@ -28,6 +28,39 @@ const authenticateToken = async (req, res, next) => {
     }
 };
 
+const optionalAuth = async (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        req.user = null;
+        return next();
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+        req.user = null;
+        return next();
+    }
+
+    try {
+        const user = await User.findByPk(decoded.id);
+        req.user = user || null;
+        next();
+    } catch (error) {
+        console.error('Optional authentication error:', error);
+        req.user = null;
+        next();
+    }
+};
+
+const requireAuth = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({error: 'Authentication required'});
+    }
+    next();
+};
+
 const requireAdmin = (req, res, next) => {
     if (!req.user || !req.user.is_admin) {
         return res.status(403).json({error: 'Admin privileges required'});
@@ -35,4 +68,4 @@ const requireAdmin = (req, res, next) => {
     next();
 };
 
-module.exports = {authenticateToken, requireAdmin,};
+module.exports = {authenticateToken, optionalAuth, requireAuth, requireAdmin};

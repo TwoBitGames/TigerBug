@@ -10,17 +10,16 @@ const {
   addMember,
   removeMember,
 } = require('../controllers/projectController');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken, optionalAuth, requireAdmin } = require('../middleware/auth');
 
-router.use(authenticateToken);
+router.get('/', optionalAuth, getProjects);
+router.get('/:id', optionalAuth, getProject);
 
-router.post('/', requireAdmin, validateProject, createProject);
-router.get('/', getProjects);
-router.get('/:id', getProject);
-router.put('/:id', validateProject, updateProject);
-router.delete('/:id', requireAdmin, deleteProject);
+router.post('/', authenticateToken, requireAdmin, validateProject, createProject);
+router.put('/:id', authenticateToken, validateProject, updateProject);
+router.delete('/:id', authenticateToken, requireAdmin, deleteProject);
 
-router.post('/:id/members', addMember);
-router.delete('/:id/members/:userId', removeMember);
+router.post('/:id/members', authenticateToken, addMember);
+router.delete('/:id/members/:userId', authenticateToken, removeMember);
 
 module.exports = router;
