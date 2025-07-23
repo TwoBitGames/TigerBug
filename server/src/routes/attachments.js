@@ -1,9 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const fs = require('fs');
-const Attachment = require('../models/Attachment');
-const Post = require('../models/Post');
-const Comment = require('../models/Comment');
+const { Attachment, Post, Comment } = require('../models/associations');
 const { authenticateToken } = require('../middleware/auth');
 const { uploadMiddleware, handleUploadError } = require('../middleware/upload');
 const { checkProjectPermission, canViewPrivatePost } = require('../utils/permissions');

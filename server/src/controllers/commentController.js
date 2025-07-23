@@ -1,10 +1,5 @@
 const {body, validationResult} = require('express-validator');
-const Comment = require('../models/Comment');
-const Post = require('../models/Post');
-const User = require('../models/User');
-const Project = require('../models/Project');
-const ProjectMembership = require('../models/ProjectMembership');
-const Attachment = require('../models/Attachment');
+const { Comment, Post, User, Project, ProjectMembership, Attachment } = require('../models/associations');
 const {checkProjectPermission, canViewPrivatePost} = require('../utils/permissions');
 const {sendCommentNotification} = require('../utils/email');
 

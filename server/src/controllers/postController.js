@@ -1,12 +1,6 @@
 const {body, validationResult} = require('express-validator');
 const {Op} = require('sequelize');
-const Post = require('../models/Post');
-const Project = require('../models/Project');
-const User = require('../models/User');
-const PostVote = require('../models/PostVote');
-const Comment = require('../models/Comment');
-const Attachment = require('../models/Attachment');
-const ProjectMembership = require('../models/ProjectMembership');
+const { Post, Project, User, PostVote, Comment, Attachment, ProjectMembership } = require('../models/associations');
 
 const {checkProjectPermission, canManagePost, canViewPrivatePost} = require('../utils/permissions');
 const {sendPostNotification} = require('../utils/email');

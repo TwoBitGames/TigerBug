@@ -8,6 +8,8 @@ const path = require('path');
 const sequelize = require('./config/database');
 const { initializeMailer } = require('./utils/email');
 
+require('./models/associations');
+
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const postRoutes = require('./routes/posts');

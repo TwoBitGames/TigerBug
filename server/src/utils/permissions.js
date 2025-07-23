@@ -1,4 +1,4 @@
-const {ProjectMembership} = require('../models/ProjectMembership');
+const { ProjectMembership } = require('../models/associations');
 
 const checkProjectPermission = async (userId, projectId, requiredRoles = []) => {
     try {

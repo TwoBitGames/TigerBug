@@ -1,5 +1,5 @@
 const {verifyToken} = require('../utils/jwt');
-const User = require('../models/User');
+const { User } = require('../models/associations');
 
 const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];

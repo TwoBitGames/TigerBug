@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const SMTPConfig = require('../models/SMTPConfig');
+const { SMTPConfig } = require('../models/associations');
 
 let transporter = null;
 

@@ -1,5 +1,5 @@
-const {body, validationResult} = require('express-validator');
-const User = require('../models/User');
+const { body, validationResult } = require('express-validator');
+const { User } = require('../models/associations');
 const {hashPassword, comparePassword} = require('../utils/password');
 const {generateToken} = require('../utils/jwt');
 

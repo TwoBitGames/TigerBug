@@ -1,7 +1,5 @@
 const {body, validationResult} = require('express-validator');
-const Project = require('../models/Project');
-const ProjectMembership = require('../models/ProjectMembership');
-const User = require('../models/User');
+const { Project, User, ProjectMembership } = require('../models/associations');
 
 const validateProject = [
     body('name').trim().isLength({min: 1}).withMessage('Project name is required'),
