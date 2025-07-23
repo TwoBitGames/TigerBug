@@ -73,5 +73,5 @@ export interface CreateCommentData {
 
 export interface AddMemberData {
     user_id: number;
-    role: 'Reporter' | 'Manager' | 'Administrator';
+    role: 'Manager' | 'Administrator';
 }

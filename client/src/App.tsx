@@ -1,6 +1,5 @@
 import {useState, useEffect} from 'react';
 import {useAuth} from './contexts/AuthContext';
-import {LoginForm} from './components/LoginForm';
 import {Navigation} from './components/Navigation';
 import {ProjectList} from './components/ProjectList';
 import {IssueList} from './components/IssueList';
@@ -13,23 +12,21 @@ const App = () => {
     const {isAuthenticated, isLoading} = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [posts, setPosts] = useState<Post[]>([]);
-    const [selectedProject, setSelectedProject] = useState<number | null>(null);
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [showCreateIssue, setShowCreateIssue] = useState(false);
-    const [showAdminDashboard, setShowAdminDashboard] = useState(false);
-    const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
     const [filterType, setFilterType] = useState<'all' | 'open' | 'closed'>('all');
+    const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
     const [isLoadingProjects, setIsLoadingProjects] = useState(false);
     const [isLoadingPosts, setIsLoadingPosts] = useState(false);
 
     useEffect(() => {
-        if (isAuthenticated) {
-            loadProjects();
-        }
-    }, [isAuthenticated]);
+        // Load projects for both authenticated and guest users
+        loadProjects();
+    }, []);
 
     useEffect(() => {
         if (selectedProject) {
-            loadPosts(selectedProject);
+            loadPosts(selectedProject.id);
         }
     }, [selectedProject]);
 
@@ -60,26 +57,17 @@ const App = () => {
     };
 
     const handleProjectSelect = (projectId: number | null) => {
-        setSelectedProject(projectId);
+        const project = projectId ? projects.find(p => p.id === projectId) || null : null;
+        setSelectedProject(project);
         setShowCreateIssue(false);
     };
 
-    const handleBackToProjects = () => {
-        setSelectedProject(null);
-        setShowCreateIssue(false);
-        setPosts([]);
+    const handleViewModeChange = (mode: 'list' | 'kanban') => {
+        setViewMode(mode);
     };
 
     const handleCreateIssue = () => {
         setShowCreateIssue(true);
-    };
-
-    const handleBackFromCreateIssue = () => {
-        setShowCreateIssue(false);
-    };
-
-    const handleShowAdminDashboard = () => {
-        setShowAdminDashboard(true);
     };
 
     const handleSubmitIssue = async (projectId: number, data: CreatePostData, files: File[]) => {
@@ -90,7 +78,7 @@ const App = () => {
                 console.log('File upload not implemented yet:', files);
             }
 
-            if (selectedProject === projectId) {
+            if (selectedProject?.id === projectId) {
                 await loadPosts(projectId);
             }
 
@@ -101,22 +89,32 @@ const App = () => {
     };
 
     const handleUpvote = async (postId: number) => {
+        if (!isAuthenticated) {
+            alert('Please login to vote on issues');
+            return;
+        }
+
         if (!selectedProject) return;
 
         try {
-            await postsApi.toggleVote(selectedProject, postId);
-            await loadPosts(selectedProject);
+            await postsApi.toggleVote(selectedProject.id, postId);
+            await loadPosts(selectedProject.id);
         } catch (error) {
             console.error('Failed to toggle vote:', error);
         }
     };
 
     const handleStatusChange = async (postId: number, status: 'Offen' | 'In Arbeit' | 'Geschlossen') => {
+        if (!isAuthenticated) {
+            alert('Please login to change issue status');
+            return;
+        }
+
         if (!selectedProject) return;
 
         try {
-            await postsApi.update(selectedProject, postId, {status});
-            await loadPosts(selectedProject);
+            await postsApi.update(selectedProject.id, postId, {status});
+            await loadPosts(selectedProject.id);
         } catch (error) {
             console.error('Failed to update post status:', error);
         }
@@ -134,32 +132,25 @@ const App = () => {
         );
     }
 
-    if (!isAuthenticated) return <LoginForm/>;
-
-    const selectedProjectData = Array.isArray(projects) ? projects.find(p => p.id === selectedProject) : undefined;
+    const selectedProjectData = selectedProject;
 
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
             <Navigation
                 selectedProject={selectedProject}
-                projects={projects}
-                showCreateIssue={showCreateIssue}
+                setSelectedProject={setSelectedProject}
                 viewMode={viewMode}
-                onProjectSelect={handleProjectSelect}
-                onBackToProjects={handleBackToProjects}
-                onBackFromCreateIssue={handleBackFromCreateIssue}
+                onViewModeChange={handleViewModeChange}
                 onCreateIssue={handleCreateIssue}
-                onViewModeChange={setViewMode}
-                onShowAdminDashboard={handleShowAdminDashboard}
             />
 
             <div className="flex-1">
                 {showCreateIssue ? (
                     <CreateIssue
                         projects={projects}
-                        selectedProject={selectedProject}
+                        selectedProject={selectedProject?.id || null}
                         onSubmit={handleSubmitIssue}
-                        onCancel={handleBackFromCreateIssue}
+                        onCancel={() => setShowCreateIssue(false)}
                     />
                 ) : selectedProject && selectedProjectData ? (
                     isLoadingPosts ? (
@@ -169,15 +160,17 @@ const App = () => {
                             <p className="text-zinc-400">Loading issues...</p>
                         </div>
                     ) : (
-                        <IssueList
-                            project={selectedProjectData}
-                            posts={posts}
-                            filterType={filterType}
-                            viewMode={viewMode}
-                            onFilterChange={setFilterType}
-                            onUpvote={handleUpvote}
-                            onStatusChange={handleStatusChange}
-                        />
+                        <div className="container py-8 px-4">
+                            <IssueList
+                                project={selectedProjectData}
+                                posts={posts}
+                                filterType={filterType}
+                                viewMode={viewMode}
+                                onFilterChange={setFilterType}
+                                onUpvote={handleUpvote}
+                                onStatusChange={handleStatusChange}
+                            />
+                        </div>
                     )
                 ) : (
                     isLoadingProjects ? (
@@ -187,10 +180,20 @@ const App = () => {
                             <p className="text-zinc-400">Loading projects...</p>
                         </div>
                     ) : (
-                        <ProjectList
-                            projects={projects}
-                            onProjectSelect={handleProjectSelect}
-                        />
+                        <div className="container py-8 px-4">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold">Projects</h2>
+                                {!isAuthenticated && (
+                                    <div className="text-sm text-gray-400">
+                                        Login to create issues and vote
+                                    </div>
+                                )}
+                            </div>
+                            <ProjectList
+                                projects={projects}
+                                onProjectSelect={handleProjectSelect}
+                            />
+                        </div>
                     )
                 )}
             </div>
