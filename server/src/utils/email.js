@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const { SMTPConfig } = require('../models');
+const SMTPConfig = require('../models/SMTPConfig');
 
 let transporter = null;
 
@@ -11,7 +11,7 @@ const initializeMailer = async () => {
       return null;
     }
 
-    transporter = nodemailer.createTransporter({
+    transporter = nodemailer.createTransport({
       host: config.host,
       port: config.port,
       secure: config.port === 465,
