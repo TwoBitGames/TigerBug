@@ -8,12 +8,15 @@ interface AuthContextType {
     user: User | null;
     isLoading: boolean;
     needsOnboarding: boolean;
+    pendingVerification: { email: string } | null;
     checkOnboardingStatus: () => Promise<void>;
     login: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string) => Promise<void>;
     setupFirstAdmin: (email: string, password: string) => Promise<void>;
     logout: () => void;
     isAuthenticated: boolean;
+    clearPendingVerification: () => void;
+    setUser: (user: User | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,6 +37,7 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [needsOnboarding, setNeedsOnboarding] = useState(false);
+    const [pendingVerification, setPendingVerification] = useState<{ email: string } | null>(null);
     const authCheckRef = useRef<Promise<void> | null>(null);
 
     const checkOnboardingStatus = async () => {
@@ -82,7 +86,15 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
             const response = await authApi.login({email, password});
             setAuthToken(response.token);
             setUser(response.user);
-        } catch (error) {
+            setPendingVerification(null);
+        } catch (error: any) {
+            if (error instanceof RequestError && error.response) {
+                const errorResponse = error.response;
+                if (errorResponse.requiresVerification && errorResponse.user) {
+                    setPendingVerification({ email: errorResponse.user.email });
+                    throw new Error('Please verify your email address to continue.');
+                }
+            }
             throw error;
         }
     };
@@ -90,8 +102,14 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
     const register = async (email: string, password: string) => {
         try {
             const response = await authApi.register({email, password});
-            setAuthToken(response.token);
-            setUser(response.user);
+            if (response.requiresVerification) {
+                setPendingVerification({ email });
+                throw new Error('Registration successful! Please check your email for verification code.');
+            } else {
+                setAuthToken(response.token);
+                setUser(response.user);
+                setPendingVerification(null);
+            }
         } catch (error) {
             throw error;
         }
@@ -111,18 +129,26 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
     const logout = () => {
         removeAuthToken();
         setUser(null);
+        setPendingVerification(null);
+    };
+
+    const clearPendingVerification = () => {
+        setPendingVerification(null);
     };
 
     const value: AuthContextType = {
         user,
         isLoading,
         needsOnboarding,
+        pendingVerification,
         checkOnboardingStatus,
         login,
         register,
         setupFirstAdmin,
         logout,
         isAuthenticated: !!user,
+        clearPendingVerification,
+        setUser,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

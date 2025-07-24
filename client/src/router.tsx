@@ -5,6 +5,7 @@ import { ProjectPage } from './pages/ProjectPage';
 import { IssuePage } from './pages/IssuePage';
 import { CreateIssuePage } from './pages/CreateIssuePage';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { EmailVerificationPage } from './pages/EmailVerificationPage';
 
 export const router = createBrowserRouter([
   {
@@ -32,5 +33,9 @@ export const router = createBrowserRouter([
         element: <AdminDashboard />
       }
     ]
+  },
+  {
+    path: '/verify-email',
+    element: <EmailVerificationPage />
   }
 ]);

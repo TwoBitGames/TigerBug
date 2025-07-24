@@ -43,7 +43,7 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
     }
 
     if (!response.ok) {
-        const message = responseData?.message || responseData || 'Request failed';
+        const message = responseData?.error || responseData?.message || responseData || 'Request failed';
         throw new RequestError(message, response.status, responseData);
     }
 

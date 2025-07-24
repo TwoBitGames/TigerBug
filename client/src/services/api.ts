@@ -6,6 +6,8 @@ import type {
   Comment,
   LoginCredentials,
   RegisterData,
+  VerifyEmailData,
+  ResendVerificationData,
   CreateProjectData,
   CreatePostData,
   UpdatePostData,
@@ -21,7 +23,13 @@ export const authApi = {
     post<{ token: string; user: User }>('/auth/login', credentials),
   
   register: (data: RegisterData) => 
-    post<{ token: string; user: User }>('/auth/register', data),
+    post<{ token: string; user: User; requiresVerification?: boolean }>('/auth/register', data),
+  
+  verifyEmail: (data: VerifyEmailData) =>
+    post<{ token: string; user: User }>('/auth/verify-email', data),
+  
+  resendVerificationCode: (data: ResendVerificationData) =>
+    post<{ message: string }>('/auth/resend-verification', data),
   
   getProfile: () => 
     get<{ user: User }>('/auth/profile').then(response => response.user),

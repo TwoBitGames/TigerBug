@@ -2,6 +2,7 @@ export interface User {
     id: number;
     email: string;
     is_admin: boolean;
+    is_verified?: boolean;
     oauth_provider?: string;
     oauth_id?: string;
     created_at: string;
@@ -116,4 +117,13 @@ export interface UpdateSMTPConfigData {
     password?: string;
     use_tls: boolean;
     from_address: string;
+}
+
+export interface VerifyEmailData {
+    email: string;
+    code: string;
+}
+
+export interface ResendVerificationData {
+    email: string;
 }

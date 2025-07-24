@@ -2,6 +2,8 @@ const { body, validationResult } = require('express-validator');
 const { User } = require('../models/associations');
 const {hashPassword, comparePassword} = require('../utils/password');
 const {generateToken} = require('../utils/jwt');
+const { generateVerificationCode, generateVerificationExpiry, isVerificationCodeValid } = require('../utils/verification');
+const { sendVerificationEmail, sendWelcomeEmail } = require('../utils/email');
 
 const validateRegister = [
     body('email').isEmail().normalizeEmail(),
@@ -11,6 +13,15 @@ const validateRegister = [
 const validateLogin = [
     body('email').isEmail().normalizeEmail(),
     body('password').notEmpty(),
+];
+
+const validateVerifyEmail = [
+    body('email').isEmail().normalizeEmail(),
+    body('code').isLength({min: 6, max: 6}).withMessage('Verification code must be 6 digits'),
+];
+
+const validateResendVerification = [
+    body('email').isEmail().normalizeEmail(),
 ];
 
 const register = async (req, res) => {
@@ -28,20 +39,31 @@ const register = async (req, res) => {
         }
 
         const passwordHash = await hashPassword(password);
+        const verificationCode = generateVerificationCode();
+        const verificationExpiry = generateVerificationExpiry();
+        
         const user = await User.create({
             email,
             password_hash: passwordHash,
+            is_verified: false,
+            verification_code: verificationCode,
+            verification_code_expires: verificationExpiry,
         });
 
-        const token = generateToken(user);
+        try {
+            await sendVerificationEmail(email, verificationCode);
+            console.log(`Verification email sent to ${email}`);
+        } catch (emailError) {
+            console.error('Failed to send verification email:', emailError);
+        }
 
         res.status(201).json({
-            message: 'User created successfully',
-            token,
+            message: 'User created successfully. Please check your email for verification code.',
+            requiresVerification: true,
             user: {
                 id: user.id,
                 email: user.email,
-                is_admin: user.is_admin,
+                is_verified: user.is_verified,
             },
         });
     } catch (error) {
@@ -69,6 +91,18 @@ const login = async (req, res) => {
             return res.status(401).json({error: 'Invalid credentials'});
         }
 
+        if (!user.is_verified) {
+            return res.status(403).json({
+                error: 'Email not verified',
+                requiresVerification: true,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    is_verified: user.is_verified,
+                }
+            });
+        }
+
         const token = generateToken(user);
 
         res.json({
@@ -78,6 +112,7 @@ const login = async (req, res) => {
                 id: user.id,
                 email: user.email,
                 is_admin: user.is_admin,
+                is_verified: user.is_verified,
             },
         });
     } catch (error) {
@@ -133,6 +168,7 @@ const setupFirstAdmin = async (req, res) => {
             email,
             password_hash: passwordHash,
             is_admin: true,
+            is_verified: true,
         });
 
         const token = generateToken(user);
@@ -144,6 +180,7 @@ const setupFirstAdmin = async (req, res) => {
                 id: user.id,
                 email: user.email,
                 is_admin: user.is_admin,
+                is_verified: user.is_verified,
             },
         });
     } catch (error) {
@@ -152,12 +189,112 @@ const setupFirstAdmin = async (req, res) => {
     }
 };
 
+const verifyEmail = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        const {email, code} = req.body;
+
+        const user = await User.findOne({where: {email}});
+        if (!user) {
+            return res.status(404).json({error: 'User not found'});
+        }
+
+        if (user.is_verified) {
+            return res.status(400).json({error: 'Email already verified'});
+        }
+
+        if (!isVerificationCodeValid(code, user.verification_code, user.verification_code_expires)) {
+            return res.status(400).json({error: 'Invalid or expired verification code'});
+        }
+
+        await user.update({
+            is_verified: true,
+            verification_code: null,
+            verification_code_expires: null,
+        });
+
+        try {
+            await sendWelcomeEmail(user.email);
+            console.log(`Welcome email sent to ${user.email}`);
+        } catch (emailError) {
+            console.error('Failed to send welcome email:', emailError);
+        }
+
+        const token = generateToken(user);
+
+        res.json({
+            message: 'Email verified successfully',
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                is_admin: user.is_admin,
+                is_verified: true,
+            },
+        });
+    } catch (error) {
+        console.error('Email verification error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
+const resendVerificationCode = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        const {email} = req.body;
+
+        const user = await User.findOne({where: {email}});
+        if (!user) {
+            return res.status(404).json({error: 'User not found'});
+        }
+
+        if (user.is_verified) {
+            return res.status(400).json({error: 'Email already verified'});
+        }
+
+        const verificationCode = generateVerificationCode();
+        const verificationExpiry = generateVerificationExpiry();
+
+        await user.update({
+            verification_code: verificationCode,
+            verification_code_expires: verificationExpiry,
+        });
+
+        try {
+            await sendVerificationEmail(email, verificationCode);
+            console.log(`Verification email resent to ${email}`);
+        } catch (emailError) {
+            console.error('Failed to resend verification email:', emailError);
+            return res.status(500).json({error: 'Failed to send verification email'});
+        }
+
+        res.json({
+            message: 'Verification code sent successfully',
+        });
+    } catch (error) {
+        console.error('Resend verification error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
 module.exports = {
     validateRegister,
     validateLogin,
+    validateVerifyEmail,
+    validateResendVerification,
     register,
     login,
     getProfile,
     checkOnboardingStatus,
     setupFirstAdmin,
+    verifyEmail,
+    resendVerificationCode,
 };

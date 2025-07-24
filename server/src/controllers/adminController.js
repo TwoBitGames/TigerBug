@@ -1,5 +1,5 @@
 const { User, Project, ProjectMembership, SMTPConfig } = require('../models/associations');
-const { sendEmail } = require('../utils/email');
+const { sendEmail, sendSimpleTestEmail } = require('../utils/email');
 
 const getUsers = async (req, res) => {
   try {
@@ -243,13 +243,12 @@ const testSMTPConfig = async (req, res) => {
     }
 
     try {
-      await sendEmail(
-        test_email,
-        'SMTP Configuration Test',
-        'This is a test email to verify your SMTP configuration is working correctly.'
-      );
+      await sendSimpleTestEmail(test_email);
 
-      res.json({ message: 'Test email sent successfully' });
+      res.json({ 
+        message: 'Test email sent successfully',
+        sentTo: test_email
+      });
     } catch (emailError) {
       console.error('Email send error:', emailError);
       res.status(400).json({ 
