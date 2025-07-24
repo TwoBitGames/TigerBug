@@ -14,6 +14,8 @@ interface AuthContextType {
     register: (username: string, email: string, password: string) => Promise<void>;
     setupFirstAdmin: (email: string, password: string) => Promise<void>;
     updateProfile: (username: string) => Promise<void>;
+    uploadProfilePicture: (file: File) => Promise<void>;
+    deleteProfilePicture: () => Promise<void>;
     logout: () => void;
     isAuthenticated: boolean;
     clearPendingVerification: () => void;
@@ -136,6 +138,24 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
         }
     };
 
+    const uploadProfilePicture = async (file: File) => {
+        try {
+            const updatedUser = await authApi.uploadProfilePicture(file);
+            setUser(updatedUser);
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const deleteProfilePicture = async () => {
+        try {
+            const updatedUser = await authApi.deleteProfilePicture();
+            setUser(updatedUser);
+        } catch (error) {
+            throw error;
+        }
+    };
+
     const logout = () => {
         removeAuthToken();
         setUser(null);
@@ -156,6 +176,8 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
         register,
         setupFirstAdmin,
         updateProfile,
+        uploadProfilePicture,
+        deleteProfilePicture,
         logout,
         isAuthenticated: !!user,
         clearPendingVerification,

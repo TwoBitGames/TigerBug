@@ -319,7 +319,7 @@ export const IssueList = ({
                                         <h3 className="font-medium text-sm leading-tight mb-1 text-card-foreground">{post.title}</h3>
                                         <div className="flex items-center space-x-2 text-xs text-muted-foreground mb-2">
                                             <Avatar className="h-4 w-4">
-                                                <AvatarImage src="/placeholder.svg" alt={post.author?.username || 'User'}/>
+                                                <AvatarImage src={post.author?.profile_picture || undefined} alt={post.author?.username || 'User'}/>
                                                 <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">
                                                     {post.author?.username?.charAt(0).toUpperCase() || 'U'}
                                                 </AvatarFallback>
@@ -331,7 +331,12 @@ export const IssueList = ({
                                         <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                                             {post.assignee && (
                                                 <div className="flex items-center space-x-1">
-                                                    <User className="h-3 w-3"/>
+                                                    <Avatar className="h-3 w-3">
+                                                        <AvatarImage src={post.assignee?.profile_picture || undefined} alt={post.assignee?.username || 'User'}/>
+                                                        <AvatarFallback className="text-[8px] bg-secondary text-secondary-foreground">
+                                                            {post.assignee?.username?.charAt(0).toUpperCase() || 'U'}
+                                                        </AvatarFallback>
+                                                    </Avatar>
                                                     <span>{post.assignee.username}</span>
                                                 </div>
                                             )}
@@ -418,7 +423,7 @@ export const IssueList = ({
                                                     </div>
                                                     <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                                                         <Avatar className="h-3 w-3">
-                                                            <AvatarImage src="/placeholder.svg"
+                                                            <AvatarImage src={post.author?.profile_picture || undefined}
                                                                          alt={post.author?.username || 'User'}/>
                                                             <AvatarFallback
                                                                 className="text-[8px] bg-secondary text-secondary-foreground">

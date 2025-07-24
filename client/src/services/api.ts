@@ -1,4 +1,4 @@
-import {get, post, put, del, uploadFiles} from '../lib/request';
+import {get, post, put, del, uploadFiles, uploadFile} from '../lib/request';
 import type {
     User,
     Project,
@@ -39,6 +39,12 @@ export const authApi = {
 
     updateProfile: (data: UpdateProfileData) =>
         put<{ user: User }>('/auth/profile', data).then(response => response.user),
+
+    uploadProfilePicture: (file: File) =>
+        uploadFile<{ user: User }>('/auth/profile/picture', file, 'profile_picture').then(response => response.user),
+
+    deleteProfilePicture: () =>
+        del<{ user: User }>('/auth/profile/picture').then(response => response.user),
 
     checkOnboardingStatus: () =>
         get<{ needsOnboarding: boolean; userCount: number }>('/auth/onboarding-status'),

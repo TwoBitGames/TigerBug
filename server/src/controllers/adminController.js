@@ -4,7 +4,7 @@ const {sendSimpleTestEmail, refreshMailer} = require('../utils/email');
 const getUsers = async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'username', 'email', 'is_admin', 'created_at'],
+            attributes: ['id', 'username', 'email', 'is_admin', 'created_at', 'profile_picture'],
             order: [['created_at', 'DESC']],
         });
 

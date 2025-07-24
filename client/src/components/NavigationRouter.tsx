@@ -2,7 +2,7 @@ import {useState, useEffect} from 'react';
 import {useLocation, useNavigate, useParams} from 'react-router-dom';
 import {ArrowLeft, ChevronDown, Shield, User, LogOut, LogIn, Plus, List, LayoutGrid, CheckSquare} from 'lucide-react';
 import {Button} from './ui/button';
-import {Avatar, AvatarFallback, AvatarImage} from './ui/avatar';
+import {UserAvatar} from './ui/user-avatar';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -180,13 +180,7 @@ export const NavigationRouter = () => {
                                     variant="ghost"
                                     className="flex items-center space-x-2 text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer transition-colors"
                                 >
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage src="/placeholder.svg?height=24&width=24"
-                                                     alt={user?.username || 'User'}/>
-                                        <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
-                                            {user?.username?.charAt(0).toUpperCase() || 'U'}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <UserAvatar user={user} className="h-6 w-6" fallbackClassName="text-xs" />
                                     <span className="text-sm">{user?.username}</span>
                                     <ChevronDown className="h-3 w-3"/>
                                 </Button>

@@ -1,13 +1,22 @@
-const { body, validationResult } = require('express-validator');
-const { User } = require('../models/associations');
+const {body, validationResult} = require('express-validator');
+const {User} = require('../models/associations');
 const {hashPassword, comparePassword} = require('../utils/password');
 const {generateToken} = require('../utils/jwt');
-const { generateVerificationCode, generateVerificationExpiry, isVerificationCodeValid } = require('../utils/verification');
-const { sendVerificationEmail, sendWelcomeEmail } = require('../utils/email');
-const { Op } = require('sequelize');
+const {
+    generateVerificationCode,
+    generateVerificationExpiry,
+    isVerificationCodeValid
+} = require('../utils/verification');
+const {sendVerificationEmail, sendWelcomeEmail} = require('../utils/email');
+const {Op} = require('sequelize');
+const fs = require('fs');
+const path = require('path');
 
 const validateRegister = [
-    body('username').isLength({min: 2, max: 30}).isAlphanumeric().withMessage('Username must be 2-30 characters and contain only letters and numbers'),
+    body('username').isLength({
+        min: 2,
+        max: 30
+    }).isAlphanumeric().withMessage('Username must be 2-30 characters and contain only letters and numbers'),
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({min: 6}).withMessage('Password must be at least 6 characters long'),
 ];
@@ -27,7 +36,10 @@ const validateResendVerification = [
 ];
 
 const validateUpdateProfile = [
-    body('username').isLength({min: 2, max: 30}).isAlphanumeric().withMessage('Username must be 2-30 characters and contain only letters and numbers'),
+    body('username').isLength({
+        min: 2,
+        max: 30
+    }).isAlphanumeric().withMessage('Username must be 2-30 characters and contain only letters and numbers'),
 ];
 
 const register = async (req, res) => {
@@ -42,12 +54,12 @@ const register = async (req, res) => {
         const existingUser = await User.findOne({
             where: {
                 [Op.or]: [
-                    { email },
-                    { username }
+                    {email},
+                    {username}
                 ]
             }
         });
-        
+
         if (existingUser) {
             if (existingUser.email === email) {
                 return res.status(400).json({error: 'User already exists with this email'});
@@ -60,7 +72,7 @@ const register = async (req, res) => {
         const passwordHash = await hashPassword(password);
         const verificationCode = generateVerificationCode();
         const verificationExpiry = generateVerificationExpiry();
-        
+
         const user = await User.create({
             username,
             email,
@@ -85,6 +97,7 @@ const register = async (req, res) => {
                 username: user.username,
                 email: user.email,
                 is_verified: user.is_verified,
+                profile_picture: user.profile_picture,
             },
         });
     } catch (error) {
@@ -105,12 +118,12 @@ const login = async (req, res) => {
         const user = await User.findOne({
             where: {
                 [Op.or]: [
-                    { email: identifier },
-                    { username: identifier }
+                    {email: identifier},
+                    {username: identifier}
                 ]
             }
         });
-        
+
         if (!user || !user.password_hash) {
             return res.status(401).json({error: 'Invalid credentials'});
         }
@@ -129,6 +142,7 @@ const login = async (req, res) => {
                     username: user.username,
                     email: user.email,
                     is_verified: user.is_verified,
+                    profile_picture: user.profile_picture,
                 }
             });
         }
@@ -144,6 +158,7 @@ const login = async (req, res) => {
                 email: user.email,
                 is_admin: user.is_admin,
                 is_verified: user.is_verified,
+                profile_picture: user.profile_picture,
             },
         });
     } catch (error) {
@@ -160,6 +175,7 @@ const getProfile = async (req, res) => {
                 username: req.user.username,
                 email: req.user.email,
                 is_admin: req.user.is_admin,
+                profile_picture: req.user.profile_picture,
             },
         });
     } catch (error) {
@@ -215,6 +231,7 @@ const setupFirstAdmin = async (req, res) => {
                 email: user.email,
                 is_admin: user.is_admin,
                 is_verified: user.is_verified,
+                profile_picture: user.profile_picture,
             },
         });
     } catch (error) {
@@ -269,6 +286,7 @@ const verifyEmail = async (req, res) => {
                 email: user.email,
                 is_admin: user.is_admin,
                 is_verified: true,
+                profile_picture: user.profile_picture,
             },
         });
     } catch (error) {
@@ -333,7 +351,7 @@ const updateProfile = async (req, res) => {
         const existingUser = await User.findOne({
             where: {
                 username,
-                id: { [Op.ne]: userId }
+                id: {[Op.ne]: userId}
             }
         });
 
@@ -341,7 +359,7 @@ const updateProfile = async (req, res) => {
             return res.status(400).json({error: 'Username is already taken'});
         }
 
-        await req.user.update({ username });
+        await req.user.update({username});
 
         res.json({
             message: 'Profile updated successfully',
@@ -350,10 +368,94 @@ const updateProfile = async (req, res) => {
                 username: req.user.username,
                 email: req.user.email,
                 is_admin: req.user.is_admin,
+                profile_picture: req.user.profile_picture,
             },
         });
     } catch (error) {
         console.error('Profile update error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
+const uploadProfilePicture = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({error: 'No file uploaded'});
+        }
+
+        const userId = req.user.id;
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            return res.status(404).json({error: 'User not found'});
+        }
+
+        if (user.profile_picture) {
+            const oldFilePath = path.join(process.env.UPLOAD_PATH || './attachments', 'profiles', path.basename(user.profile_picture));
+            if (fs.existsSync(oldFilePath)) {
+                try {
+                    fs.unlinkSync(oldFilePath);
+                } catch (error) {
+                    console.error('Error deleting old profile picture:', error);
+                }
+            }
+        }
+
+        const relativePath = `/api/profile-pictures/${path.basename(req.file.path)}`;
+        await user.update({profile_picture: relativePath});
+
+        res.json({
+            message: 'Profile picture uploaded successfully',
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                is_admin: user.is_admin,
+                profile_picture: user.profile_picture,
+            },
+        });
+    } catch (error) {
+        console.error('Profile picture upload error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
+const deleteProfilePicture = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            return res.status(404).json({error: 'User not found'});
+        }
+
+        if (!user.profile_picture) {
+            return res.status(400).json({error: 'No profile picture to delete'});
+        }
+
+        const filePath = path.join(process.env.UPLOAD_PATH || './attachments', 'profiles', path.basename(user.profile_picture));
+        if (fs.existsSync(filePath)) {
+            try {
+                fs.unlinkSync(filePath);
+            } catch (error) {
+                console.error('Error deleting profile picture file:', error);
+            }
+        }
+
+        await user.update({profile_picture: null});
+
+        res.json({
+            message: 'Profile picture deleted successfully',
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                is_admin: user.is_admin,
+                profile_picture: null,
+            },
+        });
+    } catch (error) {
+        console.error('Profile picture delete error:', error);
         res.status(500).json({error: 'Internal server error'});
     }
 };
@@ -368,6 +470,8 @@ module.exports = {
     login,
     getProfile,
     updateProfile,
+    uploadProfilePicture,
+    deleteProfilePicture,
     checkOnboardingStatus,
     setupFirstAdmin,
     verifyEmail,

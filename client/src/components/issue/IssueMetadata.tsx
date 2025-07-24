@@ -21,7 +21,7 @@ export const IssueMetadata = ({issue}: IssueMetadataProps) => {
                 <div className="flex items-center space-x-2">
                     <Avatar className="h-4 w-4">
                         <AvatarImage
-                            src={`https://api.dicebear.com/7.x/initials/svg?seed=${issue.assignee.username}`}
+                            src={issue.assignee.profile_picture || undefined}
                             alt={issue.assignee.username}
                         />
                         <AvatarFallback className="text-xs">

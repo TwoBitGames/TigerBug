@@ -42,6 +42,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use('/attachments', express.static(process.env.UPLOAD_PATH || path.join(__dirname, '../attachments')));
 
+app.use('/api/profile-pictures', express.static(path.join(process.env.UPLOAD_PATH || path.join(__dirname, '../attachments'), 'profiles')));
+
 app.use(express.static(path.join(__dirname, '../../client/dist')));
 
 app.use('/api/auth', authRoutes);
@@ -60,7 +62,6 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Public branding config endpoint
 app.get('/api/branding-config', async (req, res) => {
   try {
     const { BrandingConfig } = require('./models/associations');

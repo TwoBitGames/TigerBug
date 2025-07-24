@@ -195,7 +195,7 @@ const getProjectMembers = async (req, res) => {
             where: {project_id: id},
             include: [{
                 model: User,
-                attributes: ['id', 'username', 'email']
+                attributes: ['id', 'username', 'email', 'profile_picture']
             }]
         });
 

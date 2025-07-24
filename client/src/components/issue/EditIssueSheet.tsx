@@ -12,6 +12,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
     Select,
     SelectContent,
@@ -273,7 +274,15 @@ export const EditIssueSheet = ({
                                                 <SelectItem value="unassigned">Unassigned</SelectItem>
                                                 {projectMembers.map((member) => (
                                                     <SelectItem key={member.id} value={member.id.toString()}>
-                                                        {member.username}
+                                                        <div className="flex items-center space-x-2">
+                                                            <Avatar className="h-4 w-4">
+                                                                <AvatarImage src={member.profile_picture || undefined} alt={member.username} />
+                                                                <AvatarFallback className="text-xs">
+                                                                    {member.username.charAt(0).toUpperCase()}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <span>{member.username}</span>
+                                                        </div>
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>

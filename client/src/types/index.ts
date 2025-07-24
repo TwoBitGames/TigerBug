@@ -6,6 +6,7 @@ export interface User {
     is_verified?: boolean;
     oauth_provider?: string;
     oauth_id?: string;
+    profile_picture?: string | null;
     created_at: string;
     is_project_member?: boolean;
 }

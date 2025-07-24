@@ -79,7 +79,7 @@ export const CommentsList = ({
                                     <div className="flex-shrink-0">
                                         <Avatar className="h-10 w-10 ring-2 ring-border">
                                             <AvatarImage
-                                                src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.author?.username || 'User'}`}
+                                                src={comment.author?.profile_picture || undefined}
                                                 alt={comment.author?.username || 'User'}
                                             />
                                             <AvatarFallback

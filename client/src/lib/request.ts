@@ -118,6 +118,32 @@ export const del = async <T = any>(
     return handleResponse<T>(response);
 }
 
+export const uploadFile = async <T = any>(
+    endpoint: string,
+    file: File,
+    fieldName: string = 'file',
+    additionalData: Record<string, any> = {},
+    options: Omit<RequestOptions, 'body'> = {}
+): Promise<T> => {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const token = getAuthToken();
+
+    const formData = new FormData();
+    formData.append(fieldName, file);
+
+    Object.keys(additionalData).forEach(key => {
+        formData.append(key, additionalData[key]);
+    });
+
+    const headers: HeadersInit = {...options.headers};
+
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    const response = await fetch(url, {method: 'POST', headers, body: formData, signal: options.signal});
+
+    return handleResponse<T>(response);
+}
+
 export const uploadFiles = async <T = any>(
     endpoint: string,
     files: File[],
