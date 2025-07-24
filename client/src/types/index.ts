@@ -38,6 +38,9 @@ export interface Post {
     vote_count?: number;
     user_voted?: boolean;
     attachments?: Attachment[];
+    can_edit?: boolean | 'limited';
+    can_delete?: boolean;
+    can_change_status?: boolean;
 }
 
 export interface Comment {
@@ -48,6 +51,8 @@ export interface Comment {
     created_at: string;
     author?: User;
     attachments?: Attachment[];
+    can_edit?: boolean;
+    can_delete?: boolean;
 }
 
 export interface LoginCredentials {
@@ -84,14 +89,12 @@ export interface CreateCommentData {
 
 export interface AddMemberData {
     user_id: number;
-    role: 'Reporter' | 'Manager' | 'Administrator';
 }
 
 export interface ProjectMembership {
     id: number;
     user_id: number;
     project_id: number;
-    role: 'Reporter' | 'Manager' | 'Administrator';
     user: User;
 }
 

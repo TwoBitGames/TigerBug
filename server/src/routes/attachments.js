@@ -40,7 +40,9 @@ router.post('/:type/:id', authenticateToken, uploadMiddleware, handleUploadError
         const isPostAuthor = type === 'post' && relatedEntity.author_id === req.user.id;
         const isCommentAuthor = type === 'comment' && relatedEntity.author_id === req.user.id;
 
-        if (!hasAccess && !isPostAuthor && !isCommentAuthor) {
+        const canUpload = isPostAuthor || isCommentAuthor || req.user.is_admin || hasAccess;
+
+        if (!canUpload) {
             return res.status(403).json({error: 'Access denied'});
         }
 
@@ -51,6 +53,7 @@ router.post('/:type/:id', authenticateToken, uploadMiddleware, handleUploadError
                     related_id: id,
                     file_path: file.path,
                     original_filename: file.originalname,
+                    uploaded_by: req.user.id,
                 })
             )
         );
@@ -115,30 +118,22 @@ router.delete('/:id', authenticateToken, async (req, res) => {
         }
 
         let projectId;
-        let authorId;
 
         if (attachment.related_type === 'post') {
             const post = await Post.findByPk(attachment.related_id);
             projectId = post?.project_id;
-            authorId = post?.author_id;
         } else {
             const comment = await Comment.findByPk(attachment.related_id, {
                 include: [{model: Post, attributes: ['project_id']}],
             });
             projectId = comment?.Post?.project_id;
-            authorId = comment?.author_id;
         }
 
         if (!projectId) {
             return res.status(404).json({error: 'Related entity not found'});
         }
 
-        const {hasAccess, role} = await checkProjectPermission(req.user.id, projectId);
-        if (!hasAccess) {
-            return res.status(403).json({error: 'Access denied'});
-        }
-
-        const canDelete = authorId === req.user.id || ['Manager', 'Administrator'].includes(role);
+        const canDelete = attachment.uploaded_by === req.user.id || req.user.is_admin;
 
         if (!canDelete) {
             return res.status(403).json({error: 'Access denied'});

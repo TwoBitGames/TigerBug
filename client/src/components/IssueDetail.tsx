@@ -52,11 +52,10 @@ interface IssueDetailProps {
     issueId: number;
     projectId: number;
     onBack: () => void;
-    userRole?: 'Reporter' | 'Manager' | 'Administrator' | null;
 }
 
 export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
-    const {user, isAuthenticated} = useAuth();
+    const {isAuthenticated} = useAuth();
     const [issue, setIssue] = useState<Post | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -78,15 +77,9 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
 
     const [commentAttachments, setCommentAttachments] = useState<File[]>([]);
 
-    const canEdit = isAuthenticated && (
-        user?.is_admin ||
-        issue?.author_id === user?.id
-    );
-
-    const canDelete = isAuthenticated && (
-        user?.is_admin ||
-        issue?.author_id === user?.id
-    );
+    const canEdit = issue?.can_edit || false;
+    const canDelete = issue?.can_delete || false;
+    const canChangeStatus = issue?.can_change_status || false;
 
     useEffect(() => {
         loadIssue();
@@ -130,9 +123,12 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             const updateData: UpdatePostData = {
                 title: editTitle,
                 description: editDescription,
-                status: editStatus,
-                is_private: editIsPrivate,
             };
+
+            if (canChangeStatus) {
+                updateData.status = editStatus;
+                updateData.is_private = editIsPrivate;
+            }
 
             const updatedIssue = await postsApi.update(projectId, issueId, updateData);
             setIssue(updatedIssue);
@@ -441,42 +437,47 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <Label htmlFor="status" className="text-zinc-300">Status</Label>
-                                            <Select value={editStatus}
-                                                    onValueChange={(value: any) => setEditStatus(value)}>
-                                                <SelectTrigger className="bg-zinc-800/60 border-zinc-700 text-zinc-100">
-                                                    <SelectValue/>
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-zinc-800 border-zinc-700">
-                                                    <SelectItem value="Offen">Offen</SelectItem>
-                                                    <SelectItem value="In Arbeit">In Arbeit</SelectItem>
-                                                    <SelectItem value="Geschlossen">Geschlossen</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                        {canChangeStatus && (
+                                            <div>
+                                                <Label htmlFor="status" className="text-zinc-300">Status</Label>
+                                                <Select value={editStatus}
+                                                        onValueChange={(value: any) => setEditStatus(value)}>
+                                                    <SelectTrigger
+                                                        className="bg-zinc-800/60 border-zinc-700 text-zinc-100">
+                                                        <SelectValue/>
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-800 border-zinc-700">
+                                                        <SelectItem value="Offen">Offen</SelectItem>
+                                                        <SelectItem value="In Arbeit">In Arbeit</SelectItem>
+                                                        <SelectItem value="Geschlossen">Geschlossen</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
 
-                                        <div className="flex items-end">
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => setEditIsPrivate(!editIsPrivate)}
-                                                className={`border-zinc-600 ${
-                                                    editIsPrivate ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-300'
-                                                }`}
-                                            >
-                                                {editIsPrivate ? (
-                                                    <>
-                                                        <Lock className="h-4 w-4 mr-2"/>
-                                                        Private
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Unlock className="h-4 w-4 mr-2"/>
-                                                        Public
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
+                                        {canChangeStatus && (
+                                            <div className="flex items-end">
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => setEditIsPrivate(!editIsPrivate)}
+                                                    className={`border-zinc-600 ${
+                                                        editIsPrivate ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-300'
+                                                    }`}
+                                                >
+                                                    {editIsPrivate ? (
+                                                        <>
+                                                            <Lock className="h-4 w-4 mr-2"/>
+                                                            Private
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Unlock className="h-4 w-4 mr-2"/>
+                                                            Public
+                                                        </>
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
@@ -654,117 +655,6 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                     <MessageSquare className="h-5 w-5"/>
                     <h2 className="text-xl font-semibold">Comments ({comments.length})</h2>
                 </div>
-                {isAuthenticated && (
-                    <div className="space-y-4 p-4 bg-zinc-800/40 rounded-xl border border-zinc-700/50">
-                        <div className="space-y-3">
-                            <Textarea
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                placeholder="Write a comment..."
-                                rows={3}
-                                className="bg-zinc-800/60 border-zinc-700 text-zinc-100 resize-none focus:border-primary/60 focus:ring-primary/20"
-                            />
-
-                            {commentAttachments.length > 0 && (
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <Label className="text-sm text-zinc-300">Attachments
-                                            ({commentAttachments.length})</Label>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setCommentAttachments([])}
-                                            className="text-zinc-400 hover:text-red-400 h-6 text-xs"
-                                        >
-                                            Clear all
-                                        </Button>
-                                    </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                        {commentAttachments.map((file, index) => (
-                                            <div key={index} className="relative group">
-                                                {file.type.startsWith('image/') ? (
-                                                    <div
-                                                        className="relative aspect-square rounded-lg overflow-hidden bg-zinc-700/40 border border-zinc-600/30">
-                                                        <img
-                                                            src={URL.createObjectURL(file)}
-                                                            alt={file.name}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                        <div
-                                                            className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"/>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => removeCommentAttachment(index)}
-                                                            className="absolute top-1 right-1 text-white bg-black/50 hover:bg-red-500/80 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        >
-                                                            <X className="h-3 w-3"/>
-                                                        </Button>
-                                                        <div
-                                                            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                                                            <p className="text-xs text-white truncate">{file.name}</p>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div
-                                                        className="flex items-center space-x-2 p-2 bg-zinc-700/40 rounded-lg border border-zinc-600/30 group-hover:border-zinc-500/50 transition-colors">
-                                                        <div className="text-sm">{getFileIcon(file.name)}</div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-xs text-zinc-300 truncate">{file.name}</p>
-                                                            <p className="text-xs text-zinc-500">{formatFileSize(file.size)}</p>
-                                                        </div>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => removeCommentAttachment(index)}
-                                                            className="text-zinc-400 hover:text-red-400 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        >
-                                                            <X className="h-3 w-3"/>
-                                                        </Button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                                <input
-                                    type="file"
-                                    multiple
-                                    onChange={handleCommentFileUpload}
-                                    className="hidden"
-                                    id="comment-file-upload"
-                                    accept="image/*,.pdf,.doc,.docx,.txt"
-                                />
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => document.getElementById("comment-file-upload")?.click()}
-                                    className="text-zinc-400 hover:text-zinc-200 h-8 px-3"
-                                >
-                                    <Paperclip className="h-4 w-4 mr-1"/>
-                                    Attach
-                                </Button>
-                                <div className="text-xs text-zinc-500">
-                                    {newComment.length > 0 && `${newComment.length} characters`}
-                                </div>
-                            </div>
-                            <Button
-                                onClick={handleSubmitComment}
-                                disabled={!newComment.trim() || isSubmittingComment}
-                                size="sm"
-                                className="bg-primary hover:bg-primary/90"
-                            >
-                                {isSubmittingComment ? 'Submitting...' : 'Add Comment'}
-                            </Button>
-                        </div>
-                    </div>
-                )}
-
                 <div className="space-y-6">
                     {comments.length === 0 ? (
                         <div className="text-center py-12 text-zinc-400">
@@ -808,7 +698,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                             </span>
                                                     </div>
 
-                                                    {isAuthenticated && (user?.id === comment.author_id || user?.is_admin) && (
+                                                    {(comment.can_edit || comment.can_delete) && (
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger asChild>
                                                                 <Button
@@ -821,24 +711,30 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end"
                                                                                  className="bg-zinc-800 border-zinc-700">
-                                                                <DropdownMenuItem
-                                                                    onClick={() => {
-                                                                        setEditingComment(comment.id);
-                                                                        setEditCommentText(comment.message);
-                                                                    }}
-                                                                    className="text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700"
-                                                                >
-                                                                    <Edit2 className="h-3 w-3 mr-2"/>
-                                                                    Edit
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator className="bg-zinc-700"/>
-                                                                <DropdownMenuItem
-                                                                    onClick={() => handleDeleteComment(comment.id)}
-                                                                    className="text-red-400 hover:text-red-300 hover:bg-zinc-700"
-                                                                >
-                                                                    <Trash2 className="h-3 w-3 mr-2"/>
-                                                                    Delete
-                                                                </DropdownMenuItem>
+                                                                {comment.can_edit && (
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => {
+                                                                            setEditingComment(comment.id);
+                                                                            setEditCommentText(comment.message);
+                                                                        }}
+                                                                        className="text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700"
+                                                                    >
+                                                                        <Edit2 className="h-3 w-3 mr-2"/>
+                                                                        Edit
+                                                                    </DropdownMenuItem>
+                                                                )}
+                                                                {comment.can_edit && comment.can_delete && (
+                                                                    <DropdownMenuSeparator className="bg-zinc-700"/>
+                                                                )}
+                                                                {comment.can_delete && (
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => handleDeleteComment(comment.id)}
+                                                                        className="text-red-400 hover:text-red-300 hover:bg-zinc-700"
+                                                                    >
+                                                                        <Trash2 className="h-3 w-3 mr-2"/>
+                                                                        Delete
+                                                                    </DropdownMenuItem>
+                                                                )}
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     )}
@@ -971,6 +867,116 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                         </div>
                     )}
                 </div>
+                {isAuthenticated && (
+                    <div className="space-y-4 p-7 bg-zinc-800/40 rounded-xl border border-zinc-700/50">
+                        <div className="space-y-3">
+                            <Textarea
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                placeholder="Write a comment..."
+                                rows={3}
+                                className="bg-zinc-800/60 border-zinc-700 text-zinc-100 resize-none focus:border-primary/60 focus:ring-primary/20"
+                            />
+
+                            {commentAttachments.length > 0 && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-sm text-zinc-300">Attachments
+                                            ({commentAttachments.length})</Label>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setCommentAttachments([])}
+                                            className="text-zinc-400 hover:text-red-400 h-6 text-xs"
+                                        >
+                                            Clear all
+                                        </Button>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {commentAttachments.map((file, index) => (
+                                            <div key={index} className="relative group">
+                                                {file.type.startsWith('image/') ? (
+                                                    <div
+                                                        className="relative aspect-square rounded-lg overflow-hidden bg-zinc-700/40 border border-zinc-600/30">
+                                                        <img
+                                                            src={URL.createObjectURL(file)}
+                                                            alt={file.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        <div
+                                                            className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"/>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeCommentAttachment(index)}
+                                                            className="absolute top-1 right-1 text-white bg-black/50 hover:bg-red-500/80 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="h-3 w-3"/>
+                                                        </Button>
+                                                        <div
+                                                            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                                            <p className="text-xs text-white truncate">{file.name}</p>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div
+                                                        className="flex items-center space-x-2 p-2 bg-zinc-700/40 rounded-lg border border-zinc-600/30 group-hover:border-zinc-500/50 transition-colors">
+                                                        <div className="text-sm">{getFileIcon(file.name)}</div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-xs text-zinc-300 truncate">{file.name}</p>
+                                                            <p className="text-xs text-zinc-500">{formatFileSize(file.size)}</p>
+                                                        </div>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeCommentAttachment(index)}
+                                                            className="text-zinc-400 hover:text-red-400 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="h-3 w-3"/>
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="file"
+                                    multiple
+                                    onChange={handleCommentFileUpload}
+                                    className="hidden"
+                                    id="comment-file-upload"
+                                    accept="image/*,.pdf,.doc,.docx,.txt"
+                                />
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => document.getElementById("comment-file-upload")?.click()}
+                                    className="text-zinc-400 hover:text-zinc-200 h-8 px-3"
+                                >
+                                    <Paperclip className="h-4 w-4 mr-1"/>
+                                    Attach
+                                </Button>
+                                <div className="text-xs text-zinc-500">
+                                    {newComment.length > 0 && `${newComment.length} characters`}
+                                </div>
+                            </div>
+                            <Button
+                                onClick={handleSubmitComment}
+                                disabled={!newComment.trim() || isSubmittingComment}
+                                size="sm"
+                                className="bg-primary hover:bg-primary/90"
+                            >
+                                {isSubmittingComment ? 'Submitting...' : 'Add Comment'}
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <Dialog open={isAttachmentDialogOpen} onOpenChange={setIsAttachmentDialogOpen}>

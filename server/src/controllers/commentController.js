@@ -1,5 +1,11 @@
 const {body, validationResult} = require('express-validator');
-const { Comment, Post, User, Project, Attachment } = require('../models/associations');
+const {Comment, Post, User, Project, Attachment, ProjectMembership} = require('../models/associations');
+const {
+    checkProjectPermission,
+    canViewPrivatePost,
+    canEditComment,
+    canDeleteComment
+} = require('../utils/permissions');
 
 const validateComment = [
     body('message').trim().isLength({min: 1}).withMessage('Message is required'),
@@ -32,7 +38,13 @@ const createComment = async (req, res) => {
             return res.status(404).json({error: 'Post not found'});
         }
 
-        if (post.is_private && post.author_id !== req.user.id) {
+        let isProjectMember = false;
+        if (req.user) {
+            const permission = await checkProjectPermission(req.user.id, projectId);
+            isProjectMember = permission.hasAccess;
+        }
+
+        if (!canViewPrivatePost(req.user, post, isProjectMember, req.user.is_admin)) {
             return res.status(403).json({error: 'Access denied'});
         }
 
@@ -76,11 +88,13 @@ const getComments = async (req, res) => {
             return res.status(404).json({error: 'Post not found'});
         }
 
-        if (!req.user && post.is_private) {
-            return res.status(403).json({error: 'Access denied'});
+        let isProjectMember = false;
+        if (req.user) {
+            const permission = await checkProjectPermission(req.user.id, projectId);
+            isProjectMember = permission.hasAccess;
         }
 
-        if (req.user && post.is_private && post.author_id !== req.user.id) {
+        if (!canViewPrivatePost(req.user, post, isProjectMember, req.user?.is_admin)) {
             return res.status(403).json({error: 'Access denied'});
         }
 
@@ -109,6 +123,8 @@ const getComments = async (req, res) => {
                 return {
                     ...comment.toJSON(),
                     attachments,
+                    can_edit: req.user ? canEditComment(req.user, comment, isProjectMember, req.user.is_admin) : false,
+                    can_delete: req.user ? canDeleteComment(req.user, comment, isProjectMember, req.user.is_admin) : false,
                 };
             })
         );
@@ -153,7 +169,10 @@ const updateComment = async (req, res) => {
             return res.status(404).json({error: 'Comment not found'});
         }
 
-        if (comment.author_id !== req.user.id && !req.user.is_admin) {
+        const permission = await checkProjectPermission(req.user.id, projectId);
+        const isProjectMember = permission.hasAccess;
+
+        if (!canEditComment(req.user, comment, isProjectMember, req.user.is_admin)) {
             return res.status(403).json({error: 'Access denied'});
         }
 
@@ -194,7 +213,10 @@ const deleteComment = async (req, res) => {
             return res.status(404).json({error: 'Comment not found'});
         }
 
-        if (comment.author_id !== req.user.id && !req.user.is_admin) {
+        const permission = await checkProjectPermission(req.user.id, projectId);
+        const isProjectMember = permission.hasAccess;
+
+        if (!canDeleteComment(req.user, comment, isProjectMember, req.user.is_admin)) {
             return res.status(403).json({error: 'Access denied'});
         }
 

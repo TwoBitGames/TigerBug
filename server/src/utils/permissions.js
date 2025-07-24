@@ -1,6 +1,6 @@
 const { ProjectMembership } = require('../models/associations');
 
-const checkProjectPermission = async (userId, projectId, requiredRoles = []) => {
+const checkProjectPermission = async (userId, projectId) => {
     try {
         const membership = await ProjectMembership.findOne({
             where: {
@@ -9,23 +9,86 @@ const checkProjectPermission = async (userId, projectId, requiredRoles = []) => 
             }
         });
 
-        if (!membership) return {hasAccess: false, role: null};
-
-        const hasAccess = requiredRoles.length === 0 || requiredRoles.includes(membership.role);
-        return {hasAccess, role: membership.role};
+        return { hasAccess: !!membership };
     } catch (error) {
         console.error('Error checking project permission:', error);
-        return {hasAccess: false, role: null};
+        return { hasAccess: false };
     }
 };
 
-const canManagePost = (user, post, userRole) => {
-    return post.author_id === user.id || ['Manager', 'Administrator'].includes(userRole);
+const canCreatePost = (user) => {
+    return !!user;
 };
 
-const canViewPrivatePost = (user, post, userRole) => {
+const canEditPost = (user, post, isProjectMember = false, isAdmin = false) => {
+    if (!user) return false;
+    
+    if (isAdmin) {
+        return true;
+    }
+    
+    if (post.author_id === user.id) {
+        return 'limited';
+    }
+    
+    return false;
+};
+
+const canDeletePost = (user, post, isProjectMember = false, isAdmin = false) => {
+    if (!user) return false;
+
+    if (isAdmin) {
+        return true;
+    }
+
+    return post.author_id === user.id;
+};
+
+const canEditComment = (user, comment, isProjectMember = false, isAdmin = false) => {
+    if (!user) return false;
+
+    if (isAdmin) {
+        return true;
+    }
+
+    return comment.author_id === user.id;
+};
+
+const canDeleteComment = (user, comment, isProjectMember = false, isAdmin = false) => {
+    if (!user) return false;
+
+    if (isAdmin) {
+        return true;
+    }
+
+    return comment.author_id === user.id;
+};
+
+const canViewPrivatePost = (user, post, isProjectMember = false, isAdmin = false) => {
     if (!post.is_private) return true;
-    return post.author_id === user.id || ['Manager', 'Administrator'].includes(userRole);
+    
+    if (!user) return false;
+
+    if (isAdmin) {
+        return true;
+    }
+
+    return post.author_id === user.id;
 };
 
-module.exports = {checkProjectPermission, canManagePost, canViewPrivatePost};
+const canChangePostStatus = (user, post, isProjectMember = false, isAdmin = false) => {
+    if (!user) return false;
+
+    return isAdmin;
+};
+
+module.exports = {
+    checkProjectPermission, 
+    canCreatePost,
+    canEditPost,
+    canDeletePost,
+    canEditComment,
+    canDeleteComment,
+    canViewPrivatePost,
+    canChangePostStatus
+};

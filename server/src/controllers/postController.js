@@ -1,9 +1,15 @@
 const {body, validationResult} = require('express-validator');
 const {Op} = require('sequelize');
-const { Post, Project, User, PostVote, Comment, Attachment, ProjectMembership } = require('../models/associations');
+const {Post, Project, User, PostVote, Comment, Attachment} = require('../models/associations');
 
-const {checkProjectPermission, canManagePost, canViewPrivatePost} = require('../utils/permissions');
-const {sendPostNotification} = require('../utils/email');
+const {
+    checkProjectPermission,
+    canCreatePost,
+    canEditPost,
+    canDeletePost,
+    canViewPrivatePost,
+    canChangePostStatus
+} = require('../utils/permissions');
 
 const validatePost = [
     body('title').trim().isLength({min: 1}).withMessage('Title is required'),
@@ -35,6 +41,10 @@ const createPost = async (req, res) => {
         const project = await Project.findByPk(projectId);
         if (!project) {
             return res.status(404).json({error: 'Project not found'});
+        }
+
+        if (!canCreatePost(req.user)) {
+            return res.status(403).json({error: 'Access denied'});
         }
 
         const post = await Post.create({
@@ -85,9 +95,10 @@ const getPosts = async (req, res) => {
                 {description: {[Op.like]: `%${search}%`}},
             ];
         }
-
         if (!req.user) {
             where.is_private = false;
+        } else if (req.user.is_admin) {
+
         } else {
             where[Op.or] = [
                 {is_private: false},
@@ -164,11 +175,13 @@ const getPost = async (req, res) => {
             attributes: ['id', 'original_filename', 'file_path', 'uploaded_at']
         });
 
-        if (!req.user && post.is_private) {
-            return res.status(403).json({error: 'Access denied'});
+        let isProjectMember = false;
+        if (req.user) {
+            const permission = await checkProjectPermission(req.user.id, projectId);
+            isProjectMember = permission.hasAccess;
         }
 
-        if (req.user && post.is_private && post.author_id !== req.user.id) {
+        if (!canViewPrivatePost(req.user, post, isProjectMember, req.user?.is_admin)) {
             return res.status(403).json({error: 'Access denied'});
         }
 
@@ -176,7 +189,9 @@ const getPost = async (req, res) => {
             ...post.toJSON(),
             vote_count: post.votes.length,
             user_voted: req.user ? post.votes.some(vote => vote.user_id === req.user.id) : false,
-            can_manage: req.user ? (post.author_id === req.user.id || req.user.is_admin) : false,
+            can_edit: req.user ? canEditPost(req.user, post, isProjectMember, req.user.is_admin) : false,
+            can_delete: req.user ? canDeletePost(req.user, post, isProjectMember, req.user.is_admin) : false,
+            can_change_status: req.user ? canChangePostStatus(req.user, post, isProjectMember, req.user.is_admin) : false,
             attachments: attachments
         };
 
@@ -213,11 +228,38 @@ const updatePost = async (req, res) => {
             return res.status(404).json({error: 'Post not found'});
         }
 
-        if (post.author_id !== req.user.id && !req.user.is_admin) {
+        const permission = await checkProjectPermission(req.user.id, projectId);
+        const isProjectMember = permission.hasAccess;
+
+        const editPermission = canEditPost(req.user, post, isProjectMember, req.user.is_admin);
+
+        if (!editPermission) {
             return res.status(403).json({error: 'Access denied'});
         }
 
-        await post.update(updates);
+        if (editPermission === 'limited') {
+            const allowedFields = ['title', 'description'];
+            const filteredUpdates = {};
+
+            for (const field of allowedFields) {
+                if (updates[field] !== undefined) {
+                    filteredUpdates[field] = updates[field];
+                }
+            }
+
+            const attemptedFields = Object.keys(updates);
+            const forbiddenFields = attemptedFields.filter(field => !allowedFields.includes(field));
+
+            if (forbiddenFields.length > 0) {
+                return res.status(403).json({
+                    error: `You can only update title and description. Forbidden fields: ${forbiddenFields.join(', ')}`
+                });
+            }
+
+            await post.update(filteredUpdates);
+        } else {
+            await post.update(updates);
+        }
 
         res.json({
             message: 'Post updated successfully',
@@ -245,7 +287,10 @@ const deletePost = async (req, res) => {
             return res.status(404).json({error: 'Post not found'});
         }
 
-        if (post.author_id !== req.user.id && !req.user.is_admin) {
+        const permission = await checkProjectPermission(req.user.id, projectId);
+        const isProjectMember = permission.hasAccess;
+
+        if (!canDeletePost(req.user, post, isProjectMember, req.user.is_admin)) {
             return res.status(403).json({error: 'Access denied'});
         }
 
@@ -276,7 +321,13 @@ const toggleVote = async (req, res) => {
             return res.status(404).json({error: 'Post not found'});
         }
 
-        if (post.is_private && post.author_id !== req.user.id) {
+        let isProjectMember = false;
+        if (req.user) {
+            const permission = await checkProjectPermission(req.user.id, projectId);
+            isProjectMember = permission.hasAccess;
+        }
+
+        if (!canViewPrivatePost(req.user, post, isProjectMember, req.user.is_admin)) {
             return res.status(403).json({error: 'Access denied'});
         }
 

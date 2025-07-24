@@ -5,7 +5,6 @@ import {Input} from '../ui/input';
 import {Label} from '../ui/label';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../ui/select';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../ui/table';
-import {Badge} from '../ui/badge';
 import {Textarea} from '../ui/textarea';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger} from '../ui/dialog';
 import {adminApi, projectsApi} from '../../services/api';
@@ -23,7 +22,6 @@ export const ProjectManagement = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string>('');
-    const [selectedRole, setSelectedRole] = useState<'Reporter' | 'Manager' | 'Administrator'>('Reporter');
 
     useEffect(() => {
         loadProjects();
@@ -64,32 +62,17 @@ export const ProjectManagement = () => {
         }
     };
 
-    const handleMemberRoleUpdate = async (userId: number, role: 'Reporter' | 'Manager' | 'Administrator') => {
-        if (!selectedProject) return;
-
-        try {
-            await adminApi.updateProjectMemberRole(selectedProject.id, userId, role);
-            setProjectMembers(projectMembers.map(m =>
-                m.user_id === userId ? {...m, role} : m
-            ));
-        } catch (error) {
-            console.error('Failed to update member role:', error);
-        }
-    };
-
     const handleAddMember = async () => {
         if (!selectedProject || !selectedUserId) return;
 
         try {
             await adminApi.addProjectMember(selectedProject.id, {
-                user_id: parseInt(selectedUserId),
-                role: selectedRole
+                user_id: parseInt(selectedUserId)
             });
 
             await loadProjectMembers(selectedProject);
 
             setSelectedUserId('');
-            setSelectedRole('Reporter');
             setIsAddMemberDialogOpen(false);
         } catch (error) {
             console.error('Failed to add member:', error);
@@ -123,19 +106,6 @@ export const ProjectManagement = () => {
         }
     };
 
-    const getRoleColor = (role: string) => {
-        switch (role) {
-            case 'Administrator':
-                return 'bg-red-100 text-red-800 border-red-200';
-            case 'Manager':
-                return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'Reporter':
-                return 'bg-green-100 text-green-800 border-green-200';
-            default:
-                return 'bg-gray-100 text-gray-800 border-gray-200';
-        }
-    };
-
     if (loading) {
         return (
             <div className="p-6">
@@ -165,7 +135,8 @@ export const ProjectManagement = () => {
                         <DialogHeader>
                             <DialogTitle>Create New Project</DialogTitle>
                             <DialogDescription>
-                                Add a new project to the system. You'll be automatically added as an administrator.
+                                Add a new project to the system. You can then add team members who will be able to
+                                create posts and issues.
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleCreateProject} className="space-y-4 mt-4">
@@ -275,13 +246,13 @@ export const ProjectManagement = () => {
                                         Add Member
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="sm:max-w-md">
-                                    <DialogHeader>
-                                        <DialogTitle>Add Team Member</DialogTitle>
-                                        <DialogDescription>
-                                            Add a new member to {selectedProject.name}
-                                        </DialogDescription>
-                                    </DialogHeader>
+                                <DialogContent className="sm:max-w-md"> <DialogHeader>
+                                    <DialogTitle>Add Team Member</DialogTitle>
+                                    <DialogDescription>
+                                        Add a new member to {selectedProject.name}. They will be able to create posts
+                                        and issues.
+                                    </DialogDescription>
+                                </DialogHeader>
                                     <div className="space-y-4 mt-4">
                                         <div>
                                             <Label htmlFor="user-select">Select User</Label>
@@ -297,20 +268,6 @@ export const ProjectManagement = () => {
                                                                 {user.email}
                                                             </SelectItem>
                                                         ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div>
-                                            <Label htmlFor="role-select">Role</Label>
-                                            <Select value={selectedRole}
-                                                    onValueChange={(value: 'Reporter' | 'Manager' | 'Administrator') => setSelectedRole(value)}>
-                                                <SelectTrigger>
-                                                    <SelectValue/>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Reporter">Reporter</SelectItem>
-                                                    <SelectItem value="Manager">Manager</SelectItem>
-                                                    <SelectItem value="Administrator">Administrator</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -340,70 +297,46 @@ export const ProjectManagement = () => {
                                 <div>Loading members...</div>
                             </div>
                         ) : projectMembers.length > 0 ? (
-                            <div className="overflow-x-auto">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Member</TableHead>
-                                            <TableHead>Role</TableHead>
-                                            <TableHead>Actions</TableHead>
+                            <div className="overflow-x-auto"><Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Member</TableHead>
+                                        <TableHead>Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {projectMembers.map((member) => (
+                                        <TableRow key={member.id}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div
+                                                        className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                                                        {member.user.email.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-medium">{member.user.email}</div>
+                                                        {member.user.is_admin && (
+                                                            <div className="text-xs text-muted-foreground">System
+                                                                Admin</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleRemoveMember(member.user_id)}
+                                                    className="text-destructive hover:text-destructive"
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-2"/>
+                                                    Remove
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {projectMembers.map((member) => (
-                                            <TableRow key={member.id}>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-3">
-                                                        <div
-                                                            className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                                            {member.user.email.charAt(0).toUpperCase()}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-medium">{member.user.email}</div>
-                                                            {member.user.is_admin && (
-                                                                <div className="text-xs text-muted-foreground">System
-                                                                    Admin</div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge className={getRoleColor(member.role)} variant="outline">
-                                                        {member.role}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <Select
-                                                            value={member.role}
-                                                            onValueChange={(value: 'Reporter' | 'Manager' | 'Administrator') =>
-                                                                handleMemberRoleUpdate(member.user_id, value)
-                                                            }
-                                                        >
-                                                            <SelectTrigger className="w-40">
-                                                                <SelectValue/>
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="Reporter">Reporter</SelectItem>
-                                                                <SelectItem value="Manager">Manager</SelectItem>
-                                                                <SelectItem
-                                                                    value="Administrator">Administrator</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => handleRemoveMember(member.user_id)}
-                                                            className="text-destructive hover:text-destructive"
-                                                        >
-                                                            <Trash2 className="h-4 w-4"/>
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
+                                    ))}
+                                </TableBody>
+                            </Table>
                             </div>
                         ) : (
                             <div className="text-center py-8">

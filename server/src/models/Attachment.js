@@ -23,6 +23,14 @@ const Attachment = sequelize.define('Attachment', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  uploaded_by: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id',
+    },
+  },
   uploaded_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
