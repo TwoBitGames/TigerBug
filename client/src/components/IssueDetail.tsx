@@ -587,7 +587,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                     <div
                                         className="aspect-video bg-zinc-800/60 flex items-center justify-center relative">
                                         <img
-                                            src={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/attachments/${attachment.id}`}
+                                            src={`/api/attachments/${attachment.id}`}
                                             alt={attachment.original_filename}
                                             className="w-full h-full object-cover"
                                             onError={(e) => {
@@ -789,7 +789,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                                                         onClick={() => handleAttachmentClick(attachment)}
                                                                                     >
                                                                                         <img
-                                                                                            src={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/attachments/${attachment.id}`}
+                                                                                            src={`/api/attachments/${attachment.id}`}
                                                                                             alt={attachment.original_filename}
                                                                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                                                                                             loading="lazy"
@@ -989,7 +989,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                     <div className="flex items-center justify-center p-4">
                         {selectedAttachment && (
                             <img
-                                src={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/attachments/${selectedAttachment.id}`}
+                                src={`/api/attachments/${selectedAttachment.id}`}
                                 alt={selectedAttachment.original_filename}
                                 className="max-w-full max-h-[70vh] object-contain rounded-lg"
                             />

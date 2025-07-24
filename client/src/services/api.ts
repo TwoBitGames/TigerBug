@@ -89,7 +89,7 @@ export const attachmentsApi = {
     del(`/attachments/${id}`),
   
   download: (id: number) => {
-    const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/attachments/${id}`;
+    const url = `/api/attachments/${id}`;
     window.open(url, '_blank');
   },
 };

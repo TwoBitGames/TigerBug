@@ -16,7 +16,7 @@ export class RequestError extends Error {
     }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = '/api';
 
 const getAuthToken = (): string | null => localStorage.getItem('auth_token');
 export const setAuthToken = (token: string): void => localStorage.setItem('auth_token', token);
