@@ -122,7 +122,7 @@ export const NavigationRouter = () => {
                             onClick={handleTodoClick}
                             size="sm"
                             variant="outline"
-                            className="bg-transparent border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                            className="bg-transparent border-primary text-primary hover:bg-primary/10 hover:border-primary hover:text-primary"
                         >
                             <CheckSquare className="h-4 w-4 mr-2"/>
                             My To-Do
