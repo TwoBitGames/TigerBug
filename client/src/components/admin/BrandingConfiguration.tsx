@@ -31,6 +31,7 @@ export const BrandingConfiguration = () => {
         logo_url: null,
         tagline: null,
         social_links: null,
+        client_url: null,
     });
 
     useEffect(() => {
@@ -46,6 +47,7 @@ export const BrandingConfiguration = () => {
                 logo_url: brandingData.logo_url,
                 tagline: brandingData.tagline,
                 social_links: brandingData.social_links,
+                client_url: brandingData.client_url,
             });
         } catch (error) {
             console.error('Failed to load branding config:', error);
@@ -179,6 +181,25 @@ export const BrandingConfiguration = () => {
                                 />
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Optional: A short description that appears in the footer
+                                </p>
+                            </div>
+
+                            <div>
+                                <Label htmlFor="client_url">Client URL</Label>
+                                <Input
+                                    id="client_url"
+                                    value={brandingForm.client_url || ''}
+                                    onChange={(e) => setBrandingForm({
+                                        ...brandingForm,
+                                        client_url: e.target.value || null
+                                    })}
+                                    placeholder="http://localhost:3000"
+                                    type="url"
+                                    maxLength={500}
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Optional: The base URL for your application (used in emails and links). If not set,
+                                    the system will fall back to environment configuration.
                                 </p>
                             </div>
 

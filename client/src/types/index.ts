@@ -173,6 +173,7 @@ export interface BrandingConfig {
         instagram?: string;
         discord?: string;
     } | null;
+    client_url: string | null;
     created_at?: string;
     updated_at?: string;
 }
@@ -191,4 +192,5 @@ export interface UpdateBrandingConfigData {
         instagram?: string;
         discord?: string;
     } | null;
+    client_url?: string | null;
 }

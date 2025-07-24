@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const { SMTPConfig } = require('../models/associations');
 const { EmailTemplateEngine, emailContents } = require('./emailTemplateEngine');
+const { getClientUrl } = require('./clientUrl');
 
 let transporter = null;
 const templateEngine = new EmailTemplateEngine();
@@ -65,7 +66,8 @@ const sendEmail = async (to, subject, text, html = null) => {
 };
 
 const sendPostNotification = async (post, action, recipients) => {
-  const emailData = emailContents.postNotification(post, action);
+  const clientUrl = await getClientUrl();
+  const emailData = emailContents.postNotification(post, action, clientUrl);
   const htmlContent = await templateEngine.renderEmail(emailData);
 
   const textContent = `
@@ -80,7 +82,7 @@ Author: ${post.author.email}
 Description:
 ${post.description}
 
-View the post: ${process.env.CLIENT_URL}/projects/${post.project_id}/issues/${post.id}
+View the post: ${clientUrl}/projects/${post.project_id}/issues/${post.id}
 
 ---
 TigerBug Team
@@ -92,7 +94,8 @@ TigerBug Team
 };
 
 const sendCommentNotification = async (comment, post, recipients) => {
-  const emailData = emailContents.commentNotification(comment, post);
+  const clientUrl = await getClientUrl();
+  const emailData = emailContents.commentNotification(comment, post, clientUrl);
   const htmlContent = await templateEngine.renderEmail(emailData);
   
   const textContent = `
@@ -106,7 +109,7 @@ Comment by: ${comment.author.email}
 Comment:
 ${comment.message}
 
-View the post: ${process.env.CLIENT_URL}/projects/${post.project_id}/issues/${post.id}
+View the post: ${clientUrl}/projects/${post.project_id}/issues/${post.id}
 
 ---
 TigerBug Team
@@ -118,7 +121,8 @@ TigerBug Team
 };
 
 const sendVerificationEmail = async (email, verificationCode) => {
-  const verificationUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email?email=${encodeURIComponent(email)}&code=${verificationCode}`;
+  const clientUrl = await getClientUrl();
+  const verificationUrl = `${clientUrl}/verify-email?email=${encodeURIComponent(email)}&code=${verificationCode}`;
   const emailData = emailContents.verification(verificationCode, verificationUrl);
   const htmlContent = await templateEngine.renderEmail(emailData);
   
@@ -139,14 +143,15 @@ If you didn't create an account, please ignore this email.
 
 ---
 TigerBug Team
-${process.env.CLIENT_URL || 'http://localhost:5173'}
+${clientUrl}
   `.trim();
 
   return await sendEmail(email, emailData.subject, textContent, htmlContent);
 };
 
 const sendWelcomeEmail = async (email) => {
-  const emailData = emailContents.welcome(email);
+  const clientUrl = await getClientUrl();
+  const emailData = emailContents.welcome(email, clientUrl);
   const htmlContent = await templateEngine.renderEmail(emailData);
   
   const textContent = `
@@ -165,7 +170,7 @@ Here are some things you can do to get started:
 
 Pro Tip: Use labels and priorities to organize your issues effectively!
 
-Get started: ${process.env.CLIENT_URL || 'http://localhost:5173'}
+Get started: ${clientUrl}
 
 ---
 TigerBug Team

@@ -274,6 +274,7 @@ const getBrandingConfig = async (req, res) => {
                 logo_url: null,
                 tagline: null,
                 social_links: null,
+                client_url: null,
             });
         }
 
@@ -286,7 +287,7 @@ const getBrandingConfig = async (req, res) => {
 
 const updateBrandingConfig = async (req, res) => {
     try {
-        const {app_name, logo_url, tagline, social_links} = req.body;
+        const {app_name, logo_url, tagline, social_links, client_url} = req.body;
 
         if (!app_name || app_name.trim().length === 0) {
             return res.status(400).json({error: 'App name is required'});
@@ -302,6 +303,10 @@ const updateBrandingConfig = async (req, res) => {
 
         if (logo_url && logo_url.length > 2000) {
             return res.status(400).json({error: 'Logo URL must be 2000 characters or less'});
+        }
+
+        if (client_url && client_url.length > 500) {
+            return res.status(400).json({error: 'Client URL must be 500 characters or less'});
         }
 
         if (social_links) {
@@ -327,6 +332,7 @@ const updateBrandingConfig = async (req, res) => {
             logo_url: logo_url || null,
             tagline: tagline || null,
             social_links: social_links || null,
+            client_url: client_url || null,
         };
 
         if (brandingConfig) {

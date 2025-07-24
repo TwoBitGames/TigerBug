@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const { getClientUrl } = require('./clientUrl');
 
 class EmailTemplateEngine {
     constructor() {
@@ -39,8 +40,9 @@ class EmailTemplateEngine {
 
     async renderEmail(data) {
         const template = await this.loadTemplate();
+        const clientUrl = await getClientUrl();
         return this.interpolate(template, {
-            baseUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+            baseUrl: clientUrl,
             ...data
         });
     }
@@ -80,7 +82,7 @@ const emailContents = {
         showCta: false
     }),
 
-    postNotification: (post, action) => ({
+    postNotification: (post, action, clientUrl) => ({
         subject: `[${post.Project.name}] ${action}: ${post.title}`,
         heroTitle: `Post ${action}`,
         heroSubtitle: `A post has been ${action.toLowerCase()} in project "${post.Project.name}"`,
@@ -99,10 +101,10 @@ const emailContents = {
         `,
         showCta: true,
         ctaText: 'View Post',
-        ctaUrl: `${process.env.CLIENT_URL}/projects/${post.project_id}/issues/${post.id}`
+        ctaUrl: `${clientUrl}/projects/${post.project_id}/issues/${post.id}`
     }),
 
-    commentNotification: (comment, post) => ({
+    commentNotification: (comment, post, clientUrl) => ({
         subject: `[${post.Project.name}] New comment on: ${post.title}`,
         heroTitle: 'New Comment',
         heroSubtitle: `${comment.author.email} added a comment to "${post.title}"`,
@@ -120,10 +122,10 @@ const emailContents = {
         `,
         showCta: true,
         ctaText: 'View Discussion',
-        ctaUrl: `${process.env.CLIENT_URL}/projects/${post.project_id}/issues/${post.id}`
+        ctaUrl: `${clientUrl}/projects/${post.project_id}/issues/${post.id}`
     }),
 
-    welcome: (userEmail) => ({
+    welcome: (userEmail, clientUrl) => ({
         subject: 'Welcome to TigerBug!',
         heroTitle: 'Welcome Aboard!',
         heroSubtitle: 'You\'re all set to start tracking bugs and managing projects efficiently.',
@@ -150,7 +152,7 @@ const emailContents = {
         `,
         showCta: true,
         ctaText: 'Get Started',
-        ctaUrl: process.env.CLIENT_URL || 'http://localhost:5173'
+        ctaUrl: clientUrl
     }),
 
     testEmail: () => ({

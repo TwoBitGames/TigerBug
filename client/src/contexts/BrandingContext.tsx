@@ -41,6 +41,7 @@ export const BrandingProvider = ({children}: BrandingProviderProps) => {
                 logo_url: null,
                 tagline: null,
                 social_links: null,
+                client_url: null,
             });
         } finally {
             setLoading(false);

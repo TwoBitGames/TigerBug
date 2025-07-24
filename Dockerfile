@@ -48,7 +48,6 @@ USER user
 EXPOSE 3000
 
 ENV PORT=3000
-ENV DATABASE_PATH="/app/server/data/database.sqlite"
 ENV CLIENT_URL="http://localhost:3000"
 
 CMD ["node", "server/src/app.js"]

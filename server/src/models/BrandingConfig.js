@@ -25,6 +25,11 @@ const BrandingConfig = sequelize.define('BrandingConfig', {
     allowNull: true,
     defaultValue: null,
   },
+  client_url: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: null,
+  },
 }, {
   tableName: 'branding_configs',
   timestamps: true,

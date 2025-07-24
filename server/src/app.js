@@ -71,6 +71,7 @@ app.get('/api/branding-config', async (req, res) => {
         logo_url: null,
         tagline: null,
         social_links: null,
+        client_url: null,
       };
     }
 
