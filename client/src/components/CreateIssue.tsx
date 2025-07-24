@@ -311,7 +311,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                                 </Button>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                                {isPrivate ? 'Only you can see this issue' : 'Everyone can see this issue'}
+                                {isPrivate ? 'Only your team can see this issue' : 'Everyone can see this issue'}
                             </p>
                         </div>
                     )}

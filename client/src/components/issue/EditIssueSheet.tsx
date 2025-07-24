@@ -257,7 +257,7 @@ export const EditIssueSheet = ({
                                         </Button>
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        {editIsPrivate ? 'Only you can see this issue' : 'Everyone can see this issue'}
+                                        {editIsPrivate ? 'Only your team can see this issue' : 'Everyone can see this issue'}
                                     </p>
                                 </div>
 
