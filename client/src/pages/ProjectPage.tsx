@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useDialog } from '../contexts/DialogContext';
 import { useViewMode } from '../contexts/ViewModeContext';
 import { IssueList } from '../components/IssueList';
 import { projectsApi, postsApi } from '../services/api';
@@ -10,6 +11,7 @@ export const ProjectPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { alert } = useDialog();
   const { viewMode } = useViewMode();
   
   const [project, setProject] = useState<Project | null>(null);
@@ -58,7 +60,7 @@ export const ProjectPage = () => {
 
   const handleUpvote = async (postId: number) => {
     if (!isAuthenticated) {
-      alert('Please login to vote on issues');
+      await alert('Please login to vote on issues');
       return;
     }
 
@@ -74,7 +76,7 @@ export const ProjectPage = () => {
 
   const handleStatusChange = async (postId: number, status: 'Offen' | 'In Arbeit' | 'Geschlossen') => {
     if (!isAuthenticated) {
-      alert('Please login to change issue status');
+      await alert('Please login to change issue status');
       return;
     }
 

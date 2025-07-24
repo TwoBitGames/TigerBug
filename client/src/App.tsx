@@ -1,5 +1,6 @@
 import {useState, useEffect} from 'react';
 import {useAuth} from './contexts/AuthContext';
+import {useDialog} from './contexts/DialogContext';
 import {Navigation} from './components/Navigation';
 import {ProjectList} from './components/ProjectList';
 import {IssueList} from './components/IssueList';
@@ -11,6 +12,7 @@ import type {Project, Post, CreatePostData} from './types';
 
 const App = () => {
     const {isAuthenticated, isLoading} = useAuth();
+    const {alert} = useDialog();
     const [projects, setProjects] = useState<Project[]>([]);
     const [posts, setPosts] = useState<Post[]>([]);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -97,7 +99,7 @@ const App = () => {
 
     const handleUpvote = async (postId: number) => {
         if (!isAuthenticated) {
-            alert('Please login to vote on issues');
+            await alert('Please login to vote on issues');
             return;
         }
 
@@ -113,7 +115,7 @@ const App = () => {
 
     const handleStatusChange = async (postId: number, status: 'Offen' | 'In Arbeit' | 'Geschlossen') => {
         if (!isAuthenticated) {
-            alert('Please login to change issue status');
+            await alert('Please login to change issue status');
             return;
         }
 

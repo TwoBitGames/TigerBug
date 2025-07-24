@@ -7,11 +7,13 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../ui/table';
 import {Textarea} from '../ui/textarea';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger} from '../ui/dialog';
+import {useDialog} from '../../contexts/DialogContext';
 import {adminApi, projectsApi} from '../../services/api';
 import type {Project, ProjectMembership, CreateProjectData, User} from '../../types';
 import {Plus, Calendar, Users, Eye, UserPlus, Trash2} from 'lucide-react';
 
 export const ProjectManagement = () => {
+    const {confirm, toast} = useDialog();
     const [projects, setProjects] = useState<Project[]>([]);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [projectMembers, setProjectMembers] = useState<ProjectMembership[]>([]);
@@ -76,20 +78,21 @@ export const ProjectManagement = () => {
             setIsAddMemberDialogOpen(false);
         } catch (error) {
             console.error('Failed to add member:', error);
-            alert('Failed to add member. They might already be a member of this project.');
+            toast('Failed to add member. They might already be a member of this project.', { variant: 'destructive' });
         }
     };
 
     const handleRemoveMember = async (userId: number) => {
         if (!selectedProject) return;
 
-        if (confirm('Are you sure you want to remove this member from the project?')) {
+        const confirmed = await confirm('Are you sure you want to remove this member from the project?');
+        if (confirmed) {
             try {
                 await adminApi.removeProjectMember(selectedProject.id, userId);
                 setProjectMembers(projectMembers.filter(m => m.user_id !== userId));
             } catch (error) {
                 console.error('Failed to remove member:', error);
-                alert('Failed to remove member.');
+                toast('Failed to remove member.', { variant: 'destructive' });
             }
         }
     };

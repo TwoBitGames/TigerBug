@@ -45,6 +45,7 @@ import {
     DialogTitle,
 } from './ui/dialog';
 import {useAuth} from '../contexts/AuthContext';
+import {useDialog} from '../contexts/DialogContext';
 import {postsApi, commentsApi, attachmentsApi} from '../services/api';
 import type {Post, Comment, UpdatePostData, CreateCommentData, Attachment} from '../types';
 
@@ -56,6 +57,7 @@ interface IssueDetailProps {
 
 export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     const {isAuthenticated} = useAuth();
+    const {confirm, alert} = useDialog();
     const [issue, setIssue] = useState<Post | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -140,7 +142,10 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     };
 
     const handleDeleteIssue = async () => {
-        if (!issue || !window.confirm('Are you sure you want to delete this issue?')) return;
+        if (!issue) return;
+        
+        const confirmed = await confirm('Are you sure you want to delete this issue?');
+        if (!confirmed) return;
 
         try {
             await postsApi.delete(projectId, issueId);
@@ -205,7 +210,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     };
 
     const handleDeleteComment = async (commentId: number) => {
-        if (!window.confirm('Are you sure you want to delete this comment?')) return;
+        const confirmed = await confirm('Are you sure you want to delete this comment?');
+        if (!confirmed) return;
 
         try {
             await commentsApi.delete(projectId, issueId, commentId);
@@ -221,7 +227,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     };
 
     const handleDeleteAttachment = async (attachmentId: number) => {
-        if (!window.confirm('Are you sure you want to delete this attachment?')) return;
+        const confirmed = await confirm('Are you sure you want to delete this attachment?');
+        if (!confirmed) return;
 
         try {
             await attachmentsApi.delete(attachmentId);
@@ -231,12 +238,12 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
         }
     };
 
-    const handleCommentFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleCommentFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
         const {valid, invalid} = validateFiles(files);
 
         if (invalid.length > 0) {
-            alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10 * 1024 * 1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
+            await alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10 * 1024 * 1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
         }
 
         setCommentAttachments(prev => [...prev, ...valid]);

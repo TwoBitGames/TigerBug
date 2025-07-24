@@ -5,12 +5,15 @@ import './index.css'
 import { router } from './router.tsx'
 import { AuthProvider } from "@/contexts/AuthContext.tsx";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
+import { DialogProvider } from "@/contexts/DialogContext.tsx";
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
         <ThemeProvider defaultTheme="dark" storageKey="ui-theme">
             <AuthProvider>
-                <RouterProvider router={router} />
+                <DialogProvider>
+                    <RouterProvider router={router} />
+                </DialogProvider>
             </AuthProvider>
         </ThemeProvider>
     </StrictMode>,

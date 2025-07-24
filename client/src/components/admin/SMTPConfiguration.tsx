@@ -3,10 +3,12 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/c
 import {Button} from '../ui/button';
 import {Input} from '../ui/input';
 import {Label} from '../ui/label';
+import {useDialog} from '../../contexts/DialogContext';
 import {adminApi} from '../../services/api';
 import type {UpdateSMTPConfigData} from '../../types';
 
 export const SMTPConfiguration = () => {
+    const {alert, toast} = useDialog();
     const [loading, setLoading] = useState(true);
     const [testEmail, setTestEmail] = useState('');
     const [smtpForm, setSMTPForm] = useState<UpdateSMTPConfigData>({
@@ -45,25 +47,25 @@ export const SMTPConfiguration = () => {
         e.preventDefault();
         try {
             await adminApi.updateSMTPConfig(smtpForm);
-            alert('SMTP configuration updated successfully!');
+            toast('SMTP configuration updated successfully!', { variant: 'success' });
         } catch (error) {
             console.error('Failed to update SMTP config:', error);
-            alert('Failed to update SMTP configuration.');
+            toast('Failed to update SMTP configuration.', { variant: 'destructive' });
         }
     };
 
     const handleTestSMTP = async () => {
         if (!testEmail) {
-            alert('Please enter a test email address.');
+            await alert('Please enter a test email address.');
             return;
         }
 
         try {
             await adminApi.testSMTPConfig(testEmail);
-            alert('Test email sent successfully!');
+            toast('Test email sent successfully!', { variant: 'success' });
         } catch (error) {
             console.error('Failed to send test email:', error);
-            alert('Failed to send test email. Check your configuration.');
+            toast('Failed to send test email. Check your configuration.', { variant: 'destructive' });
         }
     };
 

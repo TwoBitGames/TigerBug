@@ -6,6 +6,7 @@ import {Input} from './ui/input';
 import {Label} from './ui/label';
 import {Textarea} from './ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from './ui/select';
+import {useDialog} from '../contexts/DialogContext';
 import type {Project, CreatePostData} from '../types';
 
 interface CreateIssueProps {
@@ -16,6 +17,7 @@ interface CreateIssueProps {
 }
 
 export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: CreateIssueProps) => {
+    const {alert} = useDialog();
     const [projectId, setProjectId] = useState<string>(selectedProject?.toString() || '');
     const [issueType, setIssueType] = useState<'bug' | 'feature' | ''>('');
     const [title, setTitle] = useState('');
@@ -55,12 +57,12 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
         return { valid, invalid };
     };
 
-    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
         const { valid, invalid } = validateFiles(files);
         
         if (invalid.length > 0) {
-            alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10*1024*1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
+            await alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10*1024*1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
         }
         
         setAttachments(prev => [...prev, ...valid]);
@@ -78,7 +80,7 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
         setIsDragOver(false);
     };
 
-    const handleDrop = (event: React.DragEvent) => {
+    const handleDrop = async (event: React.DragEvent) => {
         event.preventDefault();
         setIsDragOver(false);
         
@@ -86,7 +88,7 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
         const { valid, invalid } = validateFiles(files);
         
         if (invalid.length > 0) {
-            alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10*1024*1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
+            await alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10*1024*1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
         }
         
         setAttachments(prev => [...prev, ...valid]);
