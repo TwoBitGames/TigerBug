@@ -6,6 +6,7 @@ import { IssuePage } from './pages/IssuePage';
 import { CreateIssuePage } from './pages/CreateIssuePage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { EmailVerificationPage } from './pages/EmailVerificationPage';
+import { TodoPage } from './pages/TodoPage';
 
 export const router = createBrowserRouter([
   {
@@ -15,6 +16,10 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <HomePage />
+      },
+      {
+        path: '/todo',
+        element: <TodoPage />
       },
       {
         path: '/projects/:projectId',

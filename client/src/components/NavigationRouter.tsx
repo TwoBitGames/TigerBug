@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 import {useLocation, useNavigate, useParams} from 'react-router-dom';
-import {ArrowLeft, ChevronDown, Shield, User, LogOut, LogIn, Plus, List, LayoutGrid} from 'lucide-react';
+import {ArrowLeft, ChevronDown, Shield, User, LogOut, LogIn, Plus, List, LayoutGrid, CheckSquare} from 'lucide-react';
 import {Button} from './ui/button';
 import {Avatar, AvatarFallback, AvatarImage} from './ui/avatar';
 import {
@@ -50,6 +50,10 @@ export const NavigationRouter = () => {
             console.error('Failed to load project:', error);
             setProject(null);
         }
+    };
+
+    const handleTodoClick = () => {
+        navigate('/todo');
     };
 
     const handleBackToProjects = () => {
@@ -113,6 +117,18 @@ export const NavigationRouter = () => {
                 </div>
 
                 <div className="ml-auto flex items-center space-x-4">
+                    {isAuthenticated && !isInProject && (
+                        <Button
+                            onClick={handleTodoClick}
+                            size="sm"
+                            variant="outline"
+                            className="bg-transparent border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                        >
+                            <CheckSquare className="h-4 w-4 mr-2"/>
+                            My To-Do
+                        </Button>
+                    )}
+
                     {isInProject && isInProjectList && (
                         <>
                             <div className="flex items-center border border-border rounded-lg bg-secondary p-1">
@@ -176,6 +192,14 @@ export const NavigationRouter = () => {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-48 bg-popover border-border backdrop-blur-xl" align="end">
+                                <DropdownMenuItem
+                                    className="text-foreground focus:bg-accent focus:text-accent-foreground"
+                                    onClick={handleTodoClick}
+                                >
+                                    <CheckSquare className="h-4 w-4 mr-2"/>
+                                    My To-Do
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-border"/>
                                 {user?.is_admin && (
                                     <DropdownMenuItem
                                         className="text-foreground focus:bg-accent focus:text-accent-foreground"

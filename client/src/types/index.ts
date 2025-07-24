@@ -45,6 +45,7 @@ export interface Post {
     updated_at: string;
     author?: User;
     assignee?: User;
+    Project?: Project;
     upvotes?: number;
     vote_count?: number;
     user_voted?: boolean;

@@ -16,6 +16,7 @@ const postRoutes = require('./routes/posts');
 const commentRoutes = require('./routes/comments');
 const attachmentRoutes = require('./routes/attachments');
 const adminRoutes = require('./routes/admin');
+const todoRoutes = require('./routes/todo');
 
 const app = express();
 const PORT = process.env.PORT || 9840;
@@ -49,6 +50,7 @@ app.use('/api/projects/:projectId/posts', postRoutes);
 app.use('/api/projects/:projectId/posts/:postId/comments', commentRoutes);
 app.use('/api/attachments', attachmentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/todo', todoRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({
