@@ -65,7 +65,7 @@ const getProjectMembers = async (req, res) => {
         model: User,
         attributes: ['id', 'email', 'is_admin', 'created_at'],
       }],
-      order: [['role', 'ASC'], [User, 'email', 'ASC']],
+      order: [[User, 'email', 'ASC']],
     });
 
     res.json({ 
@@ -78,7 +78,6 @@ const getProjectMembers = async (req, res) => {
         id: membership.id,
         user_id: membership.user_id,
         project_id: membership.project_id,
-        role: membership.role,
         user: membership.User,
       }))
     });
@@ -88,52 +87,10 @@ const getProjectMembers = async (req, res) => {
   }
 };
 
-const updateProjectMemberRole = async (req, res) => {
-  try {
-    const { projectId, userId } = req.params;
-    const { role } = req.body;
-
-    const validRoles = ['Reporter', 'Manager', 'Administrator'];
-    if (!validRoles.includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Must be Reporter, Manager, or Administrator' });
-    }
-
-    const membership = await ProjectMembership.findOne({
-      where: { project_id: projectId, user_id: userId },
-      include: [{ model: User, attributes: ['email'] }]
-    });
-
-    if (!membership) {
-      return res.status(404).json({ error: 'Project membership not found' });
-    }
-
-    await membership.update({ role });
-
-    res.json({ 
-      message: 'Member role updated successfully',
-      membership: {
-        id: membership.id,
-        user_id: membership.user_id,
-        project_id: membership.project_id,
-        role: membership.role,
-        user: membership.User,
-      }
-    });
-  } catch (error) {
-    console.error('Error updating member role:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
 const addProjectMember = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { user_id, role = 'Reporter' } = req.body;
-
-    const validRoles = ['Reporter', 'Manager', 'Administrator'];
-    if (!validRoles.includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Must be Reporter, Manager, or Administrator' });
-    }
+    const { user_id} = req.body;
 
     const project = await Project.findByPk(projectId);
     if (!project) {
@@ -158,8 +115,7 @@ const addProjectMember = async (req, res) => {
 
     const membership = await ProjectMembership.create({
       user_id: user_id,
-      project_id: projectId,
-      role: role,
+      project_id: projectId
     });
 
     res.status(201).json({ 
@@ -167,8 +123,7 @@ const addProjectMember = async (req, res) => {
       membership: {
         id: membership.id,
         user_id: membership.user_id,
-        project_id: membership.project_id,
-        role: membership.role,
+        project_id: membership.project_id
       }
     });
   } catch (error) {
@@ -313,7 +268,6 @@ module.exports = {
   updateUserRole,
   getProjectMembers,
   addProjectMember,
-  updateProjectMemberRole,
   removeProjectMember,
   getSMTPConfig,
   updateSMTPConfig,

@@ -19,7 +19,7 @@ router.post('/', authenticateToken, requireAdmin, validateProject, createProject
 router.put('/:id', authenticateToken, validateProject, updateProject);
 router.delete('/:id', authenticateToken, requireAdmin, deleteProject);
 
-router.post('/:id/members', authenticateToken, addMember);
-router.delete('/:id/members/:userId', authenticateToken, removeMember);
+router.post('/:id/members', authenticateToken, requireAdmin, addMember);
+router.delete('/:id/members/:userId', authenticateToken, requireAdmin, removeMember);
 
 module.exports = router;

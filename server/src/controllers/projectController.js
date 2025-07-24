@@ -97,19 +97,7 @@ const updateProject = async (req, res) => {
 const addMember = async (req, res) => {
     try {
         const {id} = req.params;
-        const {email, role = 'Reporter'} = req.body;
-
-        const membership = await ProjectMembership.findOne({
-            where: {
-                user_id: req.user.id,
-                project_id: id,
-                role: 'Administrator',
-            },
-        });
-
-        if (!membership) {
-            return res.status(403).json({error: 'Administrator privileges required'});
-        }
+        const {email} = req.body;
 
         const user = await User.findOne({where: {email}});
         if (!user) {
@@ -129,8 +117,7 @@ const addMember = async (req, res) => {
 
         await ProjectMembership.create({
             user_id: user.id,
-            project_id: id,
-            role,
+            project_id: id
         });
 
         res.status(201).json({
@@ -145,18 +132,6 @@ const addMember = async (req, res) => {
 const removeMember = async (req, res) => {
     try {
         const {id, userId} = req.params;
-
-        const membership = await ProjectMembership.findOne({
-            where: {
-                user_id: req.user.id,
-                project_id: id,
-                role: 'Administrator',
-            },
-        });
-
-        if (!membership) {
-            return res.status(403).json({error: 'Administrator privileges required'});
-        }
 
         if (parseInt(userId) === req.user.id) {
             return res.status(400).json({error: 'Cannot remove yourself from project'});

@@ -6,18 +6,20 @@ import {ProjectList} from './components/ProjectList';
 import {IssueList} from './components/IssueList';
 import {IssueDetail} from './components/IssueDetail';
 import {CreateIssue} from './components/CreateIssue';
+import {OnboardingDialog} from './components/OnboardingDialog';
 import {Footer} from './components/Footer';
 import {projectsApi, postsApi, attachmentsApi} from './services/api';
 import type {Project, Post, CreatePostData} from './types';
 
 const App = () => {
-    const {isAuthenticated, isLoading} = useAuth();
+    const {isAuthenticated, isLoading, needsOnboarding} = useAuth();
     const {alert} = useDialog();
     const [projects, setProjects] = useState<Project[]>([]);
     const [posts, setPosts] = useState<Post[]>([]);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
     const [showCreateIssue, setShowCreateIssue] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
     const [filterType, setFilterType] = useState<'all' | 'open' | 'closed'>('all');
     const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
     const [isLoadingProjects, setIsLoadingProjects] = useState(false);
@@ -33,6 +35,12 @@ const App = () => {
             loadPosts(selectedProject.id);
         }
     }, [selectedProject]);
+
+    useEffect(() => {
+        if (!isLoading && needsOnboarding && !isAuthenticated) {
+            setShowOnboarding(true);
+        }
+    }, [isLoading, needsOnboarding, isAuthenticated]);
 
     const loadProjects = async () => {
         setIsLoadingProjects(true);
@@ -137,6 +145,10 @@ const App = () => {
         setSelectedIssueId(null);
     };
 
+    const handleOnboardingClose = () => {
+        setShowOnboarding(false);
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
@@ -238,6 +250,11 @@ const App = () => {
             </div>
 
             <Footer/>
+
+            <OnboardingDialog 
+                isOpen={showOnboarding} 
+                onClose={handleOnboardingClose}
+            />
         </div>
     );
 }

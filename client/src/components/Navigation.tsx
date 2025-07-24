@@ -10,8 +10,10 @@ import {
 } from './ui/dropdown-menu';
 import {useAuth} from '../contexts/AuthContext';
 import {LoginDialog} from './LoginDialog';
+import {OnboardingDialog} from './OnboardingDialog';
 import type {Project} from '../types';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
+import {useState} from 'react';
 
 interface NavigationProps {
     selectedProject: Project | null;
@@ -28,8 +30,9 @@ export const Navigation = ({
                                onViewModeChange,
                                onCreateIssue,
                            }: NavigationProps) => {
-    const {user, logout, isAuthenticated} = useAuth();
+    const {user, logout, isAuthenticated, needsOnboarding} = useAuth();
     const navigate = useNavigate();
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     const handleBackToProjects = () => {
         setSelectedProject(null);
@@ -39,13 +42,21 @@ export const Navigation = ({
         navigate('/admin');
     };
 
+    const handleGetStartedClick = () => {
+        setShowOnboarding(true);
+    };
+
+    const handleOnboardingClose = () => {
+        setShowOnboarding(false);
+    };
+
     return (
         <nav
             className="border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-14 items-center px-4">
                 <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
-                        <img src="/favicon.png" alt="TigerBug" className="h-8 w-8" />
+                        <img src="/favicon.png" alt="TigerBug" className="h-8 w-8"/>
                         <h1 className="text-xl font-bold text-primary">TigerBug</h1>
                     </div>
 
@@ -138,7 +149,8 @@ export const Navigation = ({
                                         Admin Settings
                                     </DropdownMenuItem>
                                 )}
-                                <DropdownMenuItem className="text-foreground focus:bg-accent focus:text-accent-foreground">
+                                <DropdownMenuItem
+                                    className="text-foreground focus:bg-accent focus:text-accent-foreground">
                                     <User className="h-4 w-4 mr-2"/>
                                     Profile Settings
                                 </DropdownMenuItem>
@@ -152,6 +164,22 @@ export const Navigation = ({
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+                    ) : needsOnboarding ? (
+                        <>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleGetStartedClick}
+                                className="bg-transparent border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                            >
+                                <LogIn className="h-4 w-4 mr-2"/>
+                                Get Started
+                            </Button>
+                            <OnboardingDialog
+                                isOpen={showOnboarding}
+                                onClose={handleOnboardingClose}
+                            />
+                        </>
                     ) : (
                         <LoginDialog>
                             <Button

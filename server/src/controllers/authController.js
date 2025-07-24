@@ -101,10 +101,63 @@ const getProfile = async (req, res) => {
     }
 };
 
+const checkOnboardingStatus = async (req, res) => {
+    try {
+        const userCount = await User.count();
+        res.json({
+            needsOnboarding: userCount === 0,
+            userCount
+        });
+    } catch (error) {
+        console.error('Onboarding status check error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
+const setupFirstAdmin = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        const userCount = await User.count();
+        if (userCount > 0) {
+            return res.status(400).json({error: 'System already has users. Onboarding not available.'});
+        }
+
+        const {email, password} = req.body;
+
+        const passwordHash = await hashPassword(password);
+        const user = await User.create({
+            email,
+            password_hash: passwordHash,
+            is_admin: true,
+        });
+
+        const token = generateToken(user);
+
+        res.status(201).json({
+            message: 'First admin account created successfully',
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                is_admin: user.is_admin,
+            },
+        });
+    } catch (error) {
+        console.error('Setup first admin error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
 module.exports = {
     validateRegister,
     validateLogin,
     register,
     login,
     getProfile,
+    checkOnboardingStatus,
+    setupFirstAdmin,
 };

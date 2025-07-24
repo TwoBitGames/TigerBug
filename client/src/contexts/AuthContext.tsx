@@ -7,8 +7,11 @@ import {setAuthToken, removeAuthToken, RequestError} from '../lib/request';
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
+    needsOnboarding: boolean;
+    checkOnboardingStatus: () => Promise<void>;
     login: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string) => Promise<void>;
+    setupFirstAdmin: (email: string, password: string) => Promise<void>;
     logout: () => void;
     isAuthenticated: boolean;
 }
@@ -30,10 +33,22 @@ interface AuthProviderProps {
 export const AuthProvider = ({children}: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [needsOnboarding, setNeedsOnboarding] = useState(false);
     const authCheckRef = useRef<Promise<void> | null>(null);
+
+    const checkOnboardingStatus = async () => {
+        try {
+            const response = await authApi.checkOnboardingStatus();
+            setNeedsOnboarding(response.needsOnboarding);
+        } catch (error) {
+            console.error('Failed to check onboarding status:', error);
+        }
+    };
 
     useEffect(() => {
         const checkAuth = async () => {
+            await checkOnboardingStatus();
+            
             const token = localStorage.getItem('auth_token');
             if (token) {
                 try {
@@ -82,6 +97,17 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
         }
     };
 
+    const setupFirstAdmin = async (email: string, password: string) => {
+        try {
+            const response = await authApi.setupFirstAdmin({email, password});
+            setAuthToken(response.token);
+            setUser(response.user);
+            setNeedsOnboarding(false);
+        } catch (error) {
+            throw error;
+        }
+    };
+
     const logout = () => {
         removeAuthToken();
         setUser(null);
@@ -90,8 +116,11 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
     const value: AuthContextType = {
         user,
         isLoading,
+        needsOnboarding,
+        checkOnboardingStatus,
         login,
         register,
+        setupFirstAdmin,
         logout,
         isAuthenticated: !!user,
     };

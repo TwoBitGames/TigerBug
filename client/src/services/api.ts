@@ -25,6 +25,12 @@ export const authApi = {
   
   getProfile: () => 
     get<{ user: User }>('/auth/profile').then(response => response.user),
+
+  checkOnboardingStatus: () =>
+    get<{ needsOnboarding: boolean; userCount: number }>('/auth/onboarding-status'),
+
+  setupFirstAdmin: (data: RegisterData) =>
+    post<{ token: string; user: User }>('/auth/setup-first-admin', data),
 };
 
 export const projectsApi = {
