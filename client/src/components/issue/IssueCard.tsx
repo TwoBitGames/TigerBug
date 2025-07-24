@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from 'date-fns';
-import { User, Calendar, Tag, Lock, ChevronUp } from 'lucide-react';
+import { User, Calendar, Tag, Lock, ChevronUp, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -10,33 +10,34 @@ import type { Post } from '../../types';
 interface IssueCardProps {
     issue: Post;
     isAuthenticated: boolean;
+    isVoting?: boolean;
     onToggleVote: () => void;
 }
 
-export const IssueCard = ({ issue, isAuthenticated, onToggleVote }: IssueCardProps) => {
+export const IssueCard = ({ issue, isAuthenticated, isVoting = false, onToggleVote }: IssueCardProps) => {
     const getStatusBadgeVariant = (status: string) => {
         switch (status) {
             case 'Open':
-                return 'default';
+                return 'outline';
             case 'In Progress':
                 return 'secondary';
             case 'Closed':
                 return 'outline';
             default:
-                return 'default';
+                return 'outline';
         }
     };
 
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'Open':
-                return 'text-green-400';
+                return 'text-green-400 border-green-400';
             case 'In Progress':
-                return 'text-yellow-400';
+                return 'text-yellow-400 border-yellow-400';
             case 'Closed':
-                return 'text-gray-400';
+                return 'text-gray-400 border-gray-400';
             default:
-                return 'text-gray-400';
+                return 'text-gray-400 border-gray-400';
         }
     };
 
@@ -81,11 +82,16 @@ export const IssueCard = ({ issue, isAuthenticated, onToggleVote }: IssueCardPro
                                 variant="outline"
                                 size="sm"
                                 onClick={onToggleVote}
+                                disabled={isVoting}
                                 className={`border-border flex items-center space-x-1 cursor-pointer ${
                                     issue.user_voted ? 'bg-primary/20 text-primary border-primary' : 'text-muted-foreground'
                                 }`}
                             >
-                                <ChevronUp className="h-4 w-4"/>
+                                {isVoting ? (
+                                    <Loader2 className="h-4 w-4 animate-spin"/>
+                                ) : (
+                                    <ChevronUp className="h-4 w-4"/>
+                                )}
                                 <span>{issue.vote_count || 0}</span>
                             </Button>
                         )}

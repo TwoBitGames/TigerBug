@@ -1,4 +1,4 @@
-import {ChevronUp, Circle, Clock, CheckCircle, User, Calendar, Target, Search, Filter, X} from 'lucide-react';
+import {ChevronUp, Circle, Clock, CheckCircle, User, Calendar, Target, Search, Filter, X, Loader2} from 'lucide-react';
 import {Button} from './ui/button';
 import {Card, CardContent} from './ui/card';
 import {Badge} from './ui/badge';
@@ -15,6 +15,7 @@ interface IssueListProps {
     posts: Post[];
     filterType: 'all' | 'open' | 'closed';
     viewMode: 'list' | 'kanban';
+    votingPosts?: Set<number>;
     onFilterChange: (filter: 'all' | 'open' | 'closed') => void;
     onUpvote: (postId: number) => void;
     onStatusChange: (postId: number, status: 'Open' | 'In Progress' | 'Closed') => void;
@@ -26,6 +27,7 @@ export const IssueList = ({
                               posts,
                               filterType,
                               viewMode,
+                              votingPosts = new Set(),
                               onFilterChange,
                               onUpvote,
                               onStatusChange,
@@ -292,13 +294,18 @@ export const IssueList = ({
                                     <Button
                                         variant="ghost"
                                         size="sm"
+                                        disabled={votingPosts.has(post.id)}
                                         className="flex-col h-auto p-1.5 min-w-[50px] text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onUpvote(post.id);
                                         }}
                                     >
-                                        <ChevronUp className="h-3.5 w-3.5 mb-0.5"/>
+                                        {votingPosts.has(post.id) ? (
+                                            <Loader2 className="h-3.5 w-3.5 mb-0.5 animate-spin"/>
+                                        ) : (
+                                            <ChevronUp className="h-3.5 w-3.5 mb-0.5"/>
+                                        )}
                                         <span className="text-xs font-medium">{post.vote_count || 0}</span>
                                     </Button>
 
@@ -387,13 +394,18 @@ export const IssueList = ({
                                                     <h4 className="font-medium text-sm leading-tight text-card-foreground pr-2">{post.title}</h4>                                                        <Button
                                                             variant="ghost"
                                                             size="sm"
+                                                            disabled={votingPosts.has(post.id)}
                                                             className="flex-col h-auto p-1 min-w-[40px] text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 onUpvote(post.id);
                                                             }}
                                                         >
-                                                        <ChevronUp className="h-3 w-3 mb-0.5"/>
+                                                        {votingPosts.has(post.id) ? (
+                                                            <Loader2 className="h-3 w-3 mb-0.5 animate-spin"/>
+                                                        ) : (
+                                                            <ChevronUp className="h-3 w-3 mb-0.5"/>
+                                                        )}
                                                         <span
                                                             className="text-xs font-medium">{post.vote_count || 0}</span>
                                                     </Button>

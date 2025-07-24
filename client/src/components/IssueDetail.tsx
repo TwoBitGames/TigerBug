@@ -26,6 +26,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     const [issue, setIssue] = useState<Post | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isVoting, setIsVoting] = useState(false);
     const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
     const [newComment, setNewComment] = useState('');
     const [editingComment, setEditingComment] = useState<number | null>(null);
@@ -99,6 +100,30 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             setError('Failed to load issue details');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const refreshIssue = async () => {
+        try {
+            const data = await postsApi.getById(projectId, issueId);
+            setIssue(data);
+            setEditTitle(data.title);
+            setEditDescription(data.description);
+            setEditStatus(data.status);
+            setEditIsPrivate(data.is_private);
+            setEditPriority(data.priority || 'Medium');
+            setEditIssueType(data.issue_type || 'Bug');
+            setEditAssigneeId(data.assignee_id?.toString() || 'unassigned');
+            setEditStoryPoints(data.story_points?.toString() || '');
+            setEditTimeEstimate(data.time_estimate?.toString() || '');
+            setEditDueDate(data.due_date ? data.due_date.split('T')[0] : '');
+            setEditLabels(data.labels || []);
+
+            if (data.attachments) {
+                setAttachments(data.attachments);
+            }
+        } catch (error) {
+            console.error('Failed to refresh issue:', error);
         }
     };
 
@@ -181,10 +206,13 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
         if (!issue || !isAuthenticated) return;
 
         try {
+            setIsVoting(true);
             await postsApi.toggleVote(projectId, issueId);
-            await loadIssue();
+            await refreshIssue();
         } catch (error) {
             console.error('Failed to toggle vote:', error);
+        } finally {
+            setIsVoting(false);
         }
     };
 
@@ -253,7 +281,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
 
         try {
             await attachmentsApi.delete(attachmentId);
-            await loadIssue();
+            await refreshIssue();
         } catch (error) {
             console.error('Failed to delete attachment:', error);
         }
@@ -300,13 +328,19 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 </div>
             )}
 
-            <IssueCard
-                issue={issue}
-                isAuthenticated={isAuthenticated}
-                onToggleVote={handleToggleVote}
-            />
-
-            <IssueMetadata issue={issue}/>
+            <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex-1">
+                    <IssueCard
+                        issue={issue}
+                        isAuthenticated={isAuthenticated}
+                        isVoting={isVoting}
+                        onToggleVote={handleToggleVote}
+                    />
+                </div>
+                <div className="lg:w-80 lg:flex-shrink-0">
+                    <IssueMetadata issue={issue}/>
+                </div>
+            </div>
 
             <AttachmentsList
                 attachments={attachments}
