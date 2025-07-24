@@ -459,7 +459,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                 <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                                     <div className="flex items-center space-x-2">
                                         <User className="h-4 w-4"/>
-                                        <span>{issue.author?.email || 'Unknown'}</span>
+                                        <span>{issue.author?.username || 'Unknown'}</span>
                                     </div>
                                     <div className="flex items-center space-x-2">
                                         <Calendar className="h-4 w-4"/>
@@ -622,12 +622,12 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                         <div className="flex-shrink-0">
                                             <Avatar className="h-10 w-10 ring-2 ring-border">
                                                 <AvatarImage
-                                                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.author?.email || 'User'}`}
-                                                    alt={comment.author?.email || 'User'}
+                                                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.author?.username || 'User'}`}
+                                                    alt={comment.author?.username || 'User'}
                                                 />
                                                 <AvatarFallback
                                                     className="bg-gradient-to-br from-primary/20 to-orange-500/20 text-foreground text-sm font-medium">
-                                                    {comment.author?.email?.charAt(0).toUpperCase() || 'U'}
+                                                    {comment.author?.username?.charAt(0).toUpperCase() || 'U'}
                                                 </AvatarFallback>
                                             </Avatar>
                                         </div>
@@ -638,7 +638,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div className="flex items-center space-x-2">
                                                             <span className="font-medium text-foreground text-sm">
-                                                                {comment.author?.email?.split('@')[0] || 'Unknown User'}
+                                                                {comment.author?.username || 'Unknown User'}
                                                             </span>
                                                         {(() => {
                                                             const roleInfo = getUserRoleLabel(comment.author);

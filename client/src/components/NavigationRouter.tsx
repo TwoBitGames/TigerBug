@@ -15,6 +15,7 @@ import {useBranding} from '../contexts/BrandingContext';
 import {useViewMode} from '../contexts/ViewModeContext';
 import {LoginDialog} from './LoginDialog';
 import {OnboardingDialog} from './OnboardingDialog';
+import {ProfileDialog} from './ProfileDialog';
 import {projectsApi} from '../services/api';
 import type {Project} from '../types';
 
@@ -28,6 +29,7 @@ export const NavigationRouter = () => {
 
     const [project, setProject] = useState<Project | null>(null);
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [showProfile, setShowProfile] = useState(false);
 
     useEffect(() => {
         if (projectId) {
@@ -70,6 +72,14 @@ export const NavigationRouter = () => {
 
     const handleOnboardingClose = () => {
         setShowOnboarding(false);
+    };
+
+    const handleProfileClick = () => {
+        setShowProfile(true);
+    };
+
+    const handleProfileClose = () => {
+        setShowProfile(false);
     };
 
     const isInProject = location.pathname.includes('/projects/') && project;
@@ -156,12 +166,12 @@ export const NavigationRouter = () => {
                                 >
                                     <Avatar className="h-6 w-6">
                                         <AvatarImage src="/placeholder.svg?height=24&width=24"
-                                                     alt={user?.email || 'User'}/>
+                                                     alt={user?.username || 'User'}/>
                                         <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
-                                            {user?.email?.charAt(0).toUpperCase() || 'U'}
+                                            {user?.username?.charAt(0).toUpperCase() || 'U'}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <span className="text-sm">{user?.email}</span>
+                                    <span className="text-sm">{user?.username}</span>
                                     <ChevronDown className="h-3 w-3"/>
                                 </Button>
                             </DropdownMenuTrigger>
@@ -176,7 +186,9 @@ export const NavigationRouter = () => {
                                     </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem
-                                    className="text-foreground focus:bg-accent focus:text-accent-foreground">
+                                    className="text-foreground focus:bg-accent focus:text-accent-foreground"
+                                    onClick={handleProfileClick}
+                                >
                                     <User className="h-4 w-4 mr-2"/>
                                     Profile Settings
                                 </DropdownMenuItem>
@@ -220,6 +232,8 @@ export const NavigationRouter = () => {
                     )}
                 </div>
             </div>
+
+            <ProfileDialog isOpen={showProfile} onClose={handleProfileClose} />
         </nav>
     );
 };

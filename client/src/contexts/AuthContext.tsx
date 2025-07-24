@@ -10,9 +10,10 @@ interface AuthContextType {
     needsOnboarding: boolean;
     pendingVerification: { email: string } | null;
     checkOnboardingStatus: () => Promise<void>;
-    login: (email: string, password: string) => Promise<void>;
-    register: (email: string, password: string) => Promise<void>;
+    login: (identifier: string, password: string) => Promise<void>;
+    register: (username: string, email: string, password: string) => Promise<void>;
     setupFirstAdmin: (email: string, password: string) => Promise<void>;
+    updateProfile: (username: string) => Promise<void>;
     logout: () => void;
     isAuthenticated: boolean;
     clearPendingVerification: () => void;
@@ -81,9 +82,9 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
         }
     }, []);
 
-    const login = async (email: string, password: string) => {
+    const login = async (identifier: string, password: string) => {
         try {
-            const response = await authApi.login({email, password});
+            const response = await authApi.login({identifier, password});
             setAuthToken(response.token);
             setUser(response.user);
             setPendingVerification(null);
@@ -99,9 +100,9 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
         }
     };
 
-    const register = async (email: string, password: string) => {
+    const register = async (username: string, email: string, password: string) => {
         try {
-            const response = await authApi.register({email, password});
+            const response = await authApi.register({username, email, password});
             if (response.requiresVerification) {
                 setPendingVerification({ email });
                 throw new Error('Registration successful! Please check your email for verification code.');
@@ -117,10 +118,19 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
 
     const setupFirstAdmin = async (email: string, password: string) => {
         try {
-            const response = await authApi.setupFirstAdmin({email, password});
+            const response = await authApi.setupFirstAdmin({username: 'admin', email, password});
             setAuthToken(response.token);
             setUser(response.user);
             setNeedsOnboarding(false);
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const updateProfile = async (username: string) => {
+        try {
+            const updatedUser = await authApi.updateProfile({username});
+            setUser(updatedUser);
         } catch (error) {
             throw error;
         }
@@ -145,6 +155,7 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
         login,
         register,
         setupFirstAdmin,
+        updateProfile,
         logout,
         isAuthenticated: !!user,
         clearPendingVerification,

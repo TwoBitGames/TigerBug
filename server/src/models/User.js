@@ -7,6 +7,18 @@ const User = sequelize.define('User', {
     primaryKey: true,
     autoIncrement: true,
   },
+  username: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+    validate: {
+      len: [2, 30],
+      isAlphanumeric: {
+        args: true,
+        msg: 'Username can only contain letters and numbers'
+      }
+    },
+  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,

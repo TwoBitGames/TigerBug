@@ -79,9 +79,12 @@ export const UserManagement = () => {
                                             <div className="flex items-center gap-3">
                                                 <div
                                                     className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                                    {userData.email.charAt(0).toUpperCase()}
+                                                    {userData.username.charAt(0).toUpperCase()}
                                                 </div>
-                                                <div className="font-medium">{userData.email}</div>
+                                                <div>
+                                                    <div className="font-medium">{userData.username}</div>
+                                                    <div className="text-sm text-muted-foreground">{userData.email}</div>
+                                                </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>

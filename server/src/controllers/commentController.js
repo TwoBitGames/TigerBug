@@ -58,7 +58,7 @@ const createComment = async (req, res) => {
 
         const fullComment = await Comment.findByPk(comment.id, {
             include: [
-                {model: User, as: 'author', attributes: ['id', 'email', 'is_admin']},
+                {model: User, as: 'author', attributes: ['id', 'username', 'email', 'is_admin']},
             ],
         });
 
@@ -80,7 +80,7 @@ const createComment = async (req, res) => {
             try {
                 const fullPost = await Post.findByPk(postId, {
                     include: [
-                        {model: User, as: 'author', attributes: ['id', 'email']},
+                        {model: User, as: 'author', attributes: ['id', 'username', 'email']},
                         {model: Project, attributes: ['id', 'name']},
                     ],
                 });
@@ -152,7 +152,7 @@ const getComments = async (req, res) => {
         const {count, rows: comments} = await Comment.findAndCountAll({
             where: {post_id: postId},
             include: [
-                {model: User, as: 'author', attributes: ['id', 'email', 'is_admin']},
+                {model: User, as: 'author', attributes: ['id', 'username', 'email', 'is_admin']},
             ],
             order: [['created_at', 'ASC']],
             limit: parseInt(limit),
@@ -239,7 +239,7 @@ const updateComment = async (req, res) => {
 
         const updatedComment = await Comment.findByPk(comment.id, {
             include: [
-                {model: User, as: 'author', attributes: ['id', 'email', 'is_admin']},
+                {model: User, as: 'author', attributes: ['id', 'username', 'email', 'is_admin']},
             ],
         });
 

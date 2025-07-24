@@ -58,7 +58,7 @@ const createPost = async (req, res) => {
 
         const fullPost = await Post.findByPk(post.id, {
             include: [
-                {model: User, as: 'author', attributes: ['id', 'email']},
+                {model: User, as: 'author', attributes: ['id', 'username', 'email']},
                 {model: Project, attributes: ['id', 'name']},
             ],
         });
@@ -133,7 +133,7 @@ const getPosts = async (req, res) => {
         const {count, rows: posts} = await Post.findAndCountAll({
             where,
             include: [
-                {model: User, as: 'author', attributes: ['id', 'email']},
+                {model: User, as: 'author', attributes: ['id', 'username', 'email']},
                 {model: PostVote, as: 'votes', attributes: ['user_id']},
                 {
                     model: Comment,
@@ -181,7 +181,7 @@ const getPost = async (req, res) => {
         const post = await Post.findOne({
             where: {id, project_id: projectId},
             include: [
-                {model: User, as: 'author', attributes: ['id', 'email']},
+                {model: User, as: 'author', attributes: ['id', 'username', 'email']},
                 {model: Project, attributes: ['id', 'name']},
                 {model: PostVote, as: 'votes', attributes: ['user_id']},
             ],
@@ -243,7 +243,7 @@ const updatePost = async (req, res) => {
         const post = await Post.findOne({
             where: {id, project_id: projectId},
             include: [
-                {model: User, as: 'author', attributes: ['id', 'email']},
+                {model: User, as: 'author', attributes: ['id', 'username', 'email']},
                 {model: Project, attributes: ['id', 'name']},
             ],
         });

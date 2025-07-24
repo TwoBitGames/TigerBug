@@ -6,6 +6,7 @@ import type {
   Comment,
   LoginCredentials,
   RegisterData,
+  UpdateProfileData,
   VerifyEmailData,
   ResendVerificationData,
   CreateProjectData,
@@ -35,6 +36,9 @@ export const authApi = {
   
   getProfile: () => 
     get<{ user: User }>('/auth/profile').then(response => response.user),
+
+  updateProfile: (data: UpdateProfileData) =>
+    put<{ user: User }>('/auth/profile', data).then(response => response.user),
 
   checkOnboardingStatus: () =>
     get<{ needsOnboarding: boolean; userCount: number }>('/auth/onboarding-status'),

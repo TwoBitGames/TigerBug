@@ -1,5 +1,6 @@
 export interface User {
     id: number;
+    username: string;
     email: string;
     is_admin: boolean;
     is_verified?: boolean;
@@ -58,13 +59,18 @@ export interface Comment {
 }
 
 export interface LoginCredentials {
-    email: string;
+    identifier: string;
     password: string;
 }
 
 export interface RegisterData {
+    username: string;
     email: string;
     password: string;
+}
+
+export interface UpdateProfileData {
+    username: string;
 }
 
 export interface CreateProjectData {

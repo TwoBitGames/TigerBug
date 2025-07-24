@@ -21,6 +21,8 @@ interface LoginDialogProps {
 export const LoginDialog = ({children}: LoginDialogProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [mode, setMode] = useState<'login' | 'register'>('login');
+    const [identifier, setIdentifier] = useState(''); // For login: username or email
+    const [username, setUsername] = useState(''); // For registration
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -37,13 +39,14 @@ export const LoginDialog = ({children}: LoginDialogProps) => {
 
         try {
             if (mode === 'login') {
-                await login(email, password);
+                await login(identifier, password);
                 setIsOpen(false);
-                setEmail('');
+                setIdentifier('');
                 setPassword('');
             } else {
-                await register(email, password);
+                await register(username, email, password);
                 setIsOpen(false);
+                setUsername('');
                 setEmail('');
                 setPassword('');
             }
@@ -88,14 +91,35 @@ export const LoginDialog = ({children}: LoginDialogProps) => {
                     </DialogHeader>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        {mode === 'register' && (
+                            <div className="space-y-2">
+                                <Label htmlFor="username" className="text-foreground">Username</Label>
+                                <Input
+                                    id="username"
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="Enter your username"
+                                    required
+                                    minLength={2}
+                                    maxLength={30}
+                                    pattern="[a-zA-Z0-9]+"
+                                    title="Username can only contain letters and numbers"
+                                    className="bg-input border-border text-foreground placeholder:text-muted-foreground"
+                                />
+                            </div>
+                        )}
+
                         <div className="space-y-2">
-                            <Label htmlFor="email" className="text-foreground">Email</Label>
+                            <Label htmlFor={mode === 'login' ? 'identifier' : 'email'} className="text-foreground">
+                                {mode === 'login' ? 'Username or Email' : 'Email'}
+                            </Label>
                             <Input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Enter your email"
+                                id={mode === 'login' ? 'identifier' : 'email'}
+                                type={mode === 'login' ? 'text' : 'email'}
+                                value={mode === 'login' ? identifier : email}
+                                onChange={(e) => mode === 'login' ? setIdentifier(e.target.value) : setEmail(e.target.value)}
+                                placeholder={mode === 'login' ? 'Enter your username or email' : 'Enter your email'}
                                 required
                                 className="bg-input border-border text-foreground placeholder:text-muted-foreground"
                             />

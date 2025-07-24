@@ -4,14 +4,16 @@ const {hashPassword, comparePassword} = require('../utils/password');
 const {generateToken} = require('../utils/jwt');
 const { generateVerificationCode, generateVerificationExpiry, isVerificationCodeValid } = require('../utils/verification');
 const { sendVerificationEmail, sendWelcomeEmail } = require('../utils/email');
+const { Op } = require('sequelize');
 
 const validateRegister = [
+    body('username').isLength({min: 2, max: 30}).isAlphanumeric().withMessage('Username must be 2-30 characters and contain only letters and numbers'),
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({min: 6}).withMessage('Password must be at least 6 characters long'),
 ];
 
 const validateLogin = [
-    body('email').isEmail().normalizeEmail(),
+    body('identifier').notEmpty().withMessage('Username or email is required'),
     body('password').notEmpty(),
 ];
 
@@ -24,6 +26,10 @@ const validateResendVerification = [
     body('email').isEmail().normalizeEmail(),
 ];
 
+const validateUpdateProfile = [
+    body('username').isLength({min: 2, max: 30}).isAlphanumeric().withMessage('Username must be 2-30 characters and contain only letters and numbers'),
+];
+
 const register = async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -31,11 +37,24 @@ const register = async (req, res) => {
             return res.status(400).json({errors: errors.array()});
         }
 
-        const {email, password} = req.body;
+        const {username, email, password} = req.body;
 
-        const existingUser = await User.findOne({where: {email}});
+        const existingUser = await User.findOne({
+            where: {
+                [Op.or]: [
+                    { email },
+                    { username }
+                ]
+            }
+        });
+        
         if (existingUser) {
-            return res.status(400).json({error: 'User already exists with this email'});
+            if (existingUser.email === email) {
+                return res.status(400).json({error: 'User already exists with this email'});
+            }
+            if (existingUser.username === username) {
+                return res.status(400).json({error: 'Username is already taken'});
+            }
         }
 
         const passwordHash = await hashPassword(password);
@@ -43,6 +62,7 @@ const register = async (req, res) => {
         const verificationExpiry = generateVerificationExpiry();
         
         const user = await User.create({
+            username,
             email,
             password_hash: passwordHash,
             is_verified: false,
@@ -62,6 +82,7 @@ const register = async (req, res) => {
             requiresVerification: true,
             user: {
                 id: user.id,
+                username: user.username,
                 email: user.email,
                 is_verified: user.is_verified,
             },
@@ -79,9 +100,17 @@ const login = async (req, res) => {
             return res.status(400).json({errors: errors.array()});
         }
 
-        const {email, password} = req.body;
+        const {identifier, password} = req.body;
 
-        const user = await User.findOne({where: {email}});
+        const user = await User.findOne({
+            where: {
+                [Op.or]: [
+                    { email: identifier },
+                    { username: identifier }
+                ]
+            }
+        });
+        
         if (!user || !user.password_hash) {
             return res.status(401).json({error: 'Invalid credentials'});
         }
@@ -97,6 +126,7 @@ const login = async (req, res) => {
                 requiresVerification: true,
                 user: {
                     id: user.id,
+                    username: user.username,
                     email: user.email,
                     is_verified: user.is_verified,
                 }
@@ -110,6 +140,7 @@ const login = async (req, res) => {
             token,
             user: {
                 id: user.id,
+                username: user.username,
                 email: user.email,
                 is_admin: user.is_admin,
                 is_verified: user.is_verified,
@@ -126,6 +157,7 @@ const getProfile = async (req, res) => {
         res.json({
             user: {
                 id: req.user.id,
+                username: req.user.username,
                 email: req.user.email,
                 is_admin: req.user.is_admin,
             },
@@ -165,6 +197,7 @@ const setupFirstAdmin = async (req, res) => {
 
         const passwordHash = await hashPassword(password);
         const user = await User.create({
+            username: 'admin', // Default username for first admin
             email,
             password_hash: passwordHash,
             is_admin: true,
@@ -178,6 +211,7 @@ const setupFirstAdmin = async (req, res) => {
             token,
             user: {
                 id: user.id,
+                username: user.username,
                 email: user.email,
                 is_admin: user.is_admin,
                 is_verified: user.is_verified,
@@ -231,6 +265,7 @@ const verifyEmail = async (req, res) => {
             token,
             user: {
                 id: user.id,
+                username: user.username,
                 email: user.email,
                 is_admin: user.is_admin,
                 is_verified: true,
@@ -285,14 +320,54 @@ const resendVerificationCode = async (req, res) => {
     }
 };
 
+const updateProfile = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        const {username} = req.body;
+        const userId = req.user.id;
+
+        const existingUser = await User.findOne({
+            where: {
+                username,
+                id: { [Op.ne]: userId }
+            }
+        });
+
+        if (existingUser) {
+            return res.status(400).json({error: 'Username is already taken'});
+        }
+
+        await req.user.update({ username });
+
+        res.json({
+            message: 'Profile updated successfully',
+            user: {
+                id: req.user.id,
+                username: req.user.username,
+                email: req.user.email,
+                is_admin: req.user.is_admin,
+            },
+        });
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
 module.exports = {
     validateRegister,
     validateLogin,
     validateVerifyEmail,
     validateResendVerification,
+    validateUpdateProfile,
     register,
     login,
     getProfile,
+    updateProfile,
     checkOnboardingStatus,
     setupFirstAdmin,
     verifyEmail,

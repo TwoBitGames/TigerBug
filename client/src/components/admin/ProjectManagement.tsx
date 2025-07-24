@@ -268,7 +268,7 @@ export const ProjectManagement = () => {
                                                         .filter(user => !projectMembers.some(member => member.user_id === user.id))
                                                         .map((user) => (
                                                             <SelectItem key={user.id} value={user.id.toString()}>
-                                                                {user.email}
+                                                                {user.username} ({user.email})
                                                             </SelectItem>
                                                         ))}
                                                 </SelectContent>
@@ -314,10 +314,11 @@ export const ProjectManagement = () => {
                                                 <div className="flex items-center gap-3">
                                                     <div
                                                         className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                                                        {member.user.email.charAt(0).toUpperCase()}
+                                                        {member.user.username.charAt(0).toUpperCase()}
                                                     </div>
                                                     <div>
-                                                        <div className="font-medium">{member.user.email}</div>
+                                                        <div className="font-medium">{member.user.username}</div>
+                                                        <div className="text-sm text-muted-foreground">{member.user.email}</div>
                                                         {member.user.is_admin && (
                                                             <div className="text-xs text-muted-foreground">System
                                                                 Admin</div>

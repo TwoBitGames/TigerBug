@@ -31,9 +31,7 @@ export const BrandingProvider = ({children}: BrandingProviderProps) => {
     const refreshBranding = async () => {
         try {
             setLoading(true);
-            console.log('Loading branding config...');
             const config = await publicApi.getBrandingConfig();
-            console.log('Loaded branding config:', config);
             setBrandingConfig(config);
         } catch (error) {
             console.error('Failed to load branding config:', error);

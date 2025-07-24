@@ -4,7 +4,7 @@ const {sendSimpleTestEmail} = require('../utils/email');
 const getUsers = async (req, res) => {
     try {
         const users = await User.findAll({
-            attributes: ['id', 'email', 'is_admin', 'created_at'],
+            attributes: ['id', 'username', 'email', 'is_admin', 'created_at'],
             order: [['created_at', 'DESC']],
         });
 
@@ -39,6 +39,7 @@ const updateUserRole = async (req, res) => {
             message: `User ${is_admin ? 'granted' : 'removed'} admin privileges`,
             user: {
                 id: user.id,
+                username: user.username,
                 email: user.email,
                 is_admin: user.is_admin,
                 created_at: user.created_at,
@@ -63,7 +64,7 @@ const getProjectMembers = async (req, res) => {
             where: {project_id: id},
             include: [{
                 model: User,
-                attributes: ['id', 'email', 'is_admin', 'created_at'],
+                attributes: ['id', 'username', 'email', 'is_admin', 'created_at'],
             }],
             order: [[User, 'email', 'ASC']],
         });

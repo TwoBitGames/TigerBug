@@ -5,9 +5,11 @@ const {
     validateLogin, 
     validateVerifyEmail,
     validateResendVerification,
+    validateUpdateProfile,
     register, 
     login, 
-    getProfile, 
+    getProfile,
+    updateProfile,
     checkOnboardingStatus, 
     setupFirstAdmin,
     verifyEmail,
@@ -22,6 +24,7 @@ router.post('/verify-email', validateVerifyEmail, verifyEmail);
 router.post('/resend-verification', validateResendVerification, resendVerificationCode);
 
 router.get('/profile', authenticateToken, getProfile);
+router.put('/profile', authenticateToken, validateUpdateProfile, updateProfile);
 
 router.get('/onboarding-status', checkOnboardingStatus);
 router.post('/setup-first-admin', validateRegister, setupFirstAdmin);

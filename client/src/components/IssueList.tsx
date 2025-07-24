@@ -191,12 +191,12 @@ export const IssueList = ({
                                         <h3 className="font-medium text-sm leading-tight mb-1 text-card-foreground">{post.title}</h3>
                                         <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                                             <Avatar className="h-4 w-4">
-                                                <AvatarImage src="/placeholder.svg" alt={post.author?.email || 'User'}/>
+                                                <AvatarImage src="/placeholder.svg" alt={post.author?.username || 'User'}/>
                                                 <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">
-                                                    {post.author?.email?.charAt(0).toUpperCase() || 'U'}
+                                                    {post.author?.username?.charAt(0).toUpperCase() || 'U'}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <span>{post.author?.email || 'Unknown'}</span>
+                                            <span>{post.author?.username || 'Unknown'}</span>
                                             <span>•</span>
                                             <span>{new Date(post.created_at).toLocaleDateString()}</span>
                                         </div>
@@ -265,14 +265,14 @@ export const IssueList = ({
                                                     <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                                                         <Avatar className="h-3 w-3">
                                                             <AvatarImage src="/placeholder.svg"
-                                                                         alt={post.author?.email || 'User'}/>
+                                                                         alt={post.author?.username || 'User'}/>
                                                             <AvatarFallback
                                                                 className="text-[8px] bg-secondary text-secondary-foreground">
-                                                                {post.author?.email?.charAt(0).toUpperCase() || 'U'}
+                                                                {post.author?.username?.charAt(0).toUpperCase() || 'U'}
                                                             </AvatarFallback>
                                                         </Avatar>
                                                         <span
-                                                            className="truncate max-w-[80px]">{post.author?.email?.split('@')[0] || 'Unknown'}</span>
+                                                            className="truncate max-w-[80px]">{post.author?.username || 'Unknown'}</span>
                                                     </div>
                                                 </div>
                                             </div>
