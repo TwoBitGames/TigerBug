@@ -65,6 +65,9 @@ export const projectsApi = {
   
   removeMember: (projectId: number, userId: number) => 
     del(`/projects/${projectId}/members/${userId}`),
+  
+  getMembers: (projectId: number) =>
+    get<{ members: User[] }>(`/projects/${projectId}/members`).then(response => response.members),
 };
 
 export const postsApi = {

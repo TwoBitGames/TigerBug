@@ -182,6 +182,32 @@ const deleteProject = async (req, res) => {
     }
 };
 
+const getProjectMembers = async (req, res) => {
+    try {
+        const {id} = req.params;
+
+        const project = await Project.findByPk(id);
+        if (!project) {
+            return res.status(404).json({error: 'Project not found'});
+        }
+
+        const memberships = await ProjectMembership.findAll({
+            where: {project_id: id},
+            include: [{
+                model: User,
+                attributes: ['id', 'username', 'email']
+            }]
+        });
+
+        const members = memberships.map(membership => membership.User);
+
+        res.json({members});
+    } catch (error) {
+        console.error('Get project members error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
 module.exports = {
     validateProject,
     createProject,
@@ -191,4 +217,5 @@ module.exports = {
     deleteProject,
     addMember,
     removeMember,
+    getProjectMembers,
 };

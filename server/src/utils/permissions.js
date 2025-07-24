@@ -38,6 +38,16 @@ const canEditPost = (user, post, isProjectMember = false, isAdmin = false) => {
     return false;
 };
 
+const canEditManagerFields = (user, isProjectMember = false, isAdmin = false) => {
+    if (!user) return false;
+    
+    if (isAdmin || isProjectMember) {
+        return true;
+    }
+    
+    return false;
+};
+
 const canDeletePost = (user, post, isProjectMember = false, isAdmin = false) => {
     if (!user) return false;
 
@@ -118,5 +128,6 @@ module.exports = {
     canEditComment,
     canDeleteComment,
     canViewPrivatePost,
-    canChangePostStatus
+    canChangePostStatus,
+    canEditManagerFields
 };

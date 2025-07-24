@@ -32,11 +32,19 @@ export interface Post {
     author_id: number;
     title: string;
     description: string;
-    status: 'Offen' | 'In Arbeit' | 'Geschlossen';
+    status: 'Open' | 'In Progress' | 'Closed';
+    priority: 'Low' | 'Medium' | 'High' | 'Critical';
+    issue_type: 'Bug' | 'Feature';
+    assignee_id?: number;
+    story_points?: number;
+    time_estimate?: number;
+    due_date?: string;
+    labels?: string[];
     is_private: boolean;
     created_at: string;
     updated_at: string;
     author?: User;
+    assignee?: User;
     upvotes?: number;
     vote_count?: number;
     user_voted?: boolean;
@@ -44,6 +52,7 @@ export interface Post {
     can_edit?: boolean | 'limited';
     can_delete?: boolean;
     can_change_status?: boolean;
+    can_edit_manager_fields?: boolean;
 }
 
 export interface Comment {
@@ -82,12 +91,26 @@ export interface CreatePostData {
     title: string;
     description: string;
     is_private?: boolean;
+    priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+    issue_type?: 'Bug' | 'Feature';
+    assignee_id?: number;
+    story_points?: number;
+    time_estimate?: number;
+    due_date?: string;
+    labels?: string[];
 }
 
 export interface UpdatePostData {
     title?: string;
     description?: string;
-    status?: 'Offen' | 'In Arbeit' | 'Geschlossen';
+    status?: 'Open' | 'In Progress' | 'Closed';
+    priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+    issue_type?: 'Bug' | 'Feature';
+    assignee_id?: number;
+    story_points?: number;
+    time_estimate?: number;
+    due_date?: string;
+    labels?: string[];
     is_private?: boolean;
 }
 

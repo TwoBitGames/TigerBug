@@ -37,6 +37,10 @@ Post.belongsTo(Project, { foreignKey: 'project_id' });
 User.hasMany(Post, { foreignKey: 'author_id', as: 'posts' });
 Post.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
 
+// Post assignee association
+User.hasMany(Post, { foreignKey: 'assignee_id', as: 'assigned_posts' });
+Post.belongsTo(User, { foreignKey: 'assignee_id', as: 'assignee' });
+
 // Comment associations
 Post.hasMany(Comment, { foreignKey: 'post_id', as: 'comments' });
 Comment.belongsTo(Post, { foreignKey: 'post_id' });

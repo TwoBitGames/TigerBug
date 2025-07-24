@@ -9,20 +9,35 @@ const {
     canEditPost,
     canDeletePost,
     canViewPrivatePost,
-    canChangePostStatus
+    canChangePostStatus,
+    canEditManagerFields
 } = require('../utils/permissions');
 
 const validatePost = [
     body('title').trim().isLength({min: 1}).withMessage('Title is required'),
     body('description').optional().trim(),
     body('is_private').optional().isBoolean(),
+    body('priority').optional().isIn(['Low', 'Medium', 'High', 'Critical']),
+    body('issue_type').optional().isIn(['Bug', 'Feature']),
+    body('assignee_id').optional().isInt(),
+    body('story_points').optional().isInt({min: 1, max: 100}),
+    body('time_estimate').optional().isInt({min: 0, max: 999}),
+    body('due_date').optional().isISO8601(),
+    body('labels').optional().isArray(),
 ];
 
 const validateUpdatePost = [
     body('title').optional().trim().isLength({min: 1}).withMessage('Title cannot be empty'),
     body('description').optional().trim(),
     body('is_private').optional().isBoolean(),
-    body('status').optional().isIn(['Offen', 'In Arbeit', 'Geschlossen']),
+    body('status').optional().isIn(['Open', 'In Progress', 'Closed']),
+    body('priority').optional().isIn(['Low', 'Medium', 'High', 'Critical']),
+    body('issue_type').optional().isIn(['Bug', 'Feature']),
+    body('assignee_id').optional().isInt(),
+    body('story_points').optional().isInt({min: 1, max: 100}),
+    body('time_estimate').optional().isInt({min: 0, max: 999}),
+    body('due_date').optional().isISO8601(),
+    body('labels').optional().isArray(),
 ];
 
 const createPost = async (req, res) => {
@@ -37,7 +52,7 @@ const createPost = async (req, res) => {
         }
 
         const {projectId} = req.params;
-        const {title, description, is_private = false} = req.body;
+        const {title, description, is_private = false, priority = 'Medium', issue_type = 'Bug', assignee_id, story_points, time_estimate, due_date, labels = []} = req.body;
 
         const project = await Project.findByPk(projectId);
         if (!project) {
@@ -48,17 +63,34 @@ const createPost = async (req, res) => {
             return res.status(403).json({error: 'Access denied'});
         }
 
-        const post = await Post.create({
+        const permission = await checkProjectPermission(req.user.id, projectId);
+        const isProjectMember = permission.hasAccess;
+        const canEditMgrFields = canEditManagerFields(req.user, isProjectMember, req.user.is_admin);
+
+        const postData = {
             project_id: projectId,
             author_id: req.user.id,
             title,
             description,
             is_private,
-        });
+        };
+
+        if (canEditMgrFields) {
+            if (priority) postData.priority = priority;
+            if (issue_type) postData.issue_type = issue_type;
+            if (assignee_id !== undefined) postData.assignee_id = assignee_id;
+            if (story_points !== undefined) postData.story_points = story_points;
+            if (time_estimate !== undefined) postData.time_estimate = time_estimate;
+            if (due_date) postData.due_date = due_date;
+            if (labels) postData.labels = labels;
+        }
+
+        const post = await Post.create(postData);
 
         const fullPost = await Post.findByPk(post.id, {
             include: [
                 {model: User, as: 'author', attributes: ['id', 'username', 'email']},
+                {model: User, as: 'assignee', attributes: ['id', 'username', 'email']},
                 {model: Project, attributes: ['id', 'name']},
             ],
         });
@@ -134,6 +166,7 @@ const getPosts = async (req, res) => {
             where,
             include: [
                 {model: User, as: 'author', attributes: ['id', 'username', 'email']},
+                {model: User, as: 'assignee', attributes: ['id', 'username', 'email']},
                 {model: PostVote, as: 'votes', attributes: ['user_id']},
                 {
                     model: Comment,
@@ -182,6 +215,7 @@ const getPost = async (req, res) => {
             where: {id, project_id: projectId},
             include: [
                 {model: User, as: 'author', attributes: ['id', 'username', 'email']},
+                {model: User, as: 'assignee', attributes: ['id', 'username', 'email']},
                 {model: Project, attributes: ['id', 'name']},
                 {model: PostVote, as: 'votes', attributes: ['user_id']},
             ],
@@ -216,6 +250,7 @@ const getPost = async (req, res) => {
             can_edit: req.user ? canEditPost(req.user, post, isProjectMember, req.user.is_admin) : false,
             can_delete: req.user ? canDeletePost(req.user, post, isProjectMember, req.user.is_admin) : false,
             can_change_status: req.user ? canChangePostStatus(req.user, post, isProjectMember, req.user.is_admin) : false,
+            can_edit_manager_fields: req.user ? canEditManagerFields(req.user, isProjectMember, req.user.is_admin) : false,
             attachments: attachments
         };
 
@@ -244,6 +279,7 @@ const updatePost = async (req, res) => {
             where: {id, project_id: projectId},
             include: [
                 {model: User, as: 'author', attributes: ['id', 'username', 'email']},
+                {model: User, as: 'assignee', attributes: ['id', 'username', 'email']},
                 {model: Project, attributes: ['id', 'name']},
             ],
         });
@@ -256,6 +292,7 @@ const updatePost = async (req, res) => {
         const isProjectMember = permission.hasAccess;
 
         const editPermission = canEditPost(req.user, post, isProjectMember, req.user.is_admin);
+        const canEditMgrFields = canEditManagerFields(req.user, isProjectMember, req.user.is_admin);
 
         if (!editPermission) {
             return res.status(403).json({error: 'Access denied'});
@@ -282,6 +319,15 @@ const updatePost = async (req, res) => {
 
             await post.update(filteredUpdates);
         } else {
+            const managerOnlyFields = ['priority', 'issue_type', 'assignee_id', 'story_points', 'time_estimate', 'due_date', 'labels'];
+            const attemptedManagerFields = Object.keys(updates).filter(field => managerOnlyFields.includes(field));
+            
+            if (attemptedManagerFields.length > 0 && !canEditMgrFields) {
+                return res.status(403).json({
+                    error: `Only managers can update these fields: ${attemptedManagerFields.join(', ')}`
+                });
+            }
+            
             await post.update(updates);
         }
 

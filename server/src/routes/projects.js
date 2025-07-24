@@ -9,11 +9,14 @@ const {
   deleteProject,
   addMember,
   removeMember,
+  getProjectMembers,
 } = require('../controllers/projectController');
 const { authenticateToken, optionalAuth, requireAdmin } = require('../middleware/auth');
 
 router.get('/', optionalAuth, getProjects);
 router.get('/:id', optionalAuth, getProject);
+router.get('/:id/members', authenticateToken, getProjectMembers);
+router.get('/:id/members', authenticateToken, getProjectMembers);
 
 router.post('/', authenticateToken, requireAdmin, validateProject, createProject);
 router.put('/:id', authenticateToken, validateProject, updateProject);

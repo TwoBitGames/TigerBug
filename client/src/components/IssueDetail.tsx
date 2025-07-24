@@ -15,7 +15,13 @@ import {
     ChevronUp,
     MoreVertical,
     Paperclip,
-    Download
+    Download,
+    Clock,
+    Target,
+    UserIcon,
+    Hash,
+    Bug,
+    Lightbulb,
 } from 'lucide-react';
 import {Button} from './ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from './ui/card';
@@ -24,6 +30,8 @@ import {Label} from './ui/label';
 import {Textarea} from './ui/textarea';
 import {Badge} from './ui/badge';
 import {Avatar, AvatarFallback, AvatarImage} from './ui/avatar';
+import {PriorityBadge} from './ui/priority-badge';
+import {IssueTypeBadge} from './ui/issue-type-badge';
 import {
     Select,
     SelectContent,
@@ -54,7 +62,7 @@ import {
 } from './ui/sheet';
 import {useAuth} from '../contexts/AuthContext';
 import {useDialog} from '../contexts/DialogContext';
-import {postsApi, commentsApi, attachmentsApi} from '../services/api';
+import {postsApi, commentsApi, attachmentsApi, projectsApi} from '../services/api';
 import type {Post, Comment, UpdatePostData, CreateCommentData, Attachment, User as UserType} from '../types';
 
 interface IssueDetailProps {
@@ -78,8 +86,18 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
 
     const [editTitle, setEditTitle] = useState('');
     const [editDescription, setEditDescription] = useState('');
-    const [editStatus, setEditStatus] = useState<'Offen' | 'In Arbeit' | 'Geschlossen'>('Offen');
+    const [editStatus, setEditStatus] = useState<'Open' | 'In Progress' | 'Closed'>('Open');
     const [editIsPrivate, setEditIsPrivate] = useState(false);
+    const [editPriority, setEditPriority] = useState<'Low' | 'Medium' | 'High' | 'Critical'>('Medium');
+    const [editIssueType, setEditIssueType] = useState<'Bug' | 'Feature'>('Bug');
+    const [editAssigneeId, setEditAssigneeId] = useState<string>('unassigned');
+    const [editStoryPoints, setEditStoryPoints] = useState<string>('');
+    const [editTimeEstimate, setEditTimeEstimate] = useState<string>('');
+    const [editDueDate, setEditDueDate] = useState<string>('');
+    const [editLabels, setEditLabels] = useState<string[]>([]);
+    const [newEditLabel, setNewEditLabel] = useState('');
+
+    const [projectMembers, setProjectMembers] = useState<UserType[]>([]);
 
     const [attachments, setAttachments] = useState<Attachment[]>([]);
     const [selectedAttachment, setSelectedAttachment] = useState<Attachment | null>(null);
@@ -90,11 +108,22 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     const canEdit = issue?.can_edit || false;
     const canDelete = issue?.can_delete || false;
     const canChangeStatus = issue?.can_change_status || false;
+    const canEditManagerFields = issue?.can_edit_manager_fields || false;
 
     useEffect(() => {
         loadIssue();
         loadComments();
+        loadProjectMembers();
     }, [issueId, projectId]);
+
+    const loadProjectMembers = async () => {
+        try {
+            const members = await projectsApi.getMembers(projectId);
+            setProjectMembers(members);
+        } catch (error) {
+            console.error('Failed to load project members:', error);
+        }
+    };
 
     const loadIssue = async () => {
         try {
@@ -105,6 +134,13 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             setEditDescription(data.description);
             setEditStatus(data.status);
             setEditIsPrivate(data.is_private);
+            setEditPriority(data.priority || 'Medium');
+            setEditIssueType(data.issue_type || 'Bug');
+            setEditAssigneeId(data.assignee_id?.toString() || 'unassigned');
+            setEditStoryPoints(data.story_points?.toString() || '');
+            setEditTimeEstimate(data.time_estimate?.toString() || '');
+            setEditDueDate(data.due_date ? data.due_date.split('T')[0] : '');
+            setEditLabels(data.labels || []);
 
             if (data.attachments) {
                 setAttachments(data.attachments);
@@ -140,6 +176,16 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 updateData.is_private = editIsPrivate;
             }
 
+            if (canEditManagerFields) {
+                updateData.priority = editPriority;
+                updateData.issue_type = editIssueType;
+                updateData.assignee_id = editAssigneeId && editAssigneeId !== 'unassigned' ? parseInt(editAssigneeId) : undefined;
+                updateData.story_points = editStoryPoints ? parseInt(editStoryPoints) : undefined;
+                updateData.time_estimate = editTimeEstimate ? parseInt(editTimeEstimate) : undefined;
+                updateData.due_date = editDueDate || undefined;
+                updateData.labels = editLabels;
+            }
+
             const updatedIssue = await postsApi.update(projectId, issueId, updateData);
             setIssue(updatedIssue);
             setIsEditSheetOpen(false);
@@ -155,13 +201,21 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             setEditDescription(issue.description);
             setEditStatus(issue.status);
             setEditIsPrivate(issue.is_private);
+            setEditPriority(issue.priority || 'Medium');
+            setEditIssueType(issue.issue_type || 'Bug');
+            setEditAssigneeId(issue.assignee_id?.toString() || 'unassigned');
+            setEditStoryPoints(issue.story_points?.toString() || '');
+            setEditTimeEstimate(issue.time_estimate?.toString() || '');
+            setEditDueDate(issue.due_date ? issue.due_date.split('T')[0] : '');
+            setEditLabels(issue.labels || []);
+            setNewEditLabel('');
             setIsEditSheetOpen(true);
         }
     };
 
     const handleDeleteIssue = async () => {
         if (!issue) return;
-        
+
         const confirmed = await confirm('Are you sure you want to delete this issue?');
         if (!confirmed) return;
 
@@ -274,11 +328,11 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
 
     const getStatusBadgeVariant = (status: string) => {
         switch (status) {
-            case 'Offen':
+            case 'Open':
                 return 'default';
-            case 'In Arbeit':
+            case 'In Progress':
                 return 'secondary';
-            case 'Geschlossen':
+            case 'Closed':
                 return 'outline';
             default:
                 return 'default';
@@ -287,11 +341,11 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
 
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'Offen':
+            case 'Open':
                 return 'text-green-400';
-            case 'In Arbeit':
+            case 'In Progress':
                 return 'text-yellow-400';
-            case 'Geschlossen':
+            case 'Closed':
                 return 'text-gray-400';
             default:
                 return 'text-gray-400';
@@ -356,18 +410,21 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
-    const getUserRoleLabel = (user: UserType | undefined): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } | null => {
+    const getUserRoleLabel = (user: UserType | undefined): {
+        label: string;
+        variant: 'default' | 'secondary' | 'destructive' | 'outline'
+    } | null => {
         if (!user) return null;
-        
+
         if (user.is_admin) {
-            return { label: 'Admin', variant: 'destructive' };
+            return {label: 'Admin', variant: 'destructive'};
         }
-        
+
         if (user.is_project_member) {
-            return { label: 'Manager', variant: 'default' };
+            return {label: 'Manager', variant: 'default'};
         }
-        
-        return { label: 'User', variant: 'outline' };
+
+        return {label: 'User', variant: 'outline'};
     };
 
     const handleAttachmentClick = (attachment: Attachment) => {
@@ -472,6 +529,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                         <Tag className="h-3 w-3 mr-1"/>
                                         {issue.status}
                                     </Badge>
+                                    <PriorityBadge priority={issue.priority || 'Medium'} size="sm"/>
+                                    <IssueTypeBadge issueType={issue.issue_type || 'Bug'} size="sm"/>
                                     {issue.is_private && (
                                         <Badge variant="outline" className="text-orange-400 border-orange-400">
                                             <Lock className="h-3 w-3 mr-1"/>
@@ -497,10 +556,11 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                 </Button>
                             )}
 
-                            {!isAuthenticated && (                            <div className="flex items-center space-x-1 text-muted-foreground text-sm">
-                                <ChevronUp className="h-4 w-4"/>
-                                <span>{issue.vote_count || 0} votes</span>
-                            </div>
+                            {!isAuthenticated && (
+                                <div className="flex items-center space-x-1 text-muted-foreground text-sm">
+                                    <ChevronUp className="h-4 w-4"/>
+                                    <span>{issue.vote_count || 0} votes</span>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -515,13 +575,108 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 </CardContent>
             </Card>
 
-            {attachments.length > 0 && (            <Card className="bg-card border-border">
-                <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-foreground">
-                        <Paperclip className="h-5 w-5"/>
-                        <span>Attachments ({attachments.length})</span>
-                    </CardTitle>
-                </CardHeader>
+            {(issue.assignee || issue.story_points || issue.time_estimate || issue.due_date || (issue.labels && issue.labels.length > 0)) && (
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {issue.assignee && (
+                        <Card className="bg-muted/30 border-border">
+                            <CardContent className="p-3">
+                                <div className="flex items-center space-x-2 mb-2">
+                                    <UserIcon className="h-3 w-3 text-muted-foreground"/>
+                                    <span className="text-xs font-medium text-muted-foreground">Assignee</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <Avatar className="h-5 w-5">
+                                        <AvatarImage
+                                            src={`https://api.dicebear.com/7.x/initials/svg?seed=${issue.assignee.username}`}
+                                            alt={issue.assignee.username}
+                                        />
+                                        <AvatarFallback className="text-xs">
+                                            {issue.assignee.username.charAt(0).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm text-foreground truncate">{issue.assignee.username}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {issue.story_points && (
+                        <Card className="bg-muted/30 border-border">
+                            <CardContent className="p-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                        <Target className="h-3 w-3 text-muted-foreground"/>
+                                        <span className="text-xs font-medium text-muted-foreground">Story Points</span>
+                                    </div>
+                                    <Badge variant="secondary" className="text-xs h-5 px-2">
+                                        {issue.story_points}
+                                    </Badge>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {issue.time_estimate && (
+                        <Card className="bg-muted/30 border-border">
+                            <CardContent className="p-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                        <Clock className="h-3 w-3 text-muted-foreground"/>
+                                        <span className="text-xs font-medium text-muted-foreground">Estimate</span>
+                                    </div>
+                                    <span className="text-sm text-foreground font-medium">{issue.time_estimate}h</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {issue.due_date && (
+                        <Card className="bg-muted/30 border-border">
+                            <CardContent className="p-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                        <Calendar className="h-3 w-3 text-muted-foreground"/>
+                                        <span className="text-xs font-medium text-muted-foreground">Due Date</span>
+                                    </div>
+                                    <span className="text-sm text-foreground font-medium">
+                                        {new Date(issue.due_date).toLocaleDateString(undefined, {
+                                            month: 'short',
+                                            day: 'numeric'
+                                        })}
+                                    </span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {issue.labels && issue.labels.length > 0 && (
+                        <Card className="bg-muted/30 border-border md:col-span-2 lg:col-span-3 xl:col-span-4">
+                            <CardContent className="p-3">
+                                <div className="flex items-center space-x-2 mb-2">
+                                    <Hash className="h-3 w-3 text-muted-foreground"/>
+                                    <span className="text-xs font-medium text-muted-foreground">Labels</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                    {issue.labels.map((label) => (
+                                        <Badge key={label} variant="outline" className="text-xs h-5 px-2">
+                                            {label}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
+            )}
+
+            {attachments.length > 0 && (
+                <Card className="bg-card border-border">
+                    <CardHeader>
+                        <CardTitle className="flex items-center space-x-2 text-foreground">
+                            <Paperclip className="h-5 w-5"/>
+                            <span>Attachments ({attachments.length})</span>
+                        </CardTitle>
+                    </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {attachments.map((attachment) => (
                             <div
@@ -560,7 +715,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                 )}
 
                                 <div className="p-3">
-                                    <div className="text-sm text-foreground truncate">{attachment.original_filename}</div>
+                                    <div
+                                        className="text-sm text-foreground truncate">{attachment.original_filename}</div>
                                     <div className="text-xs text-muted-foreground mt-1">
                                         {formatDistanceToNow(new Date(attachment.uploaded_at), {addSuffix: true})}
                                     </div>
@@ -643,7 +799,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                         {(() => {
                                                             const roleInfo = getUserRoleLabel(comment.author);
                                                             return roleInfo ? (
-                                                                <Badge variant={roleInfo.variant} className="text-xs h-5 px-2">
+                                                                <Badge variant={roleInfo.variant}
+                                                                       className="text-xs h-5 px-2">
                                                                     {roleInfo.label}
                                                                 </Badge>
                                                             ) : null;
@@ -978,8 +1135,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             </Dialog>
 
             <Sheet open={isEditSheetOpen} onOpenChange={setIsEditSheetOpen}>
-                <SheetContent side="right" className="w-[400px] sm:w-[540px] px-6">
-                    <SheetHeader className="px-0 pb-6">
+                <SheetContent side="right" className="w-[400px] sm:w-[540px] px-0 flex flex-col">
+                    <SheetHeader className="px-6 pb-6 border-b border-border">
                         <SheetTitle className="flex items-center gap-2 text-lg">
                             <Edit2 className="h-5 w-5"/>
                             Edit Issue
@@ -988,105 +1145,301 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                             Make changes to your issue. Click save when you're done.
                         </SheetDescription>
                     </SheetHeader>
-                    
-                    <div className="grid gap-8 py-2 px-0">
-                        <div className="grid gap-3 px-1">
-                            <Label htmlFor="edit-title" className="text-sm font-medium text-foreground">
-                                Title
-                            </Label>
-                            <Input
-                                id="edit-title"
-                                value={editTitle}
-                                onChange={(e) => setEditTitle(e.target.value)}
-                                className="bg-background border-border h-11 px-4"
-                                placeholder="Enter issue title..."
-                            />
-                        </div>
 
-                        <div className="grid gap-3 px-1">
-                            <Label htmlFor="edit-description" className="text-sm font-medium text-foreground">
-                                Description
-                            </Label>
-                            <Textarea
-                                id="edit-description"
-                                value={editDescription}
-                                onChange={(e) => setEditDescription(e.target.value)}
-                                rows={8}
-                                className="bg-background border-border resize-none px-4 py-3"
-                                placeholder="Describe the issue in detail..."
-                            />
-                        </div>
+                    <div className="flex-1 overflow-y-auto px-6 py-6">
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-title" className="text-foreground font-medium">
+                                    Title
+                                </Label>
+                                <Input
+                                    id="edit-title"
+                                    placeholder="Brief description of the issue"
+                                    value={editTitle}
+                                    onChange={(e) => setEditTitle(e.target.value)}
+                                    className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:ring-primary/20"
+                                />
+                            </div>
 
-                        {canChangeStatus && (
-                            <>
-                                <div className="grid gap-3 px-1">
-                                    <Label htmlFor="edit-status" className="text-sm font-medium text-foreground">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-description" className="text-foreground font-medium">
+                                    Description
+                                </Label>
+                                <Textarea
+                                    id="edit-description"
+                                    placeholder="Provide detailed information about the issue..."
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    rows={6}
+                                    className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:ring-primary/20"
+                                />
+                            </div>
+
+                            {canChangeStatus && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-status" className="text-foreground font-medium">
                                         Status
                                     </Label>
                                     <Select value={editStatus} onValueChange={(value: any) => setEditStatus(value)}>
-                                        <SelectTrigger className="bg-background border-border h-11 px-4">
+                                        <SelectTrigger className="bg-input border-border text-foreground">
                                             <SelectValue placeholder="Select status"/>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Offen">
+                                            <SelectItem value="Open">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                                    Offen
+                                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                                    Open
                                                 </div>
                                             </SelectItem>
-                                            <SelectItem value="In Arbeit">
+                                            <SelectItem value="In Progress">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                                                    In Arbeit
+                                                    In Progress
                                                 </div>
                                             </SelectItem>
-                                            <SelectItem value="Geschlossen">
+                                            <SelectItem value="Closed">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 rounded-full bg-gray-500"></div>
-                                                    Geschlossen
+                                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                                    Closed
+                                                </div>
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
+                            <div className="grid gap-6 md:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-priority" className="text-foreground font-medium">
+                                        Priority
+                                    </Label>
+                                    <Select value={editPriority} onValueChange={(value: any) => setEditPriority(value)}>
+                                        <SelectTrigger className="bg-input border-border text-foreground">
+                                            <SelectValue placeholder="Select priority"/>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Low">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                                    Low
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="Medium">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                                    Medium
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="High">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                                                    High
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="Critical">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                                    Critical
                                                 </div>
                                             </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
 
-                                <div className="grid gap-3 px-1">
-                                    <Label className="text-sm font-medium text-foreground">Privacy</Label>
-                                    <div className="flex items-center space-x-3">
-                                        <Button
-                                            type="button"
-                                            variant={!editIsPrivate ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => setEditIsPrivate(false)}
-                                            className="flex-1 h-10"
-                                        >
-                                            <Unlock className="h-4 w-4 mr-2"/>
-                                            Public
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant={editIsPrivate ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => setEditIsPrivate(true)}
-                                            className="flex-1 h-10"
-                                        >
-                                            <Lock className="h-4 w-4 mr-2"/>
-                                            Private
-                                        </Button>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground px-1">
-                                        {editIsPrivate ? 'Only you can see this issue' : 'Everyone can see this issue'}
-                                    </p>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-issue-type" className="text-foreground font-medium">
+                                        Issue Type
+                                    </Label>
+                                    <Select value={editIssueType}
+                                            onValueChange={(value: any) => setEditIssueType(value)}>
+                                        <SelectTrigger className="bg-input border-border text-foreground">
+                                            <SelectValue placeholder="Select type"/>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Bug">
+                                                <div className="flex items-center gap-2">
+                                                    <Bug className="h-4 w-4 text-red-400"/>
+                                                    Bug
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="Feature">
+                                                <div className="flex items-center gap-2">
+                                                    <Lightbulb className="h-4 w-4 text-primary"/>
+                                                    Feature
+                                                </div>
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
-                            </>
-                        )}
+                            </div>
+
+                            {canEditManagerFields && (
+                                <>
+                                    <div className="space-y-2">
+                                        <Label className="text-foreground font-medium">Privacy</Label>
+                                        <div className="flex items-center space-x-3">
+                                            <Button
+                                                type="button"
+                                                variant={!editIsPrivate ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setEditIsPrivate(false)}
+                                                className="flex-1 h-10"
+                                            >
+                                                <Unlock className="h-4 w-4 mr-2"/>
+                                                Public
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant={editIsPrivate ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => setEditIsPrivate(true)}
+                                                className="flex-1 h-10"
+                                            >
+                                                <Lock className="h-4 w-4 mr-2"/>
+                                                Private
+                                            </Button>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            {editIsPrivate ? 'Only you can see this issue' : 'Everyone can see this issue'}
+                                        </p>
+                                    </div>
+
+                                    {projectMembers.length > 0 && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-assignee"
+                                                   className="text-foreground font-medium flex items-center gap-2">
+                                                <UserIcon className="h-4 w-4"/>
+                                                Assignee
+                                            </Label>
+                                            <Select value={editAssigneeId} onValueChange={setEditAssigneeId}>
+                                                <SelectTrigger className="bg-input border-border text-foreground">
+                                                    <SelectValue placeholder="Assign to..."/>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                                                    {projectMembers.map((member) => (
+                                                        <SelectItem key={member.id} value={member.id.toString()}>
+                                                            {member.username}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
+
+                                    <div className="grid gap-6 md:grid-cols-3">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-story-points"
+                                                   className="text-foreground font-medium flex items-center gap-2">
+                                                <Target className="h-4 w-4"/>
+                                                Story Points
+                                            </Label>
+                                            <Input
+                                                id="edit-story-points"
+                                                type="number"
+                                                min="1"
+                                                max="100"
+                                                placeholder="1-100"
+                                                value={editStoryPoints}
+                                                onChange={(e) => setEditStoryPoints(e.target.value)}
+                                                className="bg-input border-border text-foreground"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-time-estimate"
+                                                   className="text-foreground font-medium flex items-center gap-2">
+                                                <Clock className="h-4 w-4"/>
+                                                Time (hours)
+                                            </Label>
+                                            <Input
+                                                id="edit-time-estimate"
+                                                type="number"
+                                                min="0"
+                                                max="999"
+                                                placeholder="0-999"
+                                                value={editTimeEstimate}
+                                                onChange={(e) => setEditTimeEstimate(e.target.value)}
+                                                className="bg-input border-border text-foreground"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-due-date"
+                                                   className="text-foreground font-medium flex items-center gap-2">
+                                                <Calendar className="h-4 w-4"/>
+                                                Due Date
+                                            </Label>
+                                            <Input
+                                                id="edit-due-date"
+                                                type="date"
+                                                value={editDueDate}
+                                                onChange={(e) => setEditDueDate(e.target.value)}
+                                                className="bg-input border-border text-foreground"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <Label className="text-foreground font-medium flex items-center gap-2">
+                                            <Hash className="h-4 w-4"/>
+                                            Labels
+                                        </Label>
+                                        <div className="flex flex-wrap gap-2 mb-2">
+                                            {editLabels.map((label) => (
+                                                <Badge key={label} variant="secondary"
+                                                       className="bg-secondary/60 text-secondary-foreground">
+                                                    {label}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => setEditLabels(editLabels.filter(l => l !== label))}
+                                                        className="ml-1 h-4 w-4 p-0 hover:bg-destructive/20"
+                                                    >
+                                                        <X className="h-3 w-3"/>
+                                                    </Button>
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Input
+                                                placeholder="Add label..."
+                                                value={newEditLabel}
+                                                onChange={(e) => setNewEditLabel(e.target.value)}
+                                                onKeyPress={(e) => {
+                                                    if (e.key === 'Enter' && newEditLabel.trim() && !editLabels.includes(newEditLabel.trim())) {
+                                                        setEditLabels([...editLabels, newEditLabel.trim()]);
+                                                        setNewEditLabel('');
+                                                    }
+                                                }}
+                                                className="bg-input border-border text-foreground flex-1"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    if (newEditLabel.trim() && !editLabels.includes(newEditLabel.trim())) {
+                                                        setEditLabels([...editLabels, newEditLabel.trim()]);
+                                                        setNewEditLabel('');
+                                                    }
+                                                }}
+                                                disabled={!newEditLabel.trim()}
+                                                className="border-border text-foreground"
+                                            >
+                                                Add
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
 
-                    <SheetFooter className="px-0 pt-6 gap-3">
+                    <SheetFooter className="px-6 py-4 border-t border-border flex-shrink-0">
                         <Button variant="outline" onClick={() => setIsEditSheetOpen(false)} className="flex-1 h-11">
                             Cancel
                         </Button>
-                        <Button onClick={handleSaveIssue} className="bg-primary hover:bg-primary/90 flex-1 h-11">
+                        <Button onClick={handleSaveIssue} className="bg-primary hover:bg-primary/90 flex-1 h-11 ml-3">
                             <Save className="h-4 w-4 mr-2"/>
                             Save Changes
                         </Button>
