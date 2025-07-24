@@ -120,14 +120,14 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                         <Card
                             className={`cursor-pointer transition-all bg-card border-border backdrop-blur-sm ${
                                 issueType === "feature"
-                                    ? "ring-2 ring-purple-500/60 bg-purple-950/30 border-purple-500/40"
+                                    ? "ring-2 ring-primary/60 bg-orange-950/30 border-primary/40"
                                     : "hover:border-accent hover:bg-accent/50"
                             }`}
                             onClick={() => setIssueType("feature")}>
                             <CardContent className="p-4">
                                 <div className="flex items-start space-x-3">
-                                    <div className="p-2 bg-purple-500/20 rounded-lg border border-purple-500/30">
-                                        <Lightbulb className="h-5 w-5 text-purple-400"/>
+                                    <div className="p-2 bg-primary/20 rounded-lg border border-primary/30">
+                                        <Lightbulb className="h-5 w-5 text-primary"/>
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="font-semibold text-sm mb-1 text-card-foreground">Feature Request</h3>
@@ -150,7 +150,7 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                         placeholder="Brief description of the issue"
                         value={title}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
-                        className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-purple-500/60 focus:ring-purple-500/20"
+                        className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:ring-primary/20"
                     />
                 </div>
 
@@ -164,7 +164,7 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                         value={description}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
                         rows={6}
-                        className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-purple-500/60 focus:ring-purple-500/20"
+                        className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:ring-primary/20"
                     />
                 </div>
 
@@ -217,7 +217,7 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                     <Button
                         onClick={handleSubmit}
                         disabled={!projectId || !issueType || !title.trim() || !description.trim() || isSubmitting}
-                        className="bg-purple-600 hover:bg-purple-700 text-white disabled:bg-zinc-700 disabled:text-zinc-500"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
                     >
                         {isSubmitting ? 'Creating...' : 'Create Issue'}
                     </Button>

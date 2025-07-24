@@ -78,7 +78,7 @@ export const IssueList = ({
         if (lowerTitle.includes('bug') || lowerTitle.includes('error') || lowerTitle.includes('crash') || lowerTitle.includes('issue')) {
             return "bg-red-500/20 text-red-300 border-red-500/40";
         }
-        return "bg-purple-500/20 text-purple-300 border-purple-500/40";
+        return "bg-primary/20 text-primary border-primary/40";
     };
 
     const getPostType = (title: string) => {
@@ -104,8 +104,8 @@ export const IssueList = ({
             <div className="mb-6">
                 <div className="flex items-center space-x-3 mb-2">
                     <div
-                        className="h-8 w-8 rounded-lg bg-purple-600/20 border border-purple-500/30 flex items-center justify-center">
-            <span className="text-purple-400 font-semibold">
+                        className="h-8 w-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
+            <span className="text-primary font-semibold">
               {project.name.charAt(0).toUpperCase()}
             </span>
                     </div>

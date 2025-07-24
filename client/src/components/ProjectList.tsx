@@ -19,8 +19,8 @@ export const ProjectList = ({projects, onProjectSelect}: ProjectListProps) => {
                         <CardHeader className="pb-3">
                             <div className="flex items-center space-x-3">
                                 <div
-                                    className="h-10 w-10 rounded-lg bg-purple-600/20 border border-purple-500/30 flex items-center justify-center">
-                  <span className="text-purple-400 font-semibold text-lg">
+                                    className="h-10 w-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
+                  <span className="text-primary font-semibold text-lg">
                     {project.name.charAt(0).toUpperCase()}
                   </span>
                                 </div>

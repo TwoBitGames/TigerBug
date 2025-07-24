@@ -38,7 +38,10 @@ export const Navigation = ({
             className="border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-14 items-center px-4">
                 <div className="flex items-center space-x-4">
-                    <h1 className="text-xl font-bold text-purple-500">TigerBug</h1>
+                    <div className="flex items-center space-x-2">
+                        <img src="/favicon.png" alt="TigerBug" className="h-8 w-8" />
+                        <h1 className="text-xl font-bold text-primary">TigerBug</h1>
+                    </div>
 
                     {selectedProject && (
                         <Button
@@ -92,7 +95,7 @@ export const Navigation = ({
                                 <Button
                                     onClick={onCreateIssue}
                                     size="sm"
-                                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
                                 >
                                     <Plus className="h-4 w-4 mr-2"/>
                                     Create Issue
@@ -147,7 +150,7 @@ export const Navigation = ({
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="bg-transparent border-purple-600 text-purple-400 hover:bg-purple-600 hover:text-white"
+                                className="bg-transparent border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                             >
                                 <LogIn className="h-4 w-4 mr-2"/>
                                 Sign In

@@ -108,7 +108,7 @@ export const LoginDialog = ({children}: LoginDialogProps) => {
                         <Button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
                             {isLoading ? (
                                 <div
