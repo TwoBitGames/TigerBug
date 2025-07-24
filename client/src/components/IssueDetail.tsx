@@ -160,8 +160,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 updateData.labels = editLabels;
             }
 
-            const updatedIssue = await postsApi.update(projectId, issueId, updateData);
-            setIssue(updatedIssue);
+            await postsApi.update(projectId, issueId, updateData);
+            await refreshIssue();
             setIsEditSheetOpen(false);
         } catch (error) {
             console.error('Failed to update issue:', error);
