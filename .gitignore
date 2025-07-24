@@ -145,3 +145,5 @@ vite.config.ts.timestamp-*
 # Code editors
 .vscode
 .idea
+
+attachments/
