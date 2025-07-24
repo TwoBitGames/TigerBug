@@ -1,5 +1,7 @@
 const {body, validationResult} = require('express-validator');
+const {Op} = require('sequelize');
 const {Comment, Post, User, Project, Attachment, ProjectMembership} = require('../models/associations');
+const {sendCommentNotification} = require('../utils/email');
 const {
     checkProjectPermission,
     canViewPrivatePost,
@@ -58,6 +60,39 @@ const createComment = async (req, res) => {
             include: [
                 {model: User, as: 'author', attributes: ['id', 'email']},
             ],
+        });
+
+        setImmediate(async () => {
+            try {
+                const fullPost = await Post.findByPk(postId, {
+                    include: [
+                        {model: User, as: 'author', attributes: ['id', 'email']},
+                        {model: Project, attributes: ['id', 'name']},
+                    ],
+                });
+
+                const projectMembers = await ProjectMembership.findAll({
+                    where: {
+                        project_id: projectId,
+                        user_id: {[Op.ne]: req.user.id}
+                    },
+                    include: [{
+                        model: User,
+                        attributes: ['email']
+                    }]
+                });
+
+                const recipientEmails = projectMembers.map(member => member.User.email);
+                if (fullPost.author.id !== req.user.id && !recipientEmails.includes(fullPost.author.email)) {
+                    recipientEmails.push(fullPost.author.email);
+                }
+                
+                if (recipientEmails.length > 0) {
+                    await sendCommentNotification(fullComment, fullPost, recipientEmails);
+                }
+            } catch (error) {
+                console.error('Failed to send comment notifications:', error);
+            }
         });
 
         res.status(201).json({

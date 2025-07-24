@@ -1,6 +1,7 @@
 const {body, validationResult} = require('express-validator');
 const {Op} = require('sequelize');
-const {Post, Project, User, PostVote, Comment, Attachment} = require('../models/associations');
+const {Post, Project, User, PostVote, Comment, Attachment, ProjectMembership} = require('../models/associations');
+const {sendPostNotification} = require('../utils/email');
 
 const {
     checkProjectPermission,
@@ -60,6 +61,29 @@ const createPost = async (req, res) => {
                 {model: User, as: 'author', attributes: ['id', 'email']},
                 {model: Project, attributes: ['id', 'name']},
             ],
+        });
+
+        setImmediate(async () => {
+            try {
+                const projectMembers = await ProjectMembership.findAll({
+                    where: {
+                        project_id: projectId,
+                        user_id: {[Op.ne]: req.user.id}
+                    },
+                    include: [{
+                        model: User,
+                        attributes: ['email']
+                    }]
+                });
+
+                const recipientEmails = projectMembers.map(member => member.User.email);
+                
+                if (recipientEmails.length > 0) {
+                    await sendPostNotification(fullPost, 'Created', recipientEmails);
+                }
+            } catch (error) {
+                console.error('Failed to send post creation notifications:', error);
+            }
         });
 
         res.status(201).json({
@@ -260,6 +284,31 @@ const updatePost = async (req, res) => {
         } else {
             await post.update(updates);
         }
+
+        setImmediate(async () => {
+            try {
+                if (updates.status) {
+                    const projectMembers = await ProjectMembership.findAll({
+                        where: {
+                            project_id: projectId,
+                            user_id: {[Op.ne]: req.user.id}
+                        },
+                        include: [{
+                            model: User,
+                            attributes: ['email']
+                        }]
+                    });
+
+                    const recipientEmails = projectMembers.map(member => member.User.email);
+                    
+                    if (recipientEmails.length > 0) {
+                        await sendPostNotification(post, 'Updated', recipientEmails);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to send post update notifications:', error);
+            }
+        });
 
         res.json({
             message: 'Post updated successfully',
