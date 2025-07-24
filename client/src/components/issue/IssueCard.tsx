@@ -107,8 +107,8 @@ export const IssueCard = ({ issue, isAuthenticated, isVoting = false, onToggleVo
             </CardHeader>
 
             <CardContent>
-                <div className="prose prose-sm max-w-none">
-                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                <div className="prose prose-sm max-w-none overflow-hidden">
+                    <p className="text-foreground whitespace-pre-wrap leading-relaxed break-all word-break-break-all overflow-wrap-anywhere hyphens-auto">
                         {issue.description}
                     </p>
                 </div>

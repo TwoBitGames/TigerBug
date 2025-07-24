@@ -311,6 +311,14 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
         }
     };
 
+    const hasMetadata = Boolean(
+        issue?.assignee || 
+        issue?.story_points || 
+        issue?.time_estimate || 
+        issue?.due_date || 
+        (issue?.labels && issue.labels.length > 0)
+    );
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -343,7 +351,7 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
                 </div>
             )}
 
-            <div className="flex flex-col lg:flex-row gap-6">
+            <div className={hasMetadata ? "flex flex-col lg:flex-row gap-6" : "flex flex-col"}>
                 <div className="flex-1">
                     <IssueCard
                         issue={issue}
@@ -352,9 +360,11 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
                         onToggleVote={handleToggleVote}
                     />
                 </div>
-                <div className="lg:w-80 lg:flex-shrink-0">
-                    <IssueMetadata issue={issue}/>
-                </div>
+                {hasMetadata && (
+                    <div className="lg:w-80 lg:flex-shrink-0">
+                        <IssueMetadata issue={issue}/>
+                    </div>
+                )}
             </div>
 
             <AttachmentsList
