@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CreateIssue } from '../components/CreateIssue';
-import { projectsApi, postsApi } from '../services/api';
+import { projectsApi, postsApi, attachmentsApi } from '../services/api';
 import type { Project, CreatePostData } from '../types';
 
 export const CreateIssuePage = () => {
@@ -34,10 +34,13 @@ export const CreateIssuePage = () => {
 
   const handleSubmitIssue = async (selectedProjectId: number, data: CreatePostData, files: File[]) => {
     try {
-      await postsApi.create(selectedProjectId, data);
-
+      const createdPost = await postsApi.create(selectedProjectId, data);
       if (files.length > 0) {
-        console.log('File upload not implemented yet:', files);
+        try {
+          await attachmentsApi.upload(files, 'post', createdPost.id);
+        } catch (uploadError) {
+          console.error('Failed to upload attachments:', uploadError);
+        }
       }
 
       navigate(`/projects/${selectedProjectId}`);

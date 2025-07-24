@@ -149,17 +149,20 @@ const getPost = async (req, res) => {
                 {model: User, as: 'author', attributes: ['id', 'email']},
                 {model: Project, attributes: ['id', 'name']},
                 {model: PostVote, as: 'votes', attributes: ['user_id']},
-                {
-                    model: Attachment,
-                    as: 'attachments',
-                    attributes: ['id', 'original_filename', 'file_path', 'uploaded_at'],
-                },
             ],
         });
 
         if (!post) {
             return res.status(404).json({error: 'Post not found'});
         }
+
+        const attachments = await Attachment.findAll({
+            where: {
+                related_type: 'post',
+                related_id: id
+            },
+            attributes: ['id', 'original_filename', 'file_path', 'uploaded_at']
+        });
 
         if (!req.user && post.is_private) {
             return res.status(403).json({error: 'Access denied'});
@@ -174,6 +177,7 @@ const getPost = async (req, res) => {
             vote_count: post.votes.length,
             user_voted: req.user ? post.votes.some(vote => vote.user_id === req.user.id) : false,
             can_manage: req.user ? (post.author_id === req.user.id || req.user.is_admin) : false,
+            attachments: attachments
         };
 
         res.json({post: postWithVotes});

@@ -22,10 +22,74 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
     const [description, setDescription] = useState('');
     const [attachments, setAttachments] = useState<File[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const validateFiles = (files: File[]): { valid: File[], invalid: File[] } => {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const allowedTypes = [
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'text/plain', 'application/pdf', 'application/zip',
+            'application/x-zip-compressed', 'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+
+        const valid: File[] = [];
+        const invalid: File[] = [];
+
+        files.forEach(file => {
+            if (file.size <= maxSize && allowedTypes.includes(file.type)) {
+                valid.push(file);
+            } else {
+                invalid.push(file);
+            }
+        });
+
+        return { valid, invalid };
+    };
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
-        setAttachments(prev => [...prev, ...files]);
+        const { valid, invalid } = validateFiles(files);
+        
+        if (invalid.length > 0) {
+            alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10*1024*1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
+        }
+        
+        setAttachments(prev => [...prev, ...valid]);
+
+        event.target.value = '';
+    };
+
+    const handleDragOver = (event: React.DragEvent) => {
+        event.preventDefault();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (event: React.DragEvent) => {
+        event.preventDefault();
+        setIsDragOver(false);
+    };
+
+    const handleDrop = (event: React.DragEvent) => {
+        event.preventDefault();
+        setIsDragOver(false);
+        
+        const files = Array.from(event.dataTransfer.files);
+        const { valid, invalid } = validateFiles(files);
+        
+        if (invalid.length > 0) {
+            alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10*1024*1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
+        }
+        
+        setAttachments(prev => [...prev, ...valid]);
     };
 
     const removeAttachment = (index: number) => {
@@ -171,9 +235,17 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                 <div className="space-y-3">
                     <Label className="text-foreground font-medium">Attachments</Label>
                     <div
-                        className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-secondary/30 hover:border-accent transition-colors backdrop-blur-sm">
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`border-2 border-dashed rounded-lg p-6 text-center bg-secondary/30 hover:border-accent transition-colors backdrop-blur-sm ${
+                            isDragOver ? 'border-primary bg-primary/10' : 'border-border'
+                        }`}
+                    >
                         <Upload className="h-8 w-8 text-zinc-500 mx-auto mb-2"/>
-                        <p className="text-sm text-zinc-400 mb-2">Drag and drop files here, or click to browse</p>
+                        <p className="text-sm text-zinc-400 mb-2">
+                            {isDragOver ? 'Drop files here' : 'Drag and drop files here, or click to browse'}
+                        </p>
                         <Input type="file" multiple onChange={handleFileUpload} className="hidden" id="file-upload"/>
                         <Button
                             variant="outline"
@@ -192,12 +264,15 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                                     key={index}
                                     className="flex items-center justify-between p-3 bg-zinc-800/60 rounded border border-zinc-700/60 backdrop-blur-sm"
                                 >
-                                    <span className="text-sm truncate text-zinc-200">{file.name}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="text-sm truncate text-zinc-200 block">{file.name}</span>
+                                        <span className="text-xs text-zinc-400">{formatFileSize(file.size)}</span>
+                                    </div>
                                     <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => removeAttachment(index)}
-                                        className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60"
+                                        className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60 ml-2"
                                     >
                                         <X className="h-4 w-4"/>
                                     </Button>

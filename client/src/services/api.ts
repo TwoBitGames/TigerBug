@@ -83,7 +83,15 @@ export const commentsApi = {
 
 export const attachmentsApi = {
   upload: (files: File[], relatedType: 'post' | 'comment', relatedId: number) => 
-    uploadFiles('/attachments', files, { related_type: relatedType, related_id: relatedId }),
+    uploadFiles(`/attachments/${relatedType}/${relatedId}`, files),
+  
+  delete: (id: number) => 
+    del(`/attachments/${id}`),
+  
+  download: (id: number) => {
+    const url = `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/attachments/${id}`;
+    window.open(url, '_blank');
+  },
 };
 
 export const adminApi = {

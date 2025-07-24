@@ -136,7 +136,7 @@ export const uploadFiles = async <T = any>(
         formData.append(key, additionalData[key]);
     });
 
-    const headers: HeadersInit = {...options.headers,};
+    const headers: HeadersInit = {...options.headers};
 
     if (token) headers.Authorization = `Bearer ${token}`;
 

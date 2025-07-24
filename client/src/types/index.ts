@@ -14,6 +14,15 @@ export interface Project {
     created_at: string;
 }
 
+export interface Attachment {
+    id: number;
+    related_type: 'post' | 'comment';
+    related_id: number;
+    file_path: string;
+    original_filename: string;
+    uploaded_at: string;
+}
+
 export interface Post {
     id: number;
     project_id: number;
@@ -28,6 +37,7 @@ export interface Post {
     upvotes?: number;
     vote_count?: number;
     user_voted?: boolean;
+    attachments?: Attachment[];
 }
 
 export interface Comment {

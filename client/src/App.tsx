@@ -6,7 +6,7 @@ import {IssueList} from './components/IssueList';
 import {IssueDetail} from './components/IssueDetail';
 import {CreateIssue} from './components/CreateIssue';
 import {Footer} from './components/Footer';
-import {projectsApi, postsApi} from './services/api';
+import {projectsApi, postsApi, attachmentsApi} from './services/api';
 import type {Project, Post, CreatePostData} from './types';
 
 const App = () => {
@@ -75,10 +75,14 @@ const App = () => {
 
     const handleSubmitIssue = async (projectId: number, data: CreatePostData, files: File[]) => {
         try {
-            await postsApi.create(projectId, data);
+            const createdPost = await postsApi.create(projectId, data);
 
             if (files.length > 0) {
-                console.log('File upload not implemented yet:', files);
+                try {
+                    await attachmentsApi.upload(files, 'post', createdPost.id);
+                } catch (uploadError) {
+                    console.error('Failed to upload attachments:', uploadError);
+                }
             }
 
             if (selectedProject?.id === projectId) {

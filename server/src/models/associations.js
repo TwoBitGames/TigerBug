@@ -50,12 +50,18 @@ PostVote.belongsTo(User, { foreignKey: 'user_id' });
 Post.hasMany(PostVote, { foreignKey: 'post_id', as: 'votes' });
 PostVote.belongsTo(Post, { foreignKey: 'post_id' });
 
-// Attachment associations
-Post.hasMany(Attachment, { foreignKey: 'post_id', as: 'attachments' });
-Attachment.belongsTo(Post, { foreignKey: 'post_id' });
-
-User.hasMany(Attachment, { foreignKey: 'uploaded_by', as: 'uploadedAttachments' });
-Attachment.belongsTo(User, { foreignKey: 'uploaded_by', as: 'uploader' });
+Post.hasMany(Attachment, { 
+  foreignKey: 'related_id',
+  scope: { related_type: 'post' },
+  as: 'attachments',
+  constraints: false
+});
+Comment.hasMany(Attachment, { 
+  foreignKey: 'related_id',
+  scope: { related_type: 'comment' },
+  as: 'attachments',
+  constraints: false
+});
 
 module.exports = {
   User,

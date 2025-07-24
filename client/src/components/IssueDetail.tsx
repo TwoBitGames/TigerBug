@@ -13,7 +13,9 @@ import {
     Unlock,
     Trash2,
     ChevronUp,
-    MoreVertical
+    MoreVertical,
+    Paperclip,
+    Download
 } from 'lucide-react';
 import {Button} from './ui/button';
 import {Card, CardContent, CardHeader, CardTitle} from './ui/card';
@@ -36,9 +38,15 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from './ui/dialog';
 import {useAuth} from '../contexts/AuthContext';
-import {postsApi, commentsApi} from '../services/api';
-import type {Post, Comment, UpdatePostData, CreateCommentData} from '../types';
+import {postsApi, commentsApi, attachmentsApi} from '../services/api';
+import type {Post, Comment, UpdatePostData, CreateCommentData, Attachment} from '../types';
 
 interface IssueDetailProps {
     issueId: number;
@@ -63,6 +71,11 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     const [editDescription, setEditDescription] = useState('');
     const [editStatus, setEditStatus] = useState<'Offen' | 'In Arbeit' | 'Geschlossen'>('Offen');
     const [editIsPrivate, setEditIsPrivate] = useState(false);
+    
+    // Attachment state
+    const [attachments, setAttachments] = useState<Attachment[]>([]);
+    const [selectedAttachment, setSelectedAttachment] = useState<Attachment | null>(null);
+    const [isAttachmentDialogOpen, setIsAttachmentDialogOpen] = useState(false);
 
     const canEdit = isAuthenticated && (
         user?.is_admin ||
@@ -88,6 +101,11 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             setEditDescription(data.description);
             setEditStatus(data.status);
             setEditIsPrivate(data.is_private);
+            
+            // Set attachments if they exist
+            if (data.attachments) {
+                setAttachments(data.attachments);
+            }
         } catch (error) {
             console.error('Failed to load issue:', error);
             setError('Failed to load issue details');
@@ -192,6 +210,22 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
         }
     };
 
+    const handleDownloadAttachment = (attachmentId: number) => {
+        attachmentsApi.download(attachmentId);
+    };
+
+    const handleDeleteAttachment = async (attachmentId: number) => {
+        if (!window.confirm('Are you sure you want to delete this attachment?')) return;
+
+        try {
+            await attachmentsApi.delete(attachmentId);
+            // Reload the issue to get updated attachments
+            await loadIssue();
+        } catch (error) {
+            console.error('Failed to delete attachment:', error);
+        }
+    };
+
     const getStatusBadgeVariant = (status: string) => {
         switch (status) {
             case 'Offen':
@@ -215,6 +249,42 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 return 'text-gray-400';
             default:
                 return 'text-gray-400';
+        }
+    };
+
+    const isImageFile = (filename: string) => {
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+        const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+        return imageExtensions.includes(ext);
+    };
+
+    const getFileIcon = (filename: string) => {
+        if (isImageFile(filename)) {
+            return '🖼️';
+        }
+        const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+        switch (ext) {
+            case '.pdf':
+                return '📄';
+            case '.zip':
+            case '.rar':
+                return '📦';
+            case '.doc':
+            case '.docx':
+                return '📝';
+            case '.txt':
+                return '📃';
+            default:
+                return '📎';
+        }
+    };
+
+    const handleAttachmentClick = (attachment: Attachment) => {
+        if (isImageFile(attachment.original_filename)) {
+            setSelectedAttachment(attachment);
+            setIsAttachmentDialogOpen(true);
+        } else {
+            handleDownloadAttachment(attachment.id);
         }
     };
 
@@ -439,6 +509,88 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 </CardContent>
             </Card>
 
+            {/* Attachments Section */}
+            {attachments.length > 0 && (
+                <Card className="bg-zinc-900/60 border-zinc-800/60 backdrop-blur-xl">
+                    <CardHeader>
+                        <CardTitle className="flex items-center space-x-2 text-zinc-100">
+                            <Paperclip className="h-5 w-5"/>
+                            <span>Attachments ({attachments.length})</span>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {attachments.map((attachment) => (
+                            <div
+                                key={attachment.id}
+                                className={`group relative overflow-hidden rounded-lg border border-zinc-700/50 bg-zinc-800/40 transition-all hover:border-zinc-600 ${
+                                    isImageFile(attachment.original_filename) ? 'cursor-pointer hover:scale-105' : ''
+                                }`}
+                                onClick={() => handleAttachmentClick(attachment)}
+                            >
+                                {isImageFile(attachment.original_filename) ? (
+                                    <div className="aspect-video bg-zinc-800/60 flex items-center justify-center relative">
+                                        <img
+                                            src={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/attachments/${attachment.id}`}
+                                            alt={attachment.original_filename}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                const target = e.target as HTMLImageElement;
+                                                target.style.display = 'none';
+                                                target.nextElementSibling!.classList.remove('hidden');
+                                            }}
+                                        />
+                                        <div className="hidden flex items-center justify-center w-full h-full">
+                                            <span className="text-4xl">{getFileIcon(attachment.original_filename)}</span>
+                                        </div>
+                                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <div className="text-white text-sm font-medium">Click to view</div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="aspect-video bg-zinc-800/60 flex items-center justify-center">
+                                        <span className="text-4xl">{getFileIcon(attachment.original_filename)}</span>
+                                    </div>
+                                )}
+                                
+                                <div className="p-3">
+                                    <div className="text-sm text-zinc-200 truncate">{attachment.original_filename}</div>
+                                    <div className="text-xs text-zinc-400 mt-1">
+                                        {formatDistanceToNow(new Date(attachment.uploaded_at), {addSuffix: true})}
+                                    </div>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDownloadAttachment(attachment.id);
+                                            }}
+                                            className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60 h-7 px-2"
+                                        >
+                                            <Download className="h-3 w-3 mr-1"/>
+                                            Download
+                                        </Button>
+                                        {canEdit && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteAttachment(attachment.id);
+                                                }}
+                                                className="text-red-400 hover:text-red-300 hover:bg-zinc-700/60 h-7 px-2"
+                                            >
+                                                <X className="h-3 w-3"/>
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            )}
+
             <Card className="bg-zinc-900/60 border-zinc-800/60 backdrop-blur-xl">
                 <CardHeader>
                     <CardTitle className="flex items-center space-x-2 text-zinc-100">
@@ -576,6 +728,49 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Fullscreen Image Dialog */}
+            <Dialog open={isAttachmentDialogOpen} onOpenChange={setIsAttachmentDialogOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] bg-zinc-900/95 border-zinc-800">
+                    <DialogHeader>
+                        <DialogTitle className="text-zinc-100">
+                            {selectedAttachment?.original_filename}
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="flex items-center justify-center p-4">
+                        {selectedAttachment && (
+                            <img
+                                src={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/attachments/${selectedAttachment.id}`}
+                                alt={selectedAttachment.original_filename}
+                                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                            />
+                        )}
+                    </div>
+                    <div className="flex justify-center space-x-2 pb-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => selectedAttachment && handleDownloadAttachment(selectedAttachment.id)}
+                            className="border-zinc-600 text-zinc-300 hover:bg-zinc-700"
+                        >
+                            <Download className="h-4 w-4 mr-2"/>
+                            Download
+                        </Button>
+                        {canEdit && selectedAttachment && (
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    handleDeleteAttachment(selectedAttachment.id);
+                                    setIsAttachmentDialogOpen(false);
+                                }}
+                                className="border-red-600 text-red-400 hover:bg-red-700/20"
+                            >
+                                <X className="h-4 w-4 mr-2"/>
+                                Delete
+                            </Button>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
