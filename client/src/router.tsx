@@ -4,6 +4,7 @@ import { HomePage } from './pages/HomePage';
 import { ProjectPage } from './pages/ProjectPage';
 import { IssuePage } from './pages/IssuePage';
 import { CreateIssuePage } from './pages/CreateIssuePage';
+import { AdminDashboard } from './pages/AdminDashboard';
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
       {
         path: '/projects/:projectId/create-issue',
         element: <CreateIssuePage />
+      },
+      {
+        path: '/admin',
+        element: <AdminDashboard />
       }
     ]
   }

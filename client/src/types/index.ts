@@ -73,5 +73,33 @@ export interface CreateCommentData {
 
 export interface AddMemberData {
     user_id: number;
-    role: 'Manager' | 'Administrator';
+    role: 'Reporter' | 'Manager' | 'Administrator';
+}
+
+export interface ProjectMembership {
+    id: number;
+    user_id: number;
+    project_id: number;
+    role: 'Reporter' | 'Manager' | 'Administrator';
+    user: User;
+}
+
+export interface SMTPConfig {
+    id: number;
+    host: string;
+    port: number;
+    username: string;
+    use_tls: boolean;
+    from_address: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface UpdateSMTPConfigData {
+    host: string;
+    port: number;
+    username: string;
+    password?: string;
+    use_tls: boolean;
+    from_address: string;
 }

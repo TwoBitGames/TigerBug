@@ -11,6 +11,7 @@ import {
 import {useAuth} from '../contexts/AuthContext';
 import {LoginDialog} from './LoginDialog';
 import type {Project} from '../types';
+import { useNavigate } from 'react-router-dom';
 
 interface NavigationProps {
     selectedProject: Project | null;
@@ -28,9 +29,14 @@ export const Navigation = ({
                                onCreateIssue,
                            }: NavigationProps) => {
     const {user, logout, isAuthenticated} = useAuth();
+    const navigate = useNavigate();
 
     const handleBackToProjects = () => {
         setSelectedProject(null);
+    };
+
+    const handleAdminClick = () => {
+        navigate('/admin');
     };
 
     return (
@@ -126,6 +132,7 @@ export const Navigation = ({
                                 {user?.is_admin && (
                                     <DropdownMenuItem
                                         className="text-foreground focus:bg-accent focus:text-accent-foreground"
+                                        onClick={handleAdminClick}
                                     >
                                         <Shield className="h-4 w-4 mr-2"/>
                                         Admin Settings

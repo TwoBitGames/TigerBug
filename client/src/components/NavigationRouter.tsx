@@ -57,7 +57,10 @@ export const NavigationRouter = () => {
     }
   };
 
-  // Determine if we're in a project context
+  const handleAdminClick = () => {
+    navigate('/admin');
+  };
+
   const isInProject = location.pathname.includes('/projects/') && project;
   const isInProjectList = location.pathname.includes('/projects/') && !location.pathname.includes('/issues/');
 
@@ -147,7 +150,10 @@ export const NavigationRouter = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-48 bg-popover border-border backdrop-blur-xl" align="end">
                 {user?.is_admin && (
-                  <DropdownMenuItem className="text-foreground focus:bg-accent focus:text-accent-foreground">
+                  <DropdownMenuItem 
+                    className="text-foreground focus:bg-accent focus:text-accent-foreground"
+                    onClick={handleAdminClick}
+                  >
                     <Shield className="h-4 w-4 mr-2"/>
                     Admin Settings
                   </DropdownMenuItem>

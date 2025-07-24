@@ -11,6 +11,9 @@ import type {
   UpdatePostData,
   CreateCommentData,
   AddMemberData,
+  ProjectMembership,
+  SMTPConfig,
+  UpdateSMTPConfigData,
 } from '../types';
 
 export const authApi = {
@@ -81,4 +84,33 @@ export const commentsApi = {
 export const attachmentsApi = {
   upload: (files: File[], relatedType: 'post' | 'comment', relatedId: number) => 
     uploadFiles('/attachments', files, { related_type: relatedType, related_id: relatedId }),
+};
+
+export const adminApi = {
+  getUsers: () => 
+    get<{ users: User[] }>('/admin/users').then(response => response.users),
+  
+  updateUserRole: (userId: number, isAdmin: boolean) => 
+    put(`/admin/users/${userId}/role`, { is_admin: isAdmin }),
+
+  getProjectMembers: (projectId: number) => 
+    get<{ project: Project; members: ProjectMembership[] }>(`/admin/projects/${projectId}/members`),
+  
+  addProjectMember: (projectId: number, data: AddMemberData) => 
+    post(`/admin/projects/${projectId}/members`, data),
+  
+  updateProjectMemberRole: (projectId: number, userId: number, role: 'Reporter' | 'Manager' | 'Administrator') => 
+    put(`/admin/projects/${projectId}/members/${userId}/role`, { role }),
+  
+  removeProjectMember: (projectId: number, userId: number) => 
+    del(`/admin/projects/${projectId}/members/${userId}`),
+
+  getSMTPConfig: () => 
+    get<{ smtpConfig: SMTPConfig }>('/admin/smtp-config').then(response => response.smtpConfig),
+  
+  updateSMTPConfig: (data: UpdateSMTPConfigData) => 
+    put<{ smtpConfig: SMTPConfig }>('/admin/smtp-config', data).then(response => response.smtpConfig),
+  
+  testSMTPConfig: (testEmail: string) => 
+    post('/admin/smtp-config/test', { test_email: testEmail }),
 };
