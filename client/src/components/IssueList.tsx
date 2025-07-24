@@ -14,6 +14,7 @@ interface IssueListProps {
     onFilterChange: (filter: 'all' | 'open' | 'closed') => void;
     onUpvote: (postId: number) => void;
     onStatusChange: (postId: number, status: 'Offen' | 'In Arbeit' | 'Geschlossen') => void;
+    onIssueClick: (postId: number) => void;
 }
 
 export const IssueList = ({
@@ -24,6 +25,7 @@ export const IssueList = ({
                               onFilterChange,
                               onUpvote,
                               onStatusChange,
+                              onIssueClick,
                           }: IssueListProps) => {
     const [draggedPost, setDraggedPost] = useState<number | null>(null);
     const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
@@ -159,7 +161,8 @@ export const IssueList = ({
                     {filteredPosts.map((post) => (
                         <Card
                             key={post.id}
-                            className="hover:shadow-xl transition-all bg-zinc-800/60 border-zinc-700/60 hover:border-zinc-600/60 backdrop-blur-sm hover:bg-zinc-800/80"
+                            className="hover:shadow-xl transition-all bg-zinc-800/60 border-zinc-700/60 hover:border-zinc-600/60 backdrop-blur-sm hover:bg-zinc-800/80 cursor-pointer"
+                            onClick={() => onIssueClick(post.id)}
                         >
                             <CardContent className="p-3">
                                 <div className="flex items-center space-x-3">
@@ -167,7 +170,10 @@ export const IssueList = ({
                                         variant="ghost"
                                         size="sm"
                                         className="flex-col h-auto p-1.5 min-w-[50px] text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700/60"
-                                        onClick={() => onUpvote(post.id)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onUpvote(post.id);
+                                        }}
                                     >
                                         <ChevronUp className="h-3.5 w-3.5 mb-0.5"/>
                                         <span className="text-xs font-medium">{post.vote_count || 0}</span>
@@ -231,6 +237,7 @@ export const IssueList = ({
                                         }`}
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, post.id)}
+                                        onClick={() => onIssueClick(post.id)}
                                     >
                                         <CardContent className="p-3">
                                             <div className="space-y-2">

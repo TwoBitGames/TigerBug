@@ -66,13 +66,13 @@ export const postsApi = {
 
 export const commentsApi = {
   getAll: (projectId: number, postId: number) => 
-    get<Comment[]>(`/projects/${projectId}/posts/${postId}/comments`),
+    get<{ comments: Comment[] }>(`/projects/${projectId}/posts/${postId}/comments`).then(response => response.comments),
   
   create: (projectId: number, postId: number, data: CreateCommentData) => 
-    post<Comment>(`/projects/${projectId}/posts/${postId}/comments`, data),
+    post<{ comment: Comment }>(`/projects/${projectId}/posts/${postId}/comments`, data).then(response => response.comment),
   
   update: (projectId: number, postId: number, commentId: number, data: CreateCommentData) => 
-    put<Comment>(`/projects/${projectId}/posts/${postId}/comments/${commentId}`, data),
+    put<{ comment: Comment }>(`/projects/${projectId}/posts/${postId}/comments/${commentId}`, data).then(response => response.comment),
   
   delete: (projectId: number, postId: number, commentId: number) => 
     del(`/projects/${projectId}/posts/${postId}/comments/${commentId}`),

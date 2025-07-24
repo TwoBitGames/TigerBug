@@ -3,6 +3,7 @@ import {useAuth} from './contexts/AuthContext';
 import {Navigation} from './components/Navigation';
 import {ProjectList} from './components/ProjectList';
 import {IssueList} from './components/IssueList';
+import {IssueDetail} from './components/IssueDetail';
 import {CreateIssue} from './components/CreateIssue';
 import {Footer} from './components/Footer';
 import {projectsApi, postsApi} from './services/api';
@@ -13,6 +14,7 @@ const App = () => {
     const [projects, setProjects] = useState<Project[]>([]);
     const [posts, setPosts] = useState<Post[]>([]);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [selectedIssueId, setSelectedIssueId] = useState<number | null>(null);
     const [showCreateIssue, setShowCreateIssue] = useState(false);
     const [filterType, setFilterType] = useState<'all' | 'open' | 'closed'>('all');
     const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
@@ -59,6 +61,7 @@ const App = () => {
     const handleProjectSelect = (projectId: number | null) => {
         const project = projectId ? projects.find(p => p.id === projectId) || null : null;
         setSelectedProject(project);
+        setSelectedIssueId(null);
         setShowCreateIssue(false);
     };
 
@@ -120,6 +123,14 @@ const App = () => {
         }
     };
 
+    const handleIssueClick = (postId: number) => {
+        setSelectedIssueId(postId);
+    };
+
+    const handleBackToIssueList = () => {
+        setSelectedIssueId(null);
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
@@ -161,15 +172,24 @@ const App = () => {
                         </div>
                     ) : (
                         <div className="container py-8 px-4">
-                            <IssueList
-                                project={selectedProjectData}
-                                posts={posts}
-                                filterType={filterType}
-                                viewMode={viewMode}
-                                onFilterChange={setFilterType}
-                                onUpvote={handleUpvote}
-                                onStatusChange={handleStatusChange}
-                            />
+                            {selectedIssueId ? (
+                                <IssueDetail
+                                    issueId={selectedIssueId}
+                                    projectId={selectedProject.id}
+                                    onBack={handleBackToIssueList}
+                                />
+                            ) : (
+                                <IssueList
+                                    project={selectedProjectData}
+                                    posts={posts}
+                                    filterType={filterType}
+                                    viewMode={viewMode}
+                                    onFilterChange={setFilterType}
+                                    onUpvote={handleUpvote}
+                                    onStatusChange={handleStatusChange}
+                                    onIssueClick={handleIssueClick}
+                                />
+                            )}
                         </div>
                     )
                 ) : (
