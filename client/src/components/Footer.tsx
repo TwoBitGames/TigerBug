@@ -12,6 +12,8 @@ const SOCIAL_ICONS = {
     discord: MessageSquare,
 } as const;
 
+const COPYRIGHT_URL = 'https://github.com/TwoBitGames/TigerBug';
+
 export const Footer = () => {
     const {brandingConfig} = useBranding();
 
@@ -22,7 +24,10 @@ export const Footer = () => {
                 <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
                     <div className="text-center md:text-left">
                         <div className="text-sm text-muted-foreground">
-                            © {new Date().getFullYear()} <b>TigerBug</b> by TwoBit Games. All rights reserved.
+                            © {new Date().getFullYear()} <a href={COPYRIGHT_URL} target="_blank"
+                                                            className="text-muted-foreground hover:text-foreground transition-colors font-bold"
+                                                            rel="noopener noreferrer">TigerBug</a> by TwoBit Games.
+                            All rights reserved.
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
