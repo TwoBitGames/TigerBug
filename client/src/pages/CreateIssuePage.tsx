@@ -1,0 +1,80 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { CreateIssue } from '../components/CreateIssue';
+import { projectsApi, postsApi } from '../services/api';
+import type { Project, CreatePostData } from '../types';
+
+export const CreateIssuePage = () => {
+  const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
+  
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+
+  useEffect(() => {
+    if (!projectId) {
+      navigate('/');
+      return;
+    }
+    loadProjects();
+  }, [projectId, navigate]);
+
+  const loadProjects = async () => {
+    setIsLoadingProjects(true);
+    try {
+      const projectData = await projectsApi.getAll();
+      setProjects(Array.isArray(projectData) ? projectData : []);
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+      setProjects([]);
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  };
+
+  const handleSubmitIssue = async (selectedProjectId: number, data: CreatePostData, files: File[]) => {
+    try {
+      await postsApi.create(selectedProjectId, data);
+
+      if (files.length > 0) {
+        console.log('File upload not implemented yet:', files);
+      }
+
+      navigate(`/projects/${selectedProjectId}`);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleCancel = () => {
+    if (projectId) {
+      navigate(`/projects/${projectId}`);
+    } else {
+      navigate('/');
+    }
+  };
+
+  if (!projectId) {
+    return null;
+  }
+
+  if (isLoadingProjects) {
+    return (
+      <div className="container py-8 px-4 text-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading projects...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container py-8 px-4">
+      <CreateIssue
+        projects={projects}
+        selectedProject={parseInt(projectId)}
+        onSubmit={handleSubmitIssue}
+        onCancel={handleCancel}
+      />
+    </div>
+  );
+};

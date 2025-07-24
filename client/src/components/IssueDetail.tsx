@@ -390,7 +390,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                     size="sm"
                                     onClick={handleToggleVote}
                                     className={`border-zinc-600 flex items-center space-x-1 ${
-                                        issue.user_voted ? 'bg-purple-600/20 text-purple-400 border-purple-600' : 'text-zinc-300'
+                                        issue.user_voted ? 'bg-primary/20 text-primary border-primary' : 'text-zinc-300'
                                     }`}
                                 >
                                     <ChevronUp className="h-4 w-4"/>
@@ -409,7 +409,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
 
                     {isEditing && (
                         <div className="flex items-center space-x-2 pt-4">
-                            <Button onClick={handleSaveIssue} size="sm" className="bg-purple-600 hover:bg-purple-700">
+                            <Button onClick={handleSaveIssue} size="sm" className="bg-primary hover:bg-primary/90">
                                 <Save className="h-4 w-4 mr-2"/>
                                 Save Changes
                             </Button>
@@ -462,7 +462,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                     onClick={handleSubmitComment}
                                     disabled={!newComment.trim() || isSubmittingComment}
                                     size="sm"
-                                    className="bg-purple-600 hover:bg-purple-700"
+                                    className="bg-primary hover:bg-primary/90"
                                 >
                                     {isSubmittingComment ? 'Submitting...' : 'Add Comment'}
                                 </Button>
@@ -548,7 +548,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                 <Button
                                                     onClick={() => handleEditComment(comment.id, editCommentText)}
                                                     size="sm"
-                                                    className="bg-purple-600 hover:bg-purple-700"
+                                                    className="bg-primary hover:bg-primary/90"
                                                 >
                                                     Save
                                                 </Button>

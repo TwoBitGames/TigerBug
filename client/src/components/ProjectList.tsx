@@ -1,41 +1,53 @@
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from './ui/card';
-import type {Project} from '../types';
+import { Link } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import type { Project } from '../types';
 
 interface ProjectListProps {
     projects: Project[];
-    onProjectSelect: (projectId: number) => void;
+    onProjectSelect?: (projectId: number) => void;
 }
 
-export const ProjectList = ({projects, onProjectSelect}: ProjectListProps) => {
+export const ProjectList = ({ projects, onProjectSelect }: ProjectListProps) => {
+    const handleProjectClick = (projectId: number) => {
+        if (onProjectSelect) {
+            onProjectSelect(projectId);
+        }
+    };
+
     return (
         <main className="container py-8 px-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {Array.isArray(projects) && projects.map((project) => (
-                    <Card
-                        key={project.id}
-                        className="cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-card/60 border-border hover:border-accent backdrop-blur-sm hover:bg-card/80"
-                        onClick={() => onProjectSelect(project.id)}
+                    <Link 
+                        key={project.id} 
+                        to={`/projects/${project.id}`}
+                        className="block"
                     >
-                        <CardHeader className="pb-3">
-                            <div className="flex items-center space-x-3">
-                                <div
-                                    className="h-10 w-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
-                  <span className="text-primary font-semibold text-lg">
-                    {project.name.charAt(0).toUpperCase()}
-                  </span>
+                        <Card
+                            className="cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-card/60 border-border hover:border-accent backdrop-blur-sm hover:bg-card/80"
+                            onClick={() => handleProjectClick(project.id)}
+                        >
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center space-x-3">
+                                    <div
+                                        className="h-10 w-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
+                      <span className="text-primary font-semibold text-lg">
+                        {project.name.charAt(0).toUpperCase()}
+                      </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <CardTitle
+                                            className="text-lg leading-tight text-card-foreground">{project.name}</CardTitle>
+                                    </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <CardTitle
-                                        className="text-lg leading-tight text-card-foreground">{project.name}</CardTitle>
-                                </div>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                            <CardDescription className="text-sm leading-relaxed text-muted-foreground">
-                                {project.description}
-                            </CardDescription>
-                        </CardContent>
-                    </Card>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                                <CardDescription className="text-sm leading-relaxed text-muted-foreground">
+                                    {project.description}
+                                </CardDescription>
+                            </CardContent>
+                        </Card>
+                    </Link>
                 ))}
 
                 {!Array.isArray(projects) || projects.length === 0 ? (

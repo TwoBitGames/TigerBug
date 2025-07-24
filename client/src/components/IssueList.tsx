@@ -164,35 +164,35 @@ export const IssueList = ({
                             className="hover:shadow-xl transition-all bg-card/60 border-border hover:border-accent backdrop-blur-sm hover:bg-card/80 cursor-pointer py-0"
                             onClick={() => onIssueClick(post.id)}
                         >
-                            <CardContent className="p-2 px-2">
-                                <div className="flex items-center space-x-2">
+                            <CardContent className="p-3">
+                                <div className="flex items-center space-x-3">
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="flex-col h-auto p-1 min-w-[40px] text-muted-foreground hover:text-foreground hover:bg-accent"
+                                        className="flex-col h-auto p-1.5 min-w-[50px] text-muted-foreground hover:text-foreground hover:bg-accent"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onUpvote(post.id);
                                         }}
                                     >
-                                        <ChevronUp className="h-3 w-3 mb-0.5"/>
+                                        <ChevronUp className="h-3.5 w-3.5 mb-0.5"/>
                                         <span className="text-xs font-medium">{post.vote_count || 0}</span>
                                     </Button>
 
-                                    <div className="flex items-center space-x-1.5">
+                                    <div className="flex items-center space-x-2">
                                         {getStatusIcon(post.status)}
                                         <Badge variant="secondary"
-                                               className={`${getTypeColor(post.title)} text-xs px-1.5 py-0`}>
+                                               className={`${getTypeColor(post.title)} text-xs px-2 py-0.5`}>
                                             {getPostType(post.title)}
                                         </Badge>
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-medium text-sm leading-tight mb-0.5 text-card-foreground">{post.title}</h3>
-                                        <div className="flex items-center space-x-1.5 text-xs text-muted-foreground">
-                                            <Avatar className="h-3 w-3">
+                                        <h3 className="font-medium text-sm leading-tight mb-1 text-card-foreground">{post.title}</h3>
+                                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                                            <Avatar className="h-4 w-4">
                                                 <AvatarImage src="/placeholder.svg" alt={post.author?.email || 'User'}/>
-                                                <AvatarFallback className="text-[8px] bg-secondary text-secondary-foreground">
+                                                <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">
                                                     {post.author?.email?.charAt(0).toUpperCase() || 'U'}
                                                 </AvatarFallback>
                                             </Avatar>
@@ -222,7 +222,7 @@ export const IssueList = ({
                             <div
                                 className={`space-y-3 min-h-[400px] bg-secondary/40 rounded-lg p-4 border-2 transition-all backdrop-blur-sm ${
                                     dragOverColumn === column.status
-                                        ? "border-purple-500/60 bg-purple-950/20"
+                                        ? "border-primary/60 bg-primary/10"
                                         : "border-border border-dashed"
                                 }`}
                                 onDragOver={(e) => handleDragOver(e, column.status)}
@@ -239,36 +239,36 @@ export const IssueList = ({
                                         onDragStart={(e) => handleDragStart(e, post.id)}
                                         onClick={() => onIssueClick(post.id)}
                                     >
-                                        <CardContent className="p-2 px-2">
-                                            <div className="space-y-1.5">
+                                        <CardContent className="p-3">
+                                            <div className="space-y-2">
                                                 <div className="flex items-start justify-between">
                                                     <h4 className="font-medium text-sm leading-tight text-card-foreground pr-2">{post.title}</h4>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="flex-col h-auto p-0.5 min-w-[32px] text-muted-foreground hover:text-foreground hover:bg-accent"
+                                                        className="flex-col h-auto p-1 min-w-[40px] text-muted-foreground hover:text-foreground hover:bg-accent"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             onUpvote(post.id);
                                                         }}
                                                     >
-                                                        <ChevronUp className="h-2.5 w-2.5 mb-0.5"/>
+                                                        <ChevronUp className="h-3 w-3 mb-0.5"/>
                                                         <span
-                                                            className="text-[10px] font-medium">{post.vote_count || 0}</span>
+                                                            className="text-xs font-medium">{post.vote_count || 0}</span>
                                                     </Button>
                                                 </div>
 
                                                 <div className="flex items-center justify-between">
                                                     <Badge variant="secondary"
-                                                           className={`${getTypeColor(post.title)} text-xs px-1.5 py-0`}>
+                                                           className={`${getTypeColor(post.title)} text-xs px-2 py-0.5`}>
                                                         {getPostType(post.title)}
                                                     </Badge>
                                                     <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                                                        <Avatar className="h-2.5 w-2.5">
+                                                        <Avatar className="h-3 w-3">
                                                             <AvatarImage src="/placeholder.svg"
                                                                          alt={post.author?.email || 'User'}/>
                                                             <AvatarFallback
-                                                                className="text-[7px] bg-secondary text-secondary-foreground">
+                                                                className="text-[8px] bg-secondary text-secondary-foreground">
                                                                 {post.author?.email?.charAt(0).toUpperCase() || 'U'}
                                                             </AvatarFallback>
                                                         </Avatar>

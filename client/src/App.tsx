@@ -201,7 +201,6 @@ const App = () => {
                         </div>
                     ) : (
                         <div className="container py-8 px-4">
-                            {/* Hero Section */}
                             <div className="text-center mb-10">
                                 <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-xl mb-6 border border-primary/20">
                                     <img src="/favicon.png" alt="TigerBug" className="h-12 w-12 mr-3" />
