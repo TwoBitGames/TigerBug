@@ -58,12 +58,12 @@ export const LoginDialog = ({children}: LoginDialogProps) => {
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px] bg-zinc-900 border-zinc-700">
+            <DialogContent className="sm:max-w-[425px] bg-popover border-border">
                 <DialogHeader>
-                    <DialogTitle className="text-zinc-100">
+                    <DialogTitle className="text-popover-foreground">
                         {mode === 'login' ? 'Sign In' : 'Create Account'}
                     </DialogTitle>
-                    <DialogDescription className="text-zinc-400">
+                    <DialogDescription className="text-muted-foreground">
                         {mode === 'login'
                             ? 'Sign in to create and manage issues'
                             : 'Create an account to start contributing'
@@ -73,7 +73,7 @@ export const LoginDialog = ({children}: LoginDialogProps) => {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="email" className="text-zinc-200">Email</Label>
+                        <Label htmlFor="email" className="text-foreground">Email</Label>
                         <Input
                             id="email"
                             type="email"
@@ -81,12 +81,12 @@ export const LoginDialog = ({children}: LoginDialogProps) => {
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter your email"
                             required
-                            className="bg-zinc-800 border-zinc-600 text-zinc-100 placeholder:text-zinc-400"
+                            className="bg-input border-border text-foreground placeholder:text-muted-foreground"
                         />
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="password" className="text-zinc-200">Password</Label>
+                        <Label htmlFor="password" className="text-foreground">Password</Label>
                         <Input
                             id="password"
                             type="password"
@@ -94,7 +94,7 @@ export const LoginDialog = ({children}: LoginDialogProps) => {
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Enter your password"
                             required
-                            className="bg-zinc-800 border-zinc-600 text-zinc-100 placeholder:text-zinc-400"
+                            className="bg-input border-border text-foreground placeholder:text-muted-foreground"
                         />
                     </div>
 
@@ -126,7 +126,7 @@ export const LoginDialog = ({children}: LoginDialogProps) => {
                             type="button"
                             variant="ghost"
                             onClick={toggleMode}
-                            className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800"
+                            className="text-muted-foreground hover:text-foreground hover:bg-accent"
                         >
                             {mode === 'login'
                                 ? "Don't have an account? Sign up"

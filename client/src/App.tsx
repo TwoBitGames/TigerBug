@@ -133,11 +133,11 @@ const App = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center">
+            <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
                 <div className="text-center">
                     <div
                         className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-zinc-400">Loading...</p>
+                    <p className="text-muted-foreground">Loading...</p>
                 </div>
             </div>
         );
@@ -146,7 +146,7 @@ const App = () => {
     const selectedProjectData = selectedProject;
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+        <div className="min-h-screen bg-background text-foreground flex flex-col">
             <Navigation
                 selectedProject={selectedProject}
                 setSelectedProject={setSelectedProject}
@@ -168,7 +168,7 @@ const App = () => {
                         <div className="container py-8 px-4 text-center">
                             <div
                                 className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-zinc-400">Loading issues...</p>
+                            <p className="text-muted-foreground">Loading issues...</p>
                         </div>
                     ) : (
                         <div className="container py-8 px-4">
@@ -197,14 +197,14 @@ const App = () => {
                         <div className="container py-8 px-4 text-center">
                             <div
                                 className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-zinc-400">Loading projects...</p>
+                            <p className="text-muted-foreground">Loading projects...</p>
                         </div>
                     ) : (
                         <div className="container py-8 px-4">
                             <div className="flex justify-between items-center mb-6">
                                 <h2 className="text-2xl font-bold">Projects</h2>
                                 {!isAuthenticated && (
-                                    <div className="text-sm text-gray-400">
+                                    <div className="text-sm text-muted-foreground">
                                         Login to create issues and vote
                                     </div>
                                 )}

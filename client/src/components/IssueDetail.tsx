@@ -221,7 +221,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="text-zinc-400">Loading issue details...</div>
+                <div className="text-muted-foreground">Loading issue details...</div>
             </div>
         );
     }
@@ -229,7 +229,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     if (!issue) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="text-zinc-400">Issue not found</div>
+                <div className="text-muted-foreground">Issue not found</div>
             </div>
         );
     }
@@ -240,7 +240,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 <Button
                     variant="ghost"
                     onClick={onBack}
-                    className="text-zinc-300 hover:text-zinc-100 hover:bg-zinc-800/60"
+                    className="text-muted-foreground hover:text-foreground hover:bg-accent"
                 >
                     <ArrowLeft className="h-4 w-4 mr-2"/>
                     Back to Issues
@@ -252,7 +252,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                             variant="outline"
                             size="sm"
                             onClick={() => setIsEditing(!isEditing)}
-                            className="border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+                            className="border-border text-muted-foreground hover:bg-accent"
                         >
                             {isEditing ? (
                                 <>
@@ -274,12 +274,12 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-zinc-400 hover:text-zinc-100"
+                                    className="text-muted-foreground hover:text-foreground"
                                 >
                                     <MoreVertical className="h-4 w-4"/>
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="bg-zinc-800 border-zinc-700">
+                            <DropdownMenuContent align="end" className="bg-popover border-border">
                                 <DropdownMenuItem
                                     onClick={handleDeleteIssue}
                                     className="text-red-400 hover:text-red-300 hover:bg-zinc-700"
@@ -296,11 +296,10 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             {error && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-sm">
                     {error}
-                </div>
-            )}
+                </div>        )}
 
-            <Card className="bg-zinc-900/60 border-zinc-800/60 backdrop-blur-xl">
-                <CardHeader>
+        <Card className="bg-card border-border backdrop-blur-xl">
+            <CardHeader>
                     <div className="flex items-start justify-between">
                         <div className="flex-1 space-y-3">
                             {isEditing ? (

@@ -13,7 +13,7 @@ export const ProjectList = ({projects, onProjectSelect}: ProjectListProps) => {
                 {Array.isArray(projects) && projects.map((project) => (
                     <Card
                         key={project.id}
-                        className="cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-zinc-800/60 border-zinc-700/60 hover:border-zinc-600/60 backdrop-blur-sm hover:bg-zinc-800/80"
+                        className="cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] bg-card/60 border-border hover:border-accent backdrop-blur-sm hover:bg-card/80"
                         onClick={() => onProjectSelect(project.id)}
                     >
                         <CardHeader className="pb-3">
@@ -26,12 +26,12 @@ export const ProjectList = ({projects, onProjectSelect}: ProjectListProps) => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <CardTitle
-                                        className="text-lg leading-tight text-zinc-100">{project.name}</CardTitle>
+                                        className="text-lg leading-tight text-card-foreground">{project.name}</CardTitle>
                                 </div>
                             </div>
                         </CardHeader>
                         <CardContent className="pt-0">
-                            <CardDescription className="text-sm leading-relaxed text-zinc-400">
+                            <CardDescription className="text-sm leading-relaxed text-muted-foreground">
                                 {project.description}
                             </CardDescription>
                         </CardContent>
@@ -40,7 +40,7 @@ export const ProjectList = ({projects, onProjectSelect}: ProjectListProps) => {
 
                 {!Array.isArray(projects) || projects.length === 0 ? (
                     <div className="col-span-full text-center py-8">
-                        <p className="text-zinc-400">No projects available</p>
+                        <p className="text-muted-foreground">No projects available</p>
                     </div>
                 ) : null}
             </div>

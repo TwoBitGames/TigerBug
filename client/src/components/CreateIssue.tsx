@@ -62,25 +62,25 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
     return (
         <main className="container py-8 px-4 max-w-2xl mx-auto">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight mb-2 text-zinc-100">Create New Issue</h1>
-                <p className="text-zinc-400">Report a bug or request a new feature</p>
+                <h1 className="text-3xl font-bold tracking-tight mb-2 text-foreground">Create New Issue</h1>
+                <p className="text-muted-foreground">Report a bug or request a new feature</p>
             </div>
 
             <div className="space-y-6">
                 <div className="space-y-2">
-                    <Label htmlFor="project-select" className="text-zinc-200 font-medium">
+                    <Label htmlFor="project-select" className="text-foreground font-medium">
                         Select Project
                     </Label>
                     <Select value={projectId} onValueChange={setProjectId}>
-                        <SelectTrigger className="bg-zinc-800/60 border-zinc-700/60 text-zinc-100 hover:bg-zinc-700/80">
+                        <SelectTrigger className="bg-secondary border-border text-foreground hover:bg-accent">
                             <SelectValue placeholder="Choose a project"/>
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-800 border-zinc-700/60 backdrop-blur-xl">
+                        <SelectContent className="bg-popover border-border backdrop-blur-xl">
                             {projects.map((project) => (
                                 <SelectItem
                                     key={project.id}
                                     value={project.id.toString()}
-                                    className="text-zinc-100 focus:bg-zinc-600 focus:text-zinc-100"
+                                    className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
                                 >
                                     <div className="flex items-center space-x-2">
                                         <span>{project.name}</span>
@@ -92,13 +92,13 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                 </div>
 
                 <div className="space-y-3">
-                    <Label className="text-zinc-200 font-medium">Issue Type</Label>
+                    <Label className="text-foreground font-medium">Issue Type</Label>
                     <div className="grid gap-3 md:grid-cols-2">
                         <Card
-                            className={`cursor-pointer transition-all bg-zinc-800/60 border-zinc-700/60 backdrop-blur-sm ${
+                            className={`cursor-pointer transition-all bg-card border-border backdrop-blur-sm ${
                                 issueType === "bug"
                                     ? "ring-2 ring-red-500/60 bg-red-950/30 border-red-500/40"
-                                    : "hover:border-zinc-600/60 hover:bg-zinc-800/80"
+                                    : "hover:border-accent hover:bg-accent/50"
                             }`}
                             onClick={() => setIssueType("bug")}>
                             <CardContent className="p-4">
@@ -107,8 +107,8 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                                         <Bug className="h-5 w-5 text-red-400"/>
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="font-semibold text-sm mb-1 text-zinc-100">Bug Report</h3>
-                                        <p className="text-xs text-zinc-400 leading-relaxed">
+                                        <h3 className="font-semibold text-sm mb-1 text-card-foreground">Bug Report</h3>
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
                                             Something isn't working as expected. Report crashes, errors, or unexpected
                                             behavior.
                                         </p>
@@ -118,10 +118,10 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                         </Card>
 
                         <Card
-                            className={`cursor-pointer transition-all bg-zinc-800/60 border-zinc-700/60 backdrop-blur-sm ${
+                            className={`cursor-pointer transition-all bg-card border-border backdrop-blur-sm ${
                                 issueType === "feature"
                                     ? "ring-2 ring-purple-500/60 bg-purple-950/30 border-purple-500/40"
-                                    : "hover:border-zinc-600/60 hover:bg-zinc-800/80"
+                                    : "hover:border-accent hover:bg-accent/50"
                             }`}
                             onClick={() => setIssueType("feature")}>
                             <CardContent className="p-4">
@@ -130,8 +130,8 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                                         <Lightbulb className="h-5 w-5 text-purple-400"/>
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="font-semibold text-sm mb-1 text-zinc-100">Feature Request</h3>
-                                        <p className="text-xs text-zinc-400 leading-relaxed">
+                                        <h3 className="font-semibold text-sm mb-1 text-card-foreground">Feature Request</h3>
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
                                             Suggest new functionality or improvements to enhance the user experience.
                                         </p>
                                     </div>
@@ -142,7 +142,7 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="issue-title" className="text-zinc-200 font-medium">
+                    <Label htmlFor="issue-title" className="text-foreground font-medium">
                         Title
                     </Label>
                     <Input
@@ -150,12 +150,12 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                         placeholder="Brief description of the issue"
                         value={title}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
-                        className="bg-zinc-800/60 border-zinc-700/60 text-zinc-100 placeholder:text-zinc-500 focus:border-purple-500/60 focus:ring-purple-500/20"
+                        className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-purple-500/60 focus:ring-purple-500/20"
                     />
                 </div>
 
                 <div className="space-y-2">
-                    <Label htmlFor="issue-description" className="text-zinc-200 font-medium">
+                    <Label htmlFor="issue-description" className="text-foreground font-medium">
                         Description
                     </Label>
                     <Textarea
@@ -164,14 +164,14 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                         value={description}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
                         rows={6}
-                        className="bg-zinc-800/60 border-zinc-700/60 text-zinc-100 placeholder:text-zinc-500 focus:border-purple-500/60 focus:ring-purple-500/20"
+                        className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-purple-500/60 focus:ring-purple-500/20"
                     />
                 </div>
 
                 <div className="space-y-3">
-                    <Label className="text-zinc-200 font-medium">Attachments</Label>
+                    <Label className="text-foreground font-medium">Attachments</Label>
                     <div
-                        className="border-2 border-dashed border-zinc-600/60 rounded-lg p-6 text-center bg-zinc-800/30 hover:border-zinc-500/60 transition-colors backdrop-blur-sm">
+                        className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-secondary/30 hover:border-accent transition-colors backdrop-blur-sm">
                         <Upload className="h-8 w-8 text-zinc-500 mx-auto mb-2"/>
                         <p className="text-sm text-zinc-400 mb-2">Drag and drop files here, or click to browse</p>
                         <Input type="file" multiple onChange={handleFileUpload} className="hidden" id="file-upload"/>

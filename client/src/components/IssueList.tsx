@@ -109,13 +109,13 @@ export const IssueList = ({
               {project.name.charAt(0).toUpperCase()}
             </span>
                     </div>
-                    <h1 className="text-2xl font-bold text-zinc-100">{project.name}</h1>
+                    <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
                 </div>
-                <p className="text-zinc-400">{project.description}</p>
+                <p className="text-muted-foreground">{project.description}</p>
             </div>
 
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-zinc-100">Issues ({filteredPosts.length})</h2>
+                <h2 className="text-xl font-semibold text-foreground">Issues ({filteredPosts.length})</h2>
                 <div className="flex items-center space-x-1">
                     <Button
                         variant={filterType === "all" ? "default" : "outline"}
@@ -123,8 +123,8 @@ export const IssueList = ({
                         onClick={() => onFilterChange("all")}
                         className={
                             filterType === "all"
-                                ? "bg-zinc-700 text-zinc-100 hover:bg-zinc-600"
-                                : "border-zinc-600/60 text-zinc-300 hover:bg-zinc-700/60 hover:border-zinc-500/60 bg-transparent"
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : "border-border text-muted-foreground hover:bg-accent hover:border-accent-foreground bg-transparent"
                         }
                     >
                         All
@@ -135,8 +135,8 @@ export const IssueList = ({
                         onClick={() => onFilterChange("open")}
                         className={
                             filterType === "open"
-                                ? "bg-zinc-700 text-zinc-100 hover:bg-zinc-600"
-                                : "border-zinc-600/60 text-zinc-300 hover:bg-zinc-700/60 hover:border-zinc-500/60 bg-transparent"
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : "border-border text-muted-foreground hover:bg-accent hover:border-accent-foreground bg-transparent"
                         }
                     >
                         Open
@@ -147,8 +147,8 @@ export const IssueList = ({
                         onClick={() => onFilterChange("closed")}
                         className={
                             filterType === "closed"
-                                ? "bg-zinc-700 text-zinc-100 hover:bg-zinc-600"
-                                : "border-zinc-600/60 text-zinc-300 hover:bg-zinc-700/60 hover:border-zinc-500/60 bg-transparent"
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                : "border-border text-muted-foreground hover:bg-accent hover:border-accent-foreground bg-transparent"
                         }
                     >
                         Closed
@@ -161,7 +161,7 @@ export const IssueList = ({
                     {filteredPosts.map((post) => (
                         <Card
                             key={post.id}
-                            className="hover:shadow-xl transition-all bg-zinc-800/60 border-zinc-700/60 hover:border-zinc-600/60 backdrop-blur-sm hover:bg-zinc-800/80 cursor-pointer"
+                            className="hover:shadow-xl transition-all bg-card/60 border-border hover:border-accent backdrop-blur-sm hover:bg-card/80 cursor-pointer"
                             onClick={() => onIssueClick(post.id)}
                         >
                             <CardContent className="p-3">
@@ -169,7 +169,7 @@ export const IssueList = ({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="flex-col h-auto p-1.5 min-w-[50px] text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700/60"
+                                        className="flex-col h-auto p-1.5 min-w-[50px] text-muted-foreground hover:text-foreground hover:bg-accent"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onUpvote(post.id);
@@ -188,11 +188,11 @@ export const IssueList = ({
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-medium text-sm leading-tight mb-1 text-zinc-100">{post.title}</h3>
-                                        <div className="flex items-center space-x-2 text-xs text-zinc-400">
+                                        <h3 className="font-medium text-sm leading-tight mb-1 text-card-foreground">{post.title}</h3>
+                                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                                             <Avatar className="h-4 w-4">
                                                 <AvatarImage src="/placeholder.svg" alt={post.author?.email || 'User'}/>
-                                                <AvatarFallback className="text-[10px] bg-zinc-700 text-zinc-300">
+                                                <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">
                                                     {post.author?.email?.charAt(0).toUpperCase() || 'U'}
                                                 </AvatarFallback>
                                             </Avatar>
@@ -214,16 +214,16 @@ export const IssueList = ({
                         <div key={column.id} className="space-y-3">
                             <div className="flex items-center space-x-2 mb-4">
                                 {getStatusIcon(column.status)}
-                                <h3 className="font-semibold text-zinc-100">{column.title}</h3>
-                                <Badge variant="secondary" className="bg-zinc-700/60 text-zinc-300 border-zinc-600/60">
+                                <h3 className="font-semibold text-foreground">{column.title}</h3>
+                                <Badge variant="secondary" className="bg-secondary text-secondary-foreground border-border">
                                     {getPostsByStatus(column.status).length}
                                 </Badge>
                             </div>
                             <div
-                                className={`space-y-3 min-h-[400px] bg-zinc-900/40 rounded-lg p-4 border-2 transition-all backdrop-blur-sm ${
+                                className={`space-y-3 min-h-[400px] bg-secondary/40 rounded-lg p-4 border-2 transition-all backdrop-blur-sm ${
                                     dragOverColumn === column.status
                                         ? "border-purple-500/60 bg-purple-950/20"
-                                        : "border-zinc-700/40 border-dashed"
+                                        : "border-border border-dashed"
                                 }`}
                                 onDragOver={(e) => handleDragOver(e, column.status)}
                                 onDragLeave={handleDragLeave}
@@ -232,7 +232,7 @@ export const IssueList = ({
                                 {getPostsByStatus(column.status).map((post) => (
                                     <Card
                                         key={post.id}
-                                        className={`cursor-move transition-all bg-zinc-800/60 border-zinc-700/60 hover:border-zinc-600/60 backdrop-blur-sm hover:bg-zinc-800/80 ${
+                                        className={`cursor-move transition-all bg-card/60 border-border hover:border-accent backdrop-blur-sm hover:bg-card/80 ${
                                             draggedPost === post.id ? "opacity-50 rotate-2 scale-105" : ""
                                         }`}
                                         draggable
@@ -242,11 +242,11 @@ export const IssueList = ({
                                         <CardContent className="p-3">
                                             <div className="space-y-2">
                                                 <div className="flex items-start justify-between">
-                                                    <h4 className="font-medium text-sm leading-tight text-zinc-100 pr-2">{post.title}</h4>
+                                                    <h4 className="font-medium text-sm leading-tight text-card-foreground pr-2">{post.title}</h4>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="flex-col h-auto p-1 min-w-[40px] text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700/60"
+                                                        className="flex-col h-auto p-1 min-w-[40px] text-muted-foreground hover:text-foreground hover:bg-accent"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             onUpvote(post.id);
@@ -263,12 +263,12 @@ export const IssueList = ({
                                                            className={`${getTypeColor(post.title)} text-xs px-2 py-0.5`}>
                                                         {getPostType(post.title)}
                                                     </Badge>
-                                                    <div className="flex items-center space-x-1 text-xs text-zinc-400">
+                                                    <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                                                         <Avatar className="h-3 w-3">
                                                             <AvatarImage src="/placeholder.svg"
                                                                          alt={post.author?.email || 'User'}/>
                                                             <AvatarFallback
-                                                                className="text-[8px] bg-zinc-700 text-zinc-300">
+                                                                className="text-[8px] bg-secondary text-secondary-foreground">
                                                                 {post.author?.email?.charAt(0).toUpperCase() || 'U'}
                                                             </AvatarFallback>
                                                         </Avatar>
