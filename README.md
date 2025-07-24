@@ -55,7 +55,7 @@ The easiest way to get TigerBug running is with Docker Compose:
 ```yaml
 services:
   tigerbug:
-    image: tigerbug:latest
+    image: ghcr.io/twobitgames/tigerbug:latest
     ports:
       - "9840:9840"
     volumes:

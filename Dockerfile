@@ -39,5 +39,6 @@ EXPOSE 9840
 
 ENV PORT=9840
 ENV CLIENT_URL="http://localhost:9840"
+ENV UPLOAD_PATH="/app/server/data/attachments"
 
 CMD ["node", "server/src/app.js"]

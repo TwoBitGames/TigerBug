@@ -39,7 +39,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-app.use('/attachments', express.static(path.join(__dirname, '../attachments')));
+app.use('/attachments', express.static(process.env.UPLOAD_PATH || path.join(__dirname, '../attachments')));
 
 app.use(express.static(path.join(__dirname, '../../client/dist')));
 
