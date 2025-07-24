@@ -1,5 +1,5 @@
 const {body, validationResult} = require('express-validator');
-const { Comment, Post, User, Project } = require('../models/associations');
+const { Comment, Post, User, Project, Attachment } = require('../models/associations');
 
 const validateComment = [
     body('message').trim().isLength({min: 1}).withMessage('Message is required'),
@@ -96,8 +96,25 @@ const getComments = async (req, res) => {
             offset,
         });
 
+        const commentsWithAttachments = await Promise.all(
+            comments.map(async (comment) => {
+                const attachments = await Attachment.findAll({
+                    where: {
+                        related_type: 'comment',
+                        related_id: comment.id,
+                    },
+                    order: [['uploaded_at', 'ASC']],
+                });
+
+                return {
+                    ...comment.toJSON(),
+                    attachments,
+                };
+            })
+        );
+
         res.json({
-            comments,
+            comments: commentsWithAttachments,
             pagination: {
                 total: count,
                 page: parseInt(page),

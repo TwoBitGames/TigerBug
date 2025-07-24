@@ -47,6 +47,7 @@ export interface Comment {
     message: string;
     created_at: string;
     author?: User;
+    attachments?: Attachment[];
 }
 
 export interface LoginCredentials {

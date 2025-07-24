@@ -71,11 +71,12 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     const [editDescription, setEditDescription] = useState('');
     const [editStatus, setEditStatus] = useState<'Offen' | 'In Arbeit' | 'Geschlossen'>('Offen');
     const [editIsPrivate, setEditIsPrivate] = useState(false);
-    
-    // Attachment state
+
     const [attachments, setAttachments] = useState<Attachment[]>([]);
     const [selectedAttachment, setSelectedAttachment] = useState<Attachment | null>(null);
     const [isAttachmentDialogOpen, setIsAttachmentDialogOpen] = useState(false);
+
+    const [commentAttachments, setCommentAttachments] = useState<File[]>([]);
 
     const canEdit = isAuthenticated && (
         user?.is_admin ||
@@ -101,8 +102,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             setEditDescription(data.description);
             setEditStatus(data.status);
             setEditIsPrivate(data.is_private);
-            
-            // Set attachments if they exist
+
             if (data.attachments) {
                 setAttachments(data.attachments);
             }
@@ -175,8 +175,18 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 message: newComment.trim(),
             };
 
-            await commentsApi.create(projectId, issueId, commentData);
+            const createdComment = await commentsApi.create(projectId, issueId, commentData);
+
+            if (commentAttachments.length > 0) {
+                try {
+                    await attachmentsApi.upload(commentAttachments, 'comment', createdComment.id);
+                } catch (uploadError) {
+                    console.error('Failed to upload comment attachments:', uploadError);
+                }
+            }
+
             setNewComment('');
+            setCommentAttachments([]);
             await loadComments();
         } catch (error) {
             console.error('Failed to submit comment:', error);
@@ -219,11 +229,26 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
 
         try {
             await attachmentsApi.delete(attachmentId);
-            // Reload the issue to get updated attachments
             await loadIssue();
         } catch (error) {
             console.error('Failed to delete attachment:', error);
         }
+    };
+
+    const handleCommentFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(event.target.files || []);
+        const {valid, invalid} = validateFiles(files);
+
+        if (invalid.length > 0) {
+            alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10 * 1024 * 1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
+        }
+
+        setCommentAttachments(prev => [...prev, ...valid]);
+        event.target.value = '';
+    };
+
+    const removeCommentAttachment = (index: number) => {
+        setCommentAttachments(prev => prev.filter((_, i) => i !== index));
     };
 
     const getStatusBadgeVariant = (status: string) => {
@@ -277,6 +302,37 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             default:
                 return '📎';
         }
+    };
+
+    const validateFiles = (files: File[]): { valid: File[], invalid: File[] } => {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const allowedTypes = [
+            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+            'text/plain', 'application/pdf', 'application/zip',
+            'application/x-zip-compressed', 'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+
+        const valid: File[] = [];
+        const invalid: File[] = [];
+
+        files.forEach(file => {
+            if (file.size <= maxSize && allowedTypes.includes(file.type)) {
+                valid.push(file);
+            } else {
+                invalid.push(file);
+            }
+        });
+
+        return {valid, invalid};
+    };
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     };
 
     const handleAttachmentClick = (attachment: Attachment) => {
@@ -366,10 +422,10 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             {error && (
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-400 text-sm">
                     {error}
-                </div>        )}
+                </div>)}
 
-        <Card className="bg-card border-border backdrop-blur-xl">
-            <CardHeader>
+            <Card className="bg-card border-border backdrop-blur-xl">
+                <CardHeader>
                     <div className="flex items-start justify-between">
                         <div className="flex-1 space-y-3">
                             {isEditing ? (
@@ -509,7 +565,6 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 </CardContent>
             </Card>
 
-            {/* Attachments Section */}
             {attachments.length > 0 && (
                 <Card className="bg-zinc-900/60 border-zinc-800/60 backdrop-blur-xl">
                     <CardHeader>
@@ -528,7 +583,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                 onClick={() => handleAttachmentClick(attachment)}
                             >
                                 {isImageFile(attachment.original_filename) ? (
-                                    <div className="aspect-video bg-zinc-800/60 flex items-center justify-center relative">
+                                    <div
+                                        className="aspect-video bg-zinc-800/60 flex items-center justify-center relative">
                                         <img
                                             src={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/attachments/${attachment.id}`}
                                             alt={attachment.original_filename}
@@ -540,9 +596,11 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                             }}
                                         />
                                         <div className="hidden flex items-center justify-center w-full h-full">
-                                            <span className="text-4xl">{getFileIcon(attachment.original_filename)}</span>
+                                            <span
+                                                className="text-4xl">{getFileIcon(attachment.original_filename)}</span>
                                         </div>
-                                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <div
+                                            className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <div className="text-white text-sm font-medium">Click to view</div>
                                         </div>
                                     </div>
@@ -551,7 +609,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                         <span className="text-4xl">{getFileIcon(attachment.original_filename)}</span>
                                     </div>
                                 )}
-                                
+
                                 <div className="p-3">
                                     <div className="text-sm text-zinc-200 truncate">{attachment.original_filename}</div>
                                     <div className="text-xs text-zinc-400 mt-1">
@@ -591,145 +649,330 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 </Card>
             )}
 
-            <Card className="bg-zinc-900/60 border-zinc-800/60 backdrop-blur-xl">
-                <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-zinc-100">
-                        <MessageSquare className="h-5 w-5"/>
-                        <span>Comments ({comments.length})</span>
-                    </CardTitle>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                    {isAuthenticated && (
-                        <div className="space-y-3 p-4 bg-zinc-800/40 rounded-lg border border-zinc-700/50">
+            <div className="space-y-6">
+                <div className="flex items-center space-x-2 text-zinc-100 mb-6">
+                    <MessageSquare className="h-5 w-5"/>
+                    <h2 className="text-xl font-semibold">Comments ({comments.length})</h2>
+                </div>
+                {isAuthenticated && (
+                    <div className="space-y-4 p-4 bg-zinc-800/40 rounded-xl border border-zinc-700/50">
+                        <div className="space-y-3">
                             <Textarea
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
                                 placeholder="Write a comment..."
                                 rows={3}
-                                className="bg-zinc-800/60 border-zinc-700 text-zinc-100 resize-none"
+                                className="bg-zinc-800/60 border-zinc-700 text-zinc-100 resize-none focus:border-primary/60 focus:ring-primary/20"
                             />
-                            <div className="flex justify-end">
-                                <Button
-                                    onClick={handleSubmitComment}
-                                    disabled={!newComment.trim() || isSubmittingComment}
-                                    size="sm"
-                                    className="bg-primary hover:bg-primary/90"
-                                >
-                                    {isSubmittingComment ? 'Submitting...' : 'Add Comment'}
-                                </Button>
-                            </div>
-                        </div>
-                    )}
 
-                    <div className="space-y-4">
-                        {comments.length === 0 ? (
-                            <div className="text-center py-8 text-zinc-400">
-                                No comments yet. Be the first to comment!
-                            </div>
-                        ) : (
-                            comments.map((comment) => (
-                                <div
-                                    key={comment.id}
-                                    className="p-4 bg-zinc-800/40 rounded-lg border border-zinc-700/50"
+                            {commentAttachments.length > 0 && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-sm text-zinc-300">Attachments
+                                            ({commentAttachments.length})</Label>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setCommentAttachments([])}
+                                            className="text-zinc-400 hover:text-red-400 h-6 text-xs"
+                                        >
+                                            Clear all
+                                        </Button>
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        {commentAttachments.map((file, index) => (
+                                            <div key={index} className="relative group">
+                                                {file.type.startsWith('image/') ? (
+                                                    <div
+                                                        className="relative aspect-square rounded-lg overflow-hidden bg-zinc-700/40 border border-zinc-600/30">
+                                                        <img
+                                                            src={URL.createObjectURL(file)}
+                                                            alt={file.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        <div
+                                                            className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"/>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeCommentAttachment(index)}
+                                                            className="absolute top-1 right-1 text-white bg-black/50 hover:bg-red-500/80 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="h-3 w-3"/>
+                                                        </Button>
+                                                        <div
+                                                            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                                            <p className="text-xs text-white truncate">{file.name}</p>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div
+                                                        className="flex items-center space-x-2 p-2 bg-zinc-700/40 rounded-lg border border-zinc-600/30 group-hover:border-zinc-500/50 transition-colors">
+                                                        <div className="text-sm">{getFileIcon(file.name)}</div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-xs text-zinc-300 truncate">{file.name}</p>
+                                                            <p className="text-xs text-zinc-500">{formatFileSize(file.size)}</p>
+                                                        </div>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeCommentAttachment(index)}
+                                                            className="text-zinc-400 hover:text-red-400 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="h-3 w-3"/>
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <input
+                                    type="file"
+                                    multiple
+                                    onChange={handleCommentFileUpload}
+                                    className="hidden"
+                                    id="comment-file-upload"
+                                    accept="image/*,.pdf,.doc,.docx,.txt"
+                                />
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => document.getElementById("comment-file-upload")?.click()}
+                                    className="text-zinc-400 hover:text-zinc-200 h-8 px-3"
                                 >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="flex items-center space-x-3">
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src="/placeholder.svg"
-                                                             alt={comment.author?.email || 'User'}/>
-                                                <AvatarFallback className="bg-zinc-700 text-zinc-300 text-xs">
+                                    <Paperclip className="h-4 w-4 mr-1"/>
+                                    Attach
+                                </Button>
+                                <div className="text-xs text-zinc-500">
+                                    {newComment.length > 0 && `${newComment.length} characters`}
+                                </div>
+                            </div>
+                            <Button
+                                onClick={handleSubmitComment}
+                                disabled={!newComment.trim() || isSubmittingComment}
+                                size="sm"
+                                className="bg-primary hover:bg-primary/90"
+                            >
+                                {isSubmittingComment ? 'Submitting...' : 'Add Comment'}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                <div className="space-y-6">
+                    {comments.length === 0 ? (
+                        <div className="text-center py-12 text-zinc-400">
+                            <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50"/>
+                            <p className="text-lg font-medium">No comments yet</p>
+                            <p className="text-sm">Be the first to share your thoughts!</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {comments.map((comment, index) => (
+                                <div key={comment.id} className="group relative">
+                                    {index < comments.length - 1 && (
+                                        <div className="absolute left-6 top-16 bottom-0 w-0.5 bg-zinc-700/50"></div>
+                                    )}
+
+                                    <div className="flex space-x-4">
+                                        <div className="flex-shrink-0">
+                                            <Avatar className="h-10 w-10 ring-2 ring-zinc-700/50">
+                                                <AvatarImage
+                                                    src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.author?.email || 'User'}`}
+                                                    alt={comment.author?.email || 'User'}
+                                                />
+                                                <AvatarFallback
+                                                    className="bg-gradient-to-br from-primary/20 to-orange-500/20 text-zinc-300 text-sm font-medium">
                                                     {comment.author?.email?.charAt(0).toUpperCase() || 'U'}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <div>
-                                                <div className="text-sm font-medium text-zinc-200">
-                                                    {comment.author?.email || 'Unknown User'}
-                                                </div>
-                                                <div className="text-xs text-zinc-400">
-                                                    {formatDistanceToNow(new Date(comment.created_at), {addSuffix: true})}
-                                                </div>
-                                            </div>
                                         </div>
 
-                                        {isAuthenticated && (user?.id === comment.author_id || user?.is_admin) && (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-zinc-400 hover:text-zinc-100 h-8 w-8 p-0"
-                                                    >
-                                                        <MoreVertical className="h-4 w-4"/>
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end"
-                                                                     className="bg-zinc-800 border-zinc-700">
-                                                    <DropdownMenuItem
-                                                        onClick={() => {
-                                                            setEditingComment(comment.id);
-                                                            setEditCommentText(comment.message);
-                                                        }}
-                                                        className="text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700"
-                                                    >
-                                                        <Edit2 className="h-4 w-4 mr-2"/>
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator className="bg-zinc-700"/>
-                                                    <DropdownMenuItem
-                                                        onClick={() => handleDeleteComment(comment.id)}
-                                                        className="text-red-400 hover:text-red-300 hover:bg-zinc-700"
-                                                    >
-                                                        <Trash2 className="h-4 w-4 mr-2"/>
-                                                        Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <div
+                                                className="bg-zinc-800/60 rounded-xl border border-zinc-700/50 p-4 group-hover:border-zinc-600/50 transition-colors">
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div className="flex items-center space-x-2">
+                                                            <span className="font-medium text-zinc-200 text-sm">
+                                                                {comment.author?.email?.split('@')[0] || 'Unknown User'}
+                                                            </span>
+                                                        <span className="text-zinc-400 text-xs">•</span>
+                                                        <span className="text-zinc-400 text-xs">
+                                                                {formatDistanceToNow(new Date(comment.created_at), {addSuffix: true})}
+                                                            </span>
+                                                    </div>
+
+                                                    {isAuthenticated && (user?.id === comment.author_id || user?.is_admin) && (
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-100 h-7 w-7 p-0 transition-opacity"
+                                                                >
+                                                                    <MoreVertical className="h-3 w-3"/>
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end"
+                                                                                 className="bg-zinc-800 border-zinc-700">
+                                                                <DropdownMenuItem
+                                                                    onClick={() => {
+                                                                        setEditingComment(comment.id);
+                                                                        setEditCommentText(comment.message);
+                                                                    }}
+                                                                    className="text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700"
+                                                                >
+                                                                    <Edit2 className="h-3 w-3 mr-2"/>
+                                                                    Edit
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuSeparator className="bg-zinc-700"/>
+                                                                <DropdownMenuItem
+                                                                    onClick={() => handleDeleteComment(comment.id)}
+                                                                    className="text-red-400 hover:text-red-300 hover:bg-zinc-700"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3 mr-2"/>
+                                                                    Delete
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    )}
+                                                </div>
+
+                                                {editingComment === comment.id ? (
+                                                    <div className="space-y-3">
+                                                        <Textarea
+                                                            value={editCommentText}
+                                                            onChange={(e) => setEditCommentText(e.target.value)}
+                                                            rows={3}
+                                                            className="bg-zinc-700/60 border-zinc-600 text-zinc-100 resize-none focus:border-primary/60"
+                                                        />
+                                                        <div className="flex items-center space-x-2">
+                                                            <Button
+                                                                onClick={() => handleEditComment(comment.id, editCommentText)}
+                                                                size="sm"
+                                                                className="bg-primary hover:bg-primary/90 h-7"
+                                                            >
+                                                                Save
+                                                            </Button>
+                                                            <Button
+                                                                onClick={() => {
+                                                                    setEditingComment(null);
+                                                                    setEditCommentText('');
+                                                                }}
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="border-zinc-600 text-zinc-300 h-7"
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed text-sm">
+                                                            {comment.message}
+                                                        </p>
+                                                        {comment.attachments && comment.attachments.length > 0 && (
+                                                            <div className="border-t border-zinc-700/50 pt-3 mt-3">
+                                                                <div className="space-y-2">
+                                                                    {comment.attachments.filter(att => att.original_filename.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 0 && (
+                                                                        <div
+                                                                            className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                                            {comment.attachments
+                                                                                .filter(att => att.original_filename.match(/\.(jpg|jpeg|png|gif|webp)$/i))
+                                                                                .map((attachment) => (
+                                                                                    <div
+                                                                                        key={attachment.id}
+                                                                                        className="relative aspect-square rounded-lg overflow-hidden bg-zinc-700/40 border border-zinc-600/30 cursor-pointer group"
+                                                                                        onClick={() => handleAttachmentClick(attachment)}
+                                                                                    >
+                                                                                        <img
+                                                                                            src={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/attachments/${attachment.id}`}
+                                                                                            alt={attachment.original_filename}
+                                                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                                                                            loading="lazy"
+                                                                                            onError={(e) => {
+                                                                                                const target = e.target as HTMLImageElement;
+                                                                                                target.style.display = 'none';
+                                                                                                const parent = target.parentElement;
+                                                                                                if (parent) {
+                                                                                                    parent.innerHTML = `
+                                                                                        <div class="w-full h-full flex items-center justify-center bg-zinc-700/60">
+                                                                                            <div class="text-zinc-400 text-center">
+                                                                                                <div class="text-2xl mb-1">📁</div>
+                                                                                                <div class="text-xs">${attachment.original_filename}</div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    `;
+                                                                                                }
+                                                                                            }}
+                                                                                        />
+                                                                                        <div
+                                                                                            className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"/>
+                                                                                        <div
+                                                                                            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                            <p className="text-xs text-white truncate">{attachment.original_filename}</p>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                ))}
+                                                                        </div>
+                                                                    )}
+
+                                                                    {comment.attachments.filter(att => !att.original_filename.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 0 && (
+                                                                        <div className="space-y-1">
+                                                                            {comment.attachments
+                                                                                .filter(att => !att.original_filename.match(/\.(jpg|jpeg|png|gif|webp)$/i))
+                                                                                .map((attachment) => (
+                                                                                    <div
+                                                                                        key={attachment.id}
+                                                                                        className="flex items-center space-x-2 p-2 bg-zinc-700/30 rounded-lg border border-zinc-600/30 hover:border-zinc-500/50 transition-colors cursor-pointer"
+                                                                                        onClick={() => handleAttachmentClick(attachment)}
+                                                                                    >
+                                                                                        <div
+                                                                                            className="text-lg">{getFileIcon(attachment.original_filename)}</div>
+                                                                                        <div className="flex-1 min-w-0">
+                                                                                            <p className="text-xs text-zinc-300 truncate">{attachment.original_filename}</p>
+                                                                                            <p className="text-xs text-zinc-500">
+                                                                                                {formatDistanceToNow(new Date(attachment.uploaded_at), {addSuffix: true})}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            size="sm"
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                handleDownloadAttachment(attachment.id);
+                                                                                            }}
+                                                                                            className="text-zinc-400 hover:text-zinc-200 h-6 w-6 p-0"
+                                                                                        >
+                                                                                            <Download
+                                                                                                className="h-3 w-3"/>
+                                                                                        </Button>
+                                                                                    </div>
+                                                                                ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-
-                                    {editingComment === comment.id ? (
-                                        <div className="space-y-3">
-                                            <Textarea
-                                                value={editCommentText}
-                                                onChange={(e) => setEditCommentText(e.target.value)}
-                                                rows={3}
-                                                className="bg-zinc-800/60 border-zinc-700 text-zinc-100 resize-none"
-                                            />
-                                            <div className="flex items-center space-x-2">
-                                                <Button
-                                                    onClick={() => handleEditComment(comment.id, editCommentText)}
-                                                    size="sm"
-                                                    className="bg-primary hover:bg-primary/90"
-                                                >
-                                                    Save
-                                                </Button>
-                                                <Button
-                                                    onClick={() => {
-                                                        setEditingComment(null);
-                                                        setEditCommentText('');
-                                                    }}
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="border-zinc-600 text-zinc-300"
-                                                >
-                                                    Cancel
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed">
-                                            {comment.message}
-                                        </p>
-                                    )}
                                 </div>
-                            ))
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
 
-            {/* Fullscreen Image Dialog */}
             <Dialog open={isAttachmentDialogOpen} onOpenChange={setIsAttachmentDialogOpen}>
                 <DialogContent className="max-w-4xl max-h-[90vh] bg-zinc-900/95 border-zinc-800">
                     <DialogHeader>
