@@ -6,6 +6,7 @@ const Comment = require('./Comment');
 const PostVote = require('./PostVote');
 const Attachment = require('./Attachment');
 const SMTPConfig = require('./SMTPConfig');
+const BrandingConfig = require('./BrandingConfig');
 
 // User and Project many-to-many through ProjectMembership
 User.belongsToMany(Project, {
@@ -71,5 +72,6 @@ module.exports = {
   Comment,
   PostVote,
   Attachment,
-  SMTPConfig
+  SMTPConfig,
+  BrandingConfig
 };

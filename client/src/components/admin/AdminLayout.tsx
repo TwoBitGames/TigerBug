@@ -1,5 +1,5 @@
 import { Button } from '../ui/button';
-import { Users, FolderPlus, Mail } from 'lucide-react';
+import { Users, FolderPlus, Mail, Palette } from 'lucide-react';
 
 interface AdminLayoutProps {
   activeSection: string;
@@ -35,6 +35,14 @@ export const AdminLayout = ({ activeSection, onSectionChange, children }: AdminL
           >
             <Mail className="h-4 w-4 mr-2" />
             SMTP Configuration
+          </Button>
+          <Button
+            variant={activeSection === 'branding' ? 'default' : 'ghost'}
+            onClick={() => onSectionChange('branding')}
+            className="w-full justify-start"
+          >
+            <Palette className="h-4 w-4 mr-2" />
+            Branding Configuration
           </Button>
         </div>
       </div>

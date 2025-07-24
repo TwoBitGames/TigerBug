@@ -1,17 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useBranding } from '../contexts/BrandingContext';
 import { ProjectList } from '../components/ProjectList';
 import { projectsApi } from '../services/api';
 import type { Project } from '../types';
 
 export const HomePage = () => {
   const { isAuthenticated } = useAuth();
+  const { brandingConfig } = useBranding();
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
 
   useEffect(() => {
     loadProjects();
   }, []);
+
+  useEffect(() => {
+    if (brandingConfig?.app_name) {
+      document.title = brandingConfig.app_name;
+    }
+  }, [brandingConfig]);
 
   const loadProjects = async () => {
     setIsLoadingProjects(true);
@@ -37,17 +45,20 @@ export const HomePage = () => {
 
   return (
     <div className="container py-8 px-4">
-      {/* Hero Section */}
       <div className="text-center mb-10">
         <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-xl mb-6 border border-primary/20">
-          <img src="/favicon.png" alt="TigerBug" className="h-12 w-12 mr-3" />
+          {brandingConfig?.logo_url ? (
+            <img src={brandingConfig.logo_url} alt={brandingConfig.app_name} className="h-12 w-12 mr-3 rounded-full" />
+          ) : (
+            <img src="/favicon.png" alt={brandingConfig?.app_name || 'TigerBug'} className="h-12 w-12 mr-3 rounded-full" />
+          )}
           <div className="text-left">
-            <h1 className="text-3xl font-bold text-foreground">TigerBug</h1>
+            <h1 className="text-3xl font-bold text-foreground">{brandingConfig?.app_name || 'TigerBug'}</h1>
             <div className="h-0.5 w-12 bg-gradient-to-r from-primary to-orange-400 rounded-full mt-1"></div>
           </div>
         </div>
         <h2 className="text-lg font-medium text-muted-foreground mb-3">
-          Open source bug reporting system for video games
+          {brandingConfig?.tagline || 'Open source bug reporting system for video games'}
         </h2>
       </div>
 

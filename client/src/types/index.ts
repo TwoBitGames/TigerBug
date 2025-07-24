@@ -128,3 +128,38 @@ export interface VerifyEmailData {
 export interface ResendVerificationData {
     email: string;
 }
+
+export interface BrandingConfig {
+    id: number;
+    app_name: string;
+    logo_url: string | null;
+    tagline: string | null;
+    social_links: {
+        github?: string;
+        youtube?: string;
+        steam?: string;
+        twitter?: string;
+        linkedin?: string;
+        facebook?: string;
+        instagram?: string;
+        discord?: string;
+    } | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface UpdateBrandingConfigData {
+    app_name: string;
+    logo_url?: string | null;
+    tagline?: string | null;
+    social_links?: {
+        github?: string;
+        youtube?: string;
+        steam?: string;
+        twitter?: string;
+        linkedin?: string;
+        facebook?: string;
+        instagram?: string;
+        discord?: string;
+    } | null;
+}

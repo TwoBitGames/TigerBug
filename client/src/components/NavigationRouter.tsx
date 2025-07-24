@@ -11,6 +11,7 @@ import {
     DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import {useAuth} from '../contexts/AuthContext';
+import {useBranding} from '../contexts/BrandingContext';
 import {useViewMode} from '../contexts/ViewModeContext';
 import {LoginDialog} from './LoginDialog';
 import {OnboardingDialog} from './OnboardingDialog';
@@ -19,6 +20,7 @@ import type {Project} from '../types';
 
 export const NavigationRouter = () => {
     const {user, logout, isAuthenticated, needsOnboarding} = useAuth();
+    const {brandingConfig} = useBranding();
     const {viewMode, setViewMode} = useViewMode();
     const location = useLocation();
     const navigate = useNavigate();
@@ -79,8 +81,12 @@ export const NavigationRouter = () => {
             <div className="container flex h-14 items-center px-4">
                 <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={handleBackToProjects}>
-                        <img src="/favicon.png" alt="TigerBug" className="h-8 w-8"/>
-                        <h1 className="text-xl font-bold text-primary">TigerBug</h1>
+                        {brandingConfig?.logo_url ? (
+                            <img src={brandingConfig.logo_url} alt={brandingConfig.app_name} className="h-8 w-8 rounded-full"/>
+                        ) : (
+                            <img src="/favicon.png" alt={brandingConfig?.app_name || 'TigerBug'} className="h-8 w-8 rounded-full"/>
+                        )}
+                        <h1 className="text-xl font-bold text-primary">{brandingConfig?.app_name || 'TigerBug'}</h1>
                     </div>
 
                     {isInProject && (

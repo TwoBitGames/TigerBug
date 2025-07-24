@@ -5,6 +5,7 @@ import {AdminLayout} from '../components/admin/AdminLayout';
 import {UserManagement} from '../components/admin/UserManagement';
 import {ProjectManagement} from '../components/admin/ProjectManagement';
 import {SMTPConfiguration} from '../components/admin/SMTPConfiguration';
+import {BrandingConfiguration} from '../components/admin/BrandingConfiguration';
 import {Shield} from 'lucide-react';
 
 export const AdminDashboard = () => {
@@ -37,6 +38,8 @@ export const AdminDashboard = () => {
                 return <ProjectManagement/>;
             case 'smtp':
                 return <SMTPConfiguration/>;
+            case 'branding':
+                return <BrandingConfiguration/>;
             default:
                 return <UserManagement/>;
         }

@@ -58,6 +58,29 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Public branding config endpoint
+app.get('/api/branding-config', async (req, res) => {
+  try {
+    const { BrandingConfig } = require('./models/associations');
+    let brandingConfig = await BrandingConfig.findByPk(1);
+    
+    if (!brandingConfig) {
+      brandingConfig = {
+        id: 1,
+        app_name: 'TigerBug',
+        logo_url: null,
+        tagline: null,
+        social_links: null,
+      };
+    }
+
+    res.json({ brandingConfig });
+  } catch (error) {
+    console.error('Error fetching public branding config:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error('Error:', err);
 

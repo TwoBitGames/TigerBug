@@ -9,6 +9,8 @@ const {
   getSMTPConfig,
   updateSMTPConfig,
   testSMTPConfig,
+  getBrandingConfig,
+  updateBrandingConfig,
 } = require('../controllers/adminController');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 
@@ -24,5 +26,8 @@ router.delete('/projects/:projectId/members/:userId', removeProjectMember);
 router.get('/smtp-config', getSMTPConfig);
 router.put('/smtp-config', updateSMTPConfig);
 router.post('/smtp-config/test', testSMTPConfig);
+
+router.get('/branding-config', getBrandingConfig);
+router.put('/branding-config', updateBrandingConfig);
 
 module.exports = router;

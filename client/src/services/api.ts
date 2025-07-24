@@ -16,6 +16,8 @@ import type {
   ProjectMembership,
   SMTPConfig,
   UpdateSMTPConfigData,
+  BrandingConfig,
+  UpdateBrandingConfigData,
 } from '../types';
 
 export const authApi = {
@@ -135,4 +137,15 @@ export const adminApi = {
   
   testSMTPConfig: (testEmail: string) => 
     post('/admin/smtp-config/test', { test_email: testEmail }),
+
+  getBrandingConfig: () => 
+    get<{ brandingConfig: BrandingConfig }>('/admin/branding-config').then(response => response.brandingConfig),
+  
+  updateBrandingConfig: (data: UpdateBrandingConfigData) => 
+    put<{ brandingConfig: BrandingConfig }>('/admin/branding-config', data).then(response => response.brandingConfig),
+};
+
+export const publicApi = {
+  getBrandingConfig: () => 
+    get<{ brandingConfig: BrandingConfig }>('/branding-config').then(response => response.brandingConfig),
 };
