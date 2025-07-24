@@ -39,6 +39,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use('/attachments', express.static(path.join(__dirname, '../attachments')));
 
+app.use(express.static(path.join(__dirname, '../../client/dist')));
+
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/projects/:projectId/posts', postRoutes);
@@ -63,8 +65,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
 });
 
 async function startServer() {

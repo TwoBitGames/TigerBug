@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+LICENSE
+
+# Node modules
+node_modules
+*/node_modules
+
+# Build outputs
+client/dist
+server/attachments/*
+
+# Development files
+client/.env.local
+client/.env.development
+server/.env
+*.log
+
+# Editor files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Development tools
+.eslintcache
+*.tsbuildinfo
+
+# Test files
+coverage/
+*.test.js
+*.spec.js
+
+# Lock files (we'll use package-lock.json for consistency)
+pnpm-lock.yaml
+yarn.lock
+
+# Database files (will be created in container)
+server/database.sqlite
