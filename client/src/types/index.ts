@@ -6,6 +6,7 @@ export interface User {
     oauth_provider?: string;
     oauth_id?: string;
     created_at: string;
+    is_project_member?: boolean;
 }
 
 export interface Project {

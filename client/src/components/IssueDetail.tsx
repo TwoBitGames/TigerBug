@@ -47,7 +47,7 @@ import {
 import {useAuth} from '../contexts/AuthContext';
 import {useDialog} from '../contexts/DialogContext';
 import {postsApi, commentsApi, attachmentsApi} from '../services/api';
-import type {Post, Comment, UpdatePostData, CreateCommentData, Attachment} from '../types';
+import type {Post, Comment, UpdatePostData, CreateCommentData, Attachment, User as UserType} from '../types';
 
 interface IssueDetailProps {
     issueId: number;
@@ -336,6 +336,20 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    };
+
+    const getUserRoleLabel = (user: UserType | undefined): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } | null => {
+        if (!user) return null;
+        
+        if (user.is_admin) {
+            return { label: 'Admin', variant: 'destructive' };
+        }
+        
+        if (user.is_project_member) {
+            return { label: 'Manager', variant: 'default' };
+        }
+        
+        return { label: 'User', variant: 'outline' };
     };
 
     const handleAttachmentClick = (attachment: Attachment) => {
@@ -696,6 +710,14 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                             <span className="font-medium text-foreground text-sm">
                                                                 {comment.author?.email?.split('@')[0] || 'Unknown User'}
                                                             </span>
+                                                        {(() => {
+                                                            const roleInfo = getUserRoleLabel(comment.author);
+                                                            return roleInfo ? (
+                                                                <Badge variant={roleInfo.variant} className="text-xs h-5 px-2">
+                                                                    {roleInfo.label}
+                                                                </Badge>
+                                                            ) : null;
+                                                        })()}
                                                         <span className="text-muted-foreground text-xs">•</span>
                                                         <span className="text-muted-foreground text-xs">
                                                                 {formatDistanceToNow(new Date(comment.created_at), {addSuffix: true})}

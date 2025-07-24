@@ -58,9 +58,23 @@ const createComment = async (req, res) => {
 
         const fullComment = await Comment.findByPk(comment.id, {
             include: [
-                {model: User, as: 'author', attributes: ['id', 'email']},
+                {model: User, as: 'author', attributes: ['id', 'email', 'is_admin']},
             ],
         });
+
+        let authorIsProjectMember = false;
+        if (fullComment.author) {
+            const authorPermission = await checkProjectPermission(fullComment.author.id, projectId);
+            authorIsProjectMember = authorPermission.hasAccess;
+        }
+
+        const commentWithMembershipInfo = {
+            ...fullComment.toJSON(),
+            author: {
+                ...fullComment.author.toJSON(),
+                is_project_member: authorIsProjectMember,
+            },
+        };
 
         setImmediate(async () => {
             try {
@@ -97,7 +111,7 @@ const createComment = async (req, res) => {
 
         res.status(201).json({
             message: 'Comment created successfully',
-            comment: fullComment,
+            comment: commentWithMembershipInfo,
         });
     } catch (error) {
         console.error('Create comment error:', error);
@@ -138,7 +152,7 @@ const getComments = async (req, res) => {
         const {count, rows: comments} = await Comment.findAndCountAll({
             where: {post_id: postId},
             include: [
-                {model: User, as: 'author', attributes: ['id', 'email']},
+                {model: User, as: 'author', attributes: ['id', 'email', 'is_admin']},
             ],
             order: [['created_at', 'ASC']],
             limit: parseInt(limit),
@@ -155,9 +169,19 @@ const getComments = async (req, res) => {
                     order: [['uploaded_at', 'ASC']],
                 });
 
+                let authorIsProjectMember = false;
+                if (comment.author) {
+                    const authorPermission = await checkProjectPermission(comment.author.id, projectId);
+                    authorIsProjectMember = authorPermission.hasAccess;
+                }
+
                 return {
                     ...comment.toJSON(),
                     attachments,
+                    author: {
+                        ...comment.author.toJSON(),
+                        is_project_member: authorIsProjectMember,
+                    },
                     can_edit: req.user ? canEditComment(req.user, comment, isProjectMember, req.user.is_admin) : false,
                     can_delete: req.user ? canDeleteComment(req.user, comment, isProjectMember, req.user.is_admin) : false,
                 };
@@ -215,13 +239,27 @@ const updateComment = async (req, res) => {
 
         const updatedComment = await Comment.findByPk(comment.id, {
             include: [
-                {model: User, as: 'author', attributes: ['id', 'email']},
+                {model: User, as: 'author', attributes: ['id', 'email', 'is_admin']},
             ],
         });
 
+        let authorIsProjectMember = false;
+        if (updatedComment.author) {
+            const authorPermission = await checkProjectPermission(updatedComment.author.id, projectId);
+            authorIsProjectMember = authorPermission.hasAccess;
+        }
+
+        const commentWithMembershipInfo = {
+            ...updatedComment.toJSON(),
+            author: {
+                ...updatedComment.author.toJSON(),
+                is_project_member: authorIsProjectMember,
+            },
+        };
+
         res.json({
             message: 'Comment updated successfully',
-            comment: updatedComment,
+            comment: commentWithMembershipInfo,
         });
     } catch (error) {
         console.error('Update comment error:', error);
