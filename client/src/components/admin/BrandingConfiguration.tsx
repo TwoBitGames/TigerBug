@@ -193,7 +193,7 @@ export const BrandingConfiguration = () => {
                                         ...brandingForm,
                                         client_url: e.target.value || null
                                     })}
-                                    placeholder="http://localhost:3000"
+                                    placeholder="http://localhost:9840"
                                     type="url"
                                     maxLength={500}
                                 />

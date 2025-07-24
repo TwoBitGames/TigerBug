@@ -18,7 +18,7 @@ const attachmentRoutes = require('./routes/attachments');
 const adminRoutes = require('./routes/admin');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 9840;
 
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
@@ -91,7 +91,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.get('*', (req, res) => {
+app.get('*name', (req, res) => {
   res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
 });
 

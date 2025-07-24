@@ -47,6 +47,25 @@ Every bug report in TigerBug is designed to capture the full context of the issu
 
 ![Screenshot of kanban view](https://i.imgur.com/5MME37b.png)
 
+### 🐳 Quick Start with Docker
+
+The easiest way to get TigerBug running is with Docker Compose:
+
+#### docker-compose.yml
+```yaml
+services:
+  tigerbug:
+    image: tigerbug:latest
+    ports:
+      - "9840:9840"
+    volumes:
+      - ./data:/app/server/data
+    environment:
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRES_IN=7d
+    restart: unless-stopped
+```
+
 ### Why is there no Issues tab?
 
 This project has been made to meet our specific needs.
