@@ -44,6 +44,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from './ui/dialog';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+} from './ui/sheet';
 import {useAuth} from '../contexts/AuthContext';
 import {useDialog} from '../contexts/DialogContext';
 import {postsApi, commentsApi, attachmentsApi} from '../services/api';
@@ -61,7 +69,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
     const [issue, setIssue] = useState<Post | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
     const [newComment, setNewComment] = useState('');
     const [editingComment, setEditingComment] = useState<number | null>(null);
     const [editCommentText, setEditCommentText] = useState('');
@@ -134,10 +142,20 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
 
             const updatedIssue = await postsApi.update(projectId, issueId, updateData);
             setIssue(updatedIssue);
-            setIsEditing(false);
+            setIsEditSheetOpen(false);
         } catch (error) {
             console.error('Failed to update issue:', error);
             setError('Failed to update issue');
+        }
+    };
+
+    const handleOpenEditSheet = () => {
+        if (issue) {
+            setEditTitle(issue.title);
+            setEditDescription(issue.description);
+            setEditStatus(issue.status);
+            setEditIsPrivate(issue.is_private);
+            setIsEditSheetOpen(true);
         }
     };
 
@@ -394,20 +412,11 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                         <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setIsEditing(!isEditing)}
+                            onClick={handleOpenEditSheet}
                             className="border-border text-muted-foreground hover:bg-accent cursor-pointer"
                         >
-                            {isEditing ? (
-                                <>
-                                    <X className="h-4 w-4 mr-2"/>
-                                    Cancel
-                                </>
-                            ) : (
-                                <>
-                                    <Edit2 className="h-4 w-4 mr-2"/>
-                                    Edit
-                                </>
-                            )}
+                            <Edit2 className="h-4 w-4 mr-2"/>
+                            Edit Issue
                         </Button>
                     )}
 
@@ -445,89 +454,32 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 <CardHeader>
                     <div className="flex items-start justify-between">
                         <div className="flex-1 space-y-3">
-                            {isEditing ? (
-                                <div className="space-y-4">
-                                    <div>
-                                        <Label htmlFor="title" className="text-foreground">Title</Label>
-                                        <Input
-                                            id="title"
-                                            value={editTitle}
-                                            onChange={(e) => setEditTitle(e.target.value)}
-                                            className="bg-input border-border text-foreground"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {canChangeStatus && (
-                                            <div>
-                                                <Label htmlFor="status" className="text-foreground">Status</Label>
-                                                <Select value={editStatus}
-                                                        onValueChange={(value: any) => setEditStatus(value)}>
-                                                    <SelectTrigger
-                                                        className="bg-input border-border text-foreground">
-                                                        <SelectValue/>
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-popover border-border">
-                                                        <SelectItem value="Offen">Offen</SelectItem>
-                                                        <SelectItem value="In Arbeit">In Arbeit</SelectItem>
-                                                        <SelectItem value="Geschlossen">Geschlossen</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        )}
-
-                                        {canChangeStatus && (
-                                            <div className="flex items-end">                                <Button
-                                    variant="outline"
-                                    onClick={() => setEditIsPrivate(!editIsPrivate)}
-                                    className={`border-border cursor-pointer ${
-                                        editIsPrivate ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
-                                    }`}
-                                >
-                                                    {editIsPrivate ? (
-                                                        <>
-                                                            <Lock className="h-4 w-4 mr-2"/>
-                                                            Private
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Unlock className="h-4 w-4 mr-2"/>
-                                                            Public
-                                                        </>
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    <CardTitle className="text-xl text-foreground">{issue.title}</CardTitle>
-                                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                                        <div className="flex items-center space-x-2">
-                                            <User className="h-4 w-4"/>
-                                            <span>{issue.author?.email || 'Unknown'}</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Calendar className="h-4 w-4"/>
-                                            <span>{formatDistanceToNow(new Date(issue.created_at), {addSuffix: true})}</span>
-                                        </div>
+                            <div className="space-y-3">
+                                <CardTitle className="text-xl text-foreground">{issue.title}</CardTitle>
+                                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                                    <div className="flex items-center space-x-2">
+                                        <User className="h-4 w-4"/>
+                                        <span>{issue.author?.email || 'Unknown'}</span>
                                     </div>
                                     <div className="flex items-center space-x-2">
-                                        <Badge variant={getStatusBadgeVariant(issue.status)}
-                                               className={getStatusColor(issue.status)}>
-                                            <Tag className="h-3 w-3 mr-1"/>
-                                            {issue.status}
-                                        </Badge>
-                                        {issue.is_private && (
-                                            <Badge variant="outline" className="text-orange-400 border-orange-400">
-                                                <Lock className="h-3 w-3 mr-1"/>
-                                                Private
-                                            </Badge>
-                                        )}
+                                        <Calendar className="h-4 w-4"/>
+                                        <span>{formatDistanceToNow(new Date(issue.created_at), {addSuffix: true})}</span>
                                     </div>
                                 </div>
-                            )}
+                                <div className="flex items-center space-x-2">
+                                    <Badge variant={getStatusBadgeVariant(issue.status)}
+                                           className={getStatusColor(issue.status)}>
+                                        <Tag className="h-3 w-3 mr-1"/>
+                                        {issue.status}
+                                    </Badge>
+                                    {issue.is_private && (
+                                        <Badge variant="outline" className="text-orange-400 border-orange-400">
+                                            <Lock className="h-3 w-3 mr-1"/>
+                                            Private
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex items-center space-x-2 ml-4">
@@ -552,36 +504,14 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                             )}
                         </div>
                     </div>
-
-                    {isEditing && (
-                        <div className="flex items-center space-x-2 pt-4">
-                            <Button onClick={handleSaveIssue} size="sm" className="bg-primary hover:bg-primary/90 cursor-pointer transition-all hover:scale-105">
-                                <Save className="h-4 w-4 mr-2"/>
-                                Save Changes
-                            </Button>
-                        </div>
-                    )}
                 </CardHeader>
 
                 <CardContent>
-                    {isEditing ? (
-                        <div>
-                            <Label htmlFor="description" className="text-foreground">Description</Label>
-                            <Textarea
-                                id="description"
-                                value={editDescription}
-                                onChange={(e) => setEditDescription(e.target.value)}
-                                rows={6}
-                                className="bg-input border-border text-foreground mt-2"
-                            />
-                        </div>
-                    ) : (
-                        <div className="prose prose-sm max-w-none">
-                            <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                                {issue.description}
-                            </p>
-                        </div>
-                    )}
+                    <div className="prose prose-sm max-w-none">
+                        <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                            {issue.description}
+                        </p>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -1046,6 +976,123 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <Sheet open={isEditSheetOpen} onOpenChange={setIsEditSheetOpen}>
+                <SheetContent side="right" className="w-[400px] sm:w-[540px] px-6">
+                    <SheetHeader className="px-0 pb-6">
+                        <SheetTitle className="flex items-center gap-2 text-lg">
+                            <Edit2 className="h-5 w-5"/>
+                            Edit Issue
+                        </SheetTitle>
+                        <SheetDescription className="text-muted-foreground">
+                            Make changes to your issue. Click save when you're done.
+                        </SheetDescription>
+                    </SheetHeader>
+                    
+                    <div className="grid gap-8 py-2 px-0">
+                        <div className="grid gap-3 px-1">
+                            <Label htmlFor="edit-title" className="text-sm font-medium text-foreground">
+                                Title
+                            </Label>
+                            <Input
+                                id="edit-title"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                className="bg-background border-border h-11 px-4"
+                                placeholder="Enter issue title..."
+                            />
+                        </div>
+
+                        <div className="grid gap-3 px-1">
+                            <Label htmlFor="edit-description" className="text-sm font-medium text-foreground">
+                                Description
+                            </Label>
+                            <Textarea
+                                id="edit-description"
+                                value={editDescription}
+                                onChange={(e) => setEditDescription(e.target.value)}
+                                rows={8}
+                                className="bg-background border-border resize-none px-4 py-3"
+                                placeholder="Describe the issue in detail..."
+                            />
+                        </div>
+
+                        {canChangeStatus && (
+                            <>
+                                <div className="grid gap-3 px-1">
+                                    <Label htmlFor="edit-status" className="text-sm font-medium text-foreground">
+                                        Status
+                                    </Label>
+                                    <Select value={editStatus} onValueChange={(value: any) => setEditStatus(value)}>
+                                        <SelectTrigger className="bg-background border-border h-11 px-4">
+                                            <SelectValue placeholder="Select status"/>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="Offen">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                                    Offen
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="In Arbeit">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                                                    In Arbeit
+                                                </div>
+                                            </SelectItem>
+                                            <SelectItem value="Geschlossen">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                                                    Geschlossen
+                                                </div>
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="grid gap-3 px-1">
+                                    <Label className="text-sm font-medium text-foreground">Privacy</Label>
+                                    <div className="flex items-center space-x-3">
+                                        <Button
+                                            type="button"
+                                            variant={!editIsPrivate ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => setEditIsPrivate(false)}
+                                            className="flex-1 h-10"
+                                        >
+                                            <Unlock className="h-4 w-4 mr-2"/>
+                                            Public
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant={editIsPrivate ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => setEditIsPrivate(true)}
+                                            className="flex-1 h-10"
+                                        >
+                                            <Lock className="h-4 w-4 mr-2"/>
+                                            Private
+                                        </Button>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground px-1">
+                                        {editIsPrivate ? 'Only you can see this issue' : 'Everyone can see this issue'}
+                                    </p>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    <SheetFooter className="px-0 pt-6 gap-3">
+                        <Button variant="outline" onClick={() => setIsEditSheetOpen(false)} className="flex-1 h-11">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSaveIssue} className="bg-primary hover:bg-primary/90 flex-1 h-11">
+                            <Save className="h-4 w-4 mr-2"/>
+                            Save Changes
+                        </Button>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
         </div>
     );
 };
