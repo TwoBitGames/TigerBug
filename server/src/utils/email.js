@@ -36,6 +36,11 @@ const initializeMailer = async () => {
   }
 };
 
+const refreshMailer = async () => {
+  transporter = null;
+  return await initializeMailer();
+};
+
 const sendEmail = async (to, subject, text, html = null) => {
   if (!transporter) {
     await initializeMailer();
@@ -207,6 +212,7 @@ TigerBug Team
 
 module.exports = {
   initializeMailer,
+  refreshMailer,
   sendEmail,
   sendPostNotification,
   sendCommentNotification,

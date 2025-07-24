@@ -1,5 +1,5 @@
 const {User, Project, ProjectMembership, SMTPConfig, BrandingConfig} = require('../models/associations');
-const {sendSimpleTestEmail} = require('../utils/email');
+const {sendSimpleTestEmail, refreshMailer} = require('../utils/email');
 
 const getUsers = async (req, res) => {
     try {
@@ -218,6 +218,9 @@ const updateSMTPConfig = async (req, res) => {
             });
         }
 
+        await refreshMailer();
+        console.log('SMTP transporter refreshed with new configuration');
+
         const {password: _, ...configWithoutPassword} = smtpConfig.toJSON();
 
         res.json({
@@ -242,6 +245,8 @@ const testSMTPConfig = async (req, res) => {
         if (!smtpConfig) {
             return res.status(400).json({error: 'SMTP configuration not found'});
         }
+
+        await refreshMailer();
 
         try {
             await sendSimpleTestEmail(test_email);
