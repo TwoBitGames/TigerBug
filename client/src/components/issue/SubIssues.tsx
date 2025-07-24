@@ -9,7 +9,8 @@ import {
     GitBranch,
     Circle,
     CheckCircle,
-    Clock
+    Clock,
+    Lock
 } from 'lucide-react';
 import {PriorityBadge} from '../ui/priority-badge';
 import {IssueTypeBadge} from '../ui/issue-type-badge';
@@ -118,6 +119,11 @@ export const SubIssues: React.FC<SubIssuesProps> = ({
                                                 <div className="flex items-center space-x-2">
                                                     <PriorityBadge priority={subIssue.priority || 'Medium'} size="sm"/>
                                                     <IssueTypeBadge issueType={subIssue.issue_type || 'Bug'} size="sm"/>
+                                                    {subIssue.is_private && (
+                                                        <div title="Private Issue">
+                                                            <Lock className="h-3 w-3 text-orange-400"/>
+                                                        </div>
+                                                    )}
 
                                                     {subIssue.assignee && (
                                                         <div

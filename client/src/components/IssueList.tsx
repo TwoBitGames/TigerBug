@@ -10,7 +10,8 @@ import {
     Filter,
     X,
     Loader2,
-    GitBranch
+    GitBranch,
+    Lock
 } from 'lucide-react';
 import {Button} from './ui/button';
 import {Card, CardContent} from './ui/card';
@@ -323,6 +324,11 @@ export const IssueList = ({
                                         {getStatusIcon(post.status)}
                                         <PriorityBadge priority={post.priority || 'Medium'} size="sm"/>
                                         <IssueTypeBadge issueType={post.issue_type || 'Bug'} size="sm"/>
+                                        {post.is_private && (
+                                            <div title="Private Issue">
+                                                <Lock className="h-3 w-3 text-orange-400"/>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
@@ -442,6 +448,11 @@ export const IssueList = ({
                                                     <div className="flex items-center space-x-2">
                                                         <PriorityBadge priority={post.priority || 'Medium'} size="sm"/>
                                                         <IssueTypeBadge issueType={post.issue_type || 'Bug'} size="sm"/>
+                                                        {post.is_private && (
+                                                            <div title="Private Issue">
+                                                                <Lock className="h-3 w-3 text-orange-400"/>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div
                                                         className="flex items-center space-x-1 text-xs text-muted-foreground">
