@@ -78,7 +78,7 @@ export const NavigationRouter = () => {
             className="border-b border-border bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-14 items-center px-4">
                 <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2 cursor-pointer" onClick={handleBackToProjects}>
+                    <div className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={handleBackToProjects}>
                         <img src="/favicon.png" alt="TigerBug" className="h-8 w-8"/>
                         <h1 className="text-xl font-bold text-primary">TigerBug</h1>
                     </div>
@@ -146,7 +146,7 @@ export const NavigationRouter = () => {
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
-                                    className="flex items-center space-x-2 text-muted-foreground hover:text-foreground hover:bg-accent"
+                                    className="flex items-center space-x-2 text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer transition-colors"
                                 >
                                     <Avatar className="h-6 w-6">
                                         <AvatarImage src="/placeholder.svg?height=24&width=24"

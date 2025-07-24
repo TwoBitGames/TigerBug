@@ -161,7 +161,7 @@ export const IssueList = ({
                     {filteredPosts.map((post) => (
                         <Card
                             key={post.id}
-                            className="hover:shadow-xl transition-all bg-card/60 border-border hover:border-accent backdrop-blur-sm hover:bg-card/80 cursor-pointer py-0"
+                            className="hover:shadow-lg transition-shadow bg-card border-border hover:border-accent backdrop-blur-sm hover:bg-accent/5 cursor-pointer py-0"
                             onClick={() => onIssueClick(post.id)}
                         >
                             <CardContent className="p-3">
@@ -169,7 +169,7 @@ export const IssueList = ({
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="flex-col h-auto p-1.5 min-w-[50px] text-muted-foreground hover:text-foreground hover:bg-accent"
+                                        className="flex-col h-auto p-1.5 min-w-[50px] text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             onUpvote(post.id);
@@ -220,7 +220,7 @@ export const IssueList = ({
                                 </Badge>
                             </div>
                             <div
-                                className={`space-y-3 min-h-[400px] bg-secondary/40 rounded-lg p-4 border-2 transition-all backdrop-blur-sm ${
+                                className={`space-y-3 min-h-[400px] bg-muted/30 rounded-lg p-4 border-2 transition-colors backdrop-blur-sm ${
                                     dragOverColumn === column.status
                                         ? "border-primary/60 bg-primary/10"
                                         : "border-border border-dashed"
@@ -232,7 +232,7 @@ export const IssueList = ({
                                 {getPostsByStatus(column.status).map((post) => (
                                     <Card
                                         key={post.id}
-                                        className={`cursor-move transition-all bg-card/60 border-border hover:border-accent backdrop-blur-sm hover:bg-card/80 py-0 ${
+                                        className={`cursor-move transition-shadow bg-card border-border hover:border-accent backdrop-blur-sm hover:bg-accent/5 py-0 hover:shadow-lg ${
                                             draggedPost === post.id ? "opacity-50 rotate-2 scale-105" : ""
                                         }`}
                                         draggable
@@ -242,16 +242,15 @@ export const IssueList = ({
                                         <CardContent className="p-3">
                                             <div className="space-y-2">
                                                 <div className="flex items-start justify-between">
-                                                    <h4 className="font-medium text-sm leading-tight text-card-foreground pr-2">{post.title}</h4>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="flex-col h-auto p-1 min-w-[40px] text-muted-foreground hover:text-foreground hover:bg-accent"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onUpvote(post.id);
-                                                        }}
-                                                    >
+                                                    <h4 className="font-medium text-sm leading-tight text-card-foreground pr-2">{post.title}</h4>                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="flex-col h-auto p-1 min-w-[40px] text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onUpvote(post.id);
+                                                            }}
+                                                        >
                                                         <ChevronUp className="h-3 w-3 mb-0.5"/>
                                                         <span
                                                             className="text-xs font-medium">{post.vote_count || 0}</span>

@@ -369,7 +369,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 <Button
                     variant="ghost"
                     onClick={onBack}
-                    className="text-muted-foreground hover:text-foreground hover:bg-accent"
+                    className="text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
                 >
                     <ArrowLeft className="h-4 w-4 mr-2"/>
                     Back to Issues
@@ -381,7 +381,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                             variant="outline"
                             size="sm"
                             onClick={() => setIsEditing(!isEditing)}
-                            className="border-border text-muted-foreground hover:bg-accent"
+                            className="border-border text-muted-foreground hover:bg-accent cursor-pointer"
                         >
                             {isEditing ? (
                                 <>
@@ -403,7 +403,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-muted-foreground hover:text-foreground"
+                                    className="text-muted-foreground hover:text-foreground cursor-pointer"
                                 >
                                     <MoreVertical className="h-4 w-4"/>
                                 </Button>
@@ -411,7 +411,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                             <DropdownMenuContent align="end" className="bg-popover border-border">
                                 <DropdownMenuItem
                                     onClick={handleDeleteIssue}
-                                    className="text-red-400 hover:text-red-300 hover:bg-zinc-700"
+                                    className="text-red-400 hover:text-red-300 hover:bg-zinc-700 cursor-pointer"
                                 >
                                     <Trash2 className="h-4 w-4 mr-2"/>
                                     Delete Issue
@@ -434,26 +434,26 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                             {isEditing ? (
                                 <div className="space-y-4">
                                     <div>
-                                        <Label htmlFor="title" className="text-zinc-300">Title</Label>
+                                        <Label htmlFor="title" className="text-foreground">Title</Label>
                                         <Input
                                             id="title"
                                             value={editTitle}
                                             onChange={(e) => setEditTitle(e.target.value)}
-                                            className="bg-zinc-800/60 border-zinc-700 text-zinc-100"
+                                            className="bg-input border-border text-foreground"
                                         />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         {canChangeStatus && (
                                             <div>
-                                                <Label htmlFor="status" className="text-zinc-300">Status</Label>
+                                                <Label htmlFor="status" className="text-foreground">Status</Label>
                                                 <Select value={editStatus}
                                                         onValueChange={(value: any) => setEditStatus(value)}>
                                                     <SelectTrigger
-                                                        className="bg-zinc-800/60 border-zinc-700 text-zinc-100">
+                                                        className="bg-input border-border text-foreground">
                                                         <SelectValue/>
                                                     </SelectTrigger>
-                                                    <SelectContent className="bg-zinc-800 border-zinc-700">
+                                                    <SelectContent className="bg-popover border-border">
                                                         <SelectItem value="Offen">Offen</SelectItem>
                                                         <SelectItem value="In Arbeit">In Arbeit</SelectItem>
                                                         <SelectItem value="Geschlossen">Geschlossen</SelectItem>
@@ -463,14 +463,13 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                         )}
 
                                         {canChangeStatus && (
-                                            <div className="flex items-end">
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => setEditIsPrivate(!editIsPrivate)}
-                                                    className={`border-zinc-600 ${
-                                                        editIsPrivate ? 'bg-zinc-700 text-zinc-100' : 'text-zinc-300'
-                                                    }`}
-                                                >
+                                            <div className="flex items-end">                                <Button
+                                    variant="outline"
+                                    onClick={() => setEditIsPrivate(!editIsPrivate)}
+                                    className={`border-border cursor-pointer ${
+                                        editIsPrivate ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
+                                    }`}
+                                >
                                                     {editIsPrivate ? (
                                                         <>
                                                             <Lock className="h-4 w-4 mr-2"/>
@@ -489,8 +488,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                 </div>
                             ) : (
                                 <div className="space-y-3">
-                                    <CardTitle className="text-xl text-zinc-100">{issue.title}</CardTitle>
-                                    <div className="flex items-center space-x-4 text-sm text-zinc-400">
+                                    <CardTitle className="text-xl text-foreground">{issue.title}</CardTitle>
+                                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                                         <div className="flex items-center space-x-2">
                                             <User className="h-4 w-4"/>
                                             <span>{issue.author?.email || 'Unknown'}</span>
@@ -523,8 +522,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                     variant="outline"
                                     size="sm"
                                     onClick={handleToggleVote}
-                                    className={`border-zinc-600 flex items-center space-x-1 ${
-                                        issue.user_voted ? 'bg-primary/20 text-primary border-primary' : 'text-zinc-300'
+                                    className={`border-border flex items-center space-x-1 cursor-pointer ${
+                                        issue.user_voted ? 'bg-primary/20 text-primary border-primary' : 'text-muted-foreground'
                                     }`}
                                 >
                                     <ChevronUp className="h-4 w-4"/>
@@ -532,18 +531,17 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                 </Button>
                             )}
 
-                            {!isAuthenticated && (
-                                <div className="flex items-center space-x-1 text-zinc-400 text-sm">
-                                    <ChevronUp className="h-4 w-4"/>
-                                    <span>{issue.vote_count || 0} votes</span>
-                                </div>
+                            {!isAuthenticated && (                            <div className="flex items-center space-x-1 text-muted-foreground text-sm">
+                                <ChevronUp className="h-4 w-4"/>
+                                <span>{issue.vote_count || 0} votes</span>
+                            </div>
                             )}
                         </div>
                     </div>
 
                     {isEditing && (
                         <div className="flex items-center space-x-2 pt-4">
-                            <Button onClick={handleSaveIssue} size="sm" className="bg-primary hover:bg-primary/90">
+                            <Button onClick={handleSaveIssue} size="sm" className="bg-primary hover:bg-primary/90 cursor-pointer transition-all hover:scale-105">
                                 <Save className="h-4 w-4 mr-2"/>
                                 Save Changes
                             </Button>
@@ -554,18 +552,18 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 <CardContent>
                     {isEditing ? (
                         <div>
-                            <Label htmlFor="description" className="text-zinc-300">Description</Label>
+                            <Label htmlFor="description" className="text-foreground">Description</Label>
                             <Textarea
                                 id="description"
                                 value={editDescription}
                                 onChange={(e) => setEditDescription(e.target.value)}
                                 rows={6}
-                                className="bg-zinc-800/60 border-zinc-700 text-zinc-100 mt-2"
+                                className="bg-input border-border text-foreground mt-2"
                             />
                         </div>
                     ) : (
-                        <div className="prose prose-invert max-w-none">
-                            <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                        <div className="prose prose-sm max-w-none">
+                            <p className="text-foreground whitespace-pre-wrap leading-relaxed">
                                 {issue.description}
                             </p>
                         </div>
@@ -573,26 +571,25 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 </CardContent>
             </Card>
 
-            {attachments.length > 0 && (
-                <Card className="bg-zinc-900/60 border-zinc-800/60 backdrop-blur-xl">
-                    <CardHeader>
-                        <CardTitle className="flex items-center space-x-2 text-zinc-100">
-                            <Paperclip className="h-5 w-5"/>
-                            <span>Attachments ({attachments.length})</span>
-                        </CardTitle>
-                    </CardHeader>
+            {attachments.length > 0 && (            <Card className="bg-card border-border">
+                <CardHeader>
+                    <CardTitle className="flex items-center space-x-2 text-foreground">
+                        <Paperclip className="h-5 w-5"/>
+                        <span>Attachments ({attachments.length})</span>
+                    </CardTitle>
+                </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {attachments.map((attachment) => (
                             <div
                                 key={attachment.id}
-                                className={`group relative overflow-hidden rounded-lg border border-zinc-700/50 bg-zinc-800/40 transition-all hover:border-zinc-600 ${
-                                    isImageFile(attachment.original_filename) ? 'cursor-pointer hover:scale-105' : ''
+                                className={`group relative overflow-hidden rounded-lg border border-border bg-muted/40 transition-colors hover:border-accent ${
+                                    isImageFile(attachment.original_filename) ? 'cursor-pointer hover:bg-muted/60' : ''
                                 }`}
                                 onClick={() => handleAttachmentClick(attachment)}
                             >
                                 {isImageFile(attachment.original_filename) ? (
                                     <div
-                                        className="aspect-video bg-zinc-800/60 flex items-center justify-center relative">
+                                        className="aspect-video bg-muted flex items-center justify-center relative">
                                         <img
                                             src={`/api/attachments/${attachment.id}`}
                                             alt={attachment.original_filename}
@@ -613,14 +610,14 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="aspect-video bg-zinc-800/60 flex items-center justify-center">
+                                    <div className="aspect-video bg-muted flex items-center justify-center">
                                         <span className="text-4xl">{getFileIcon(attachment.original_filename)}</span>
                                     </div>
                                 )}
 
                                 <div className="p-3">
-                                    <div className="text-sm text-zinc-200 truncate">{attachment.original_filename}</div>
-                                    <div className="text-xs text-zinc-400 mt-1">
+                                    <div className="text-sm text-foreground truncate">{attachment.original_filename}</div>
+                                    <div className="text-xs text-muted-foreground mt-1">
                                         {formatDistanceToNow(new Date(attachment.uploaded_at), {addSuffix: true})}
                                     </div>
                                     <div className="flex items-center justify-between mt-2">
@@ -631,7 +628,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                 e.stopPropagation();
                                                 handleDownloadAttachment(attachment.id);
                                             }}
-                                            className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/60 h-7 px-2"
+                                            className="text-muted-foreground hover:text-foreground hover:bg-accent h-7 px-2"
                                         >
                                             <Download className="h-3 w-3 mr-1"/>
                                             Download
@@ -644,7 +641,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                     e.stopPropagation();
                                                     handleDeleteAttachment(attachment.id);
                                                 }}
-                                                className="text-red-400 hover:text-red-300 hover:bg-zinc-700/60 h-7 px-2"
+                                                className="text-destructive hover:text-destructive/80 hover:bg-accent h-7 px-2"
                                             >
                                                 <X className="h-3 w-3"/>
                                             </Button>
@@ -658,13 +655,13 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
             )}
 
             <div className="space-y-6">
-                <div className="flex items-center space-x-2 text-zinc-100 mb-6">
+                <div className="flex items-center space-x-2 text-foreground mb-6">
                     <MessageSquare className="h-5 w-5"/>
                     <h2 className="text-xl font-semibold">Comments ({comments.length})</h2>
                 </div>
                 <div className="space-y-6">
                     {comments.length === 0 ? (
-                        <div className="text-center py-12 text-zinc-400">
+                        <div className="text-center py-12 text-muted-foreground">
                             <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50"/>
                             <p className="text-lg font-medium">No comments yet</p>
                             <p className="text-sm">Be the first to share your thoughts!</p>
@@ -674,18 +671,18 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                             {comments.map((comment, index) => (
                                 <div key={comment.id} className="group relative">
                                     {index < comments.length - 1 && (
-                                        <div className="absolute left-6 top-16 bottom-0 w-0.5 bg-zinc-700/50"></div>
+                                        <div className="absolute left-6 top-16 bottom-0 w-0.5 bg-border"></div>
                                     )}
 
                                     <div className="flex space-x-4">
                                         <div className="flex-shrink-0">
-                                            <Avatar className="h-10 w-10 ring-2 ring-zinc-700/50">
+                                            <Avatar className="h-10 w-10 ring-2 ring-border">
                                                 <AvatarImage
                                                     src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.author?.email || 'User'}`}
                                                     alt={comment.author?.email || 'User'}
                                                 />
                                                 <AvatarFallback
-                                                    className="bg-gradient-to-br from-primary/20 to-orange-500/20 text-zinc-300 text-sm font-medium">
+                                                    className="bg-gradient-to-br from-primary/20 to-orange-500/20 text-foreground text-sm font-medium">
                                                     {comment.author?.email?.charAt(0).toUpperCase() || 'U'}
                                                 </AvatarFallback>
                                             </Avatar>
@@ -693,14 +690,14 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
 
                                         <div className="flex-1 min-w-0">
                                             <div
-                                                className="bg-zinc-800/60 rounded-xl border border-zinc-700/50 p-4 group-hover:border-zinc-600/50 transition-colors">
+                                                className="bg-muted rounded-xl border border-border p-4 group-hover:border-accent transition-colors">
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div className="flex items-center space-x-2">
-                                                            <span className="font-medium text-zinc-200 text-sm">
+                                                            <span className="font-medium text-foreground text-sm">
                                                                 {comment.author?.email?.split('@')[0] || 'Unknown User'}
                                                             </span>
-                                                        <span className="text-zinc-400 text-xs">•</span>
-                                                        <span className="text-zinc-400 text-xs">
+                                                        <span className="text-muted-foreground text-xs">•</span>
+                                                        <span className="text-muted-foreground text-xs">
                                                                 {formatDistanceToNow(new Date(comment.created_at), {addSuffix: true})}
                                                             </span>
                                                     </div>
@@ -711,32 +708,32 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
-                                                                    className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-100 h-7 w-7 p-0 transition-opacity"
+                                                                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground h-7 w-7 p-0 transition-opacity"
                                                                 >
                                                                     <MoreVertical className="h-3 w-3"/>
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end"
-                                                                                 className="bg-zinc-800 border-zinc-700">
+                                                                                 className="bg-popover border-border">
                                                                 {comment.can_edit && (
                                                                     <DropdownMenuItem
                                                                         onClick={() => {
                                                                             setEditingComment(comment.id);
                                                                             setEditCommentText(comment.message);
                                                                         }}
-                                                                        className="text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700"
+                                                                        className="text-foreground hover:text-accent-foreground hover:bg-accent cursor-pointer"
                                                                     >
                                                                         <Edit2 className="h-3 w-3 mr-2"/>
                                                                         Edit
                                                                     </DropdownMenuItem>
                                                                 )}
                                                                 {comment.can_edit && comment.can_delete && (
-                                                                    <DropdownMenuSeparator className="bg-zinc-700"/>
+                                                                    <DropdownMenuSeparator className="bg-border"/>
                                                                 )}
                                                                 {comment.can_delete && (
                                                                     <DropdownMenuItem
                                                                         onClick={() => handleDeleteComment(comment.id)}
-                                                                        className="text-red-400 hover:text-red-300 hover:bg-zinc-700"
+                                                                        className="text-red-400 hover:text-red-300 hover:bg-destructive/10 cursor-pointer"
                                                                     >
                                                                         <Trash2 className="h-3 w-3 mr-2"/>
                                                                         Delete
@@ -753,7 +750,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                             value={editCommentText}
                                                             onChange={(e) => setEditCommentText(e.target.value)}
                                                             rows={3}
-                                                            className="bg-zinc-700/60 border-zinc-600 text-zinc-100 resize-none focus:border-primary/60"
+                                                            className="bg-input border-border text-foreground resize-none focus:border-primary/60"
                                                         />
                                                         <div className="flex items-center space-x-2">
                                                             <Button
@@ -770,7 +767,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                                 }}
                                                                 variant="outline"
                                                                 size="sm"
-                                                                className="border-zinc-600 text-zinc-300 h-7"
+                                                                className="border-border text-muted-foreground h-7"
                                                             >
                                                                 Cancel
                                                             </Button>
@@ -778,11 +775,11 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                     </div>
                                                 ) : (
                                                     <div className="space-y-3">
-                                                        <p className="text-zinc-300 whitespace-pre-wrap leading-relaxed text-sm">
+                                                        <p className="text-foreground whitespace-pre-wrap leading-relaxed text-sm">
                                                             {comment.message}
                                                         </p>
                                                         {comment.attachments && comment.attachments.length > 0 && (
-                                                            <div className="border-t border-zinc-700/50 pt-3 mt-3">
+                                                            <div className="border-t border-border pt-3 mt-3">
                                                                 <div className="space-y-2">
                                                                     {comment.attachments.filter(att => att.original_filename.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 0 && (
                                                                         <div
@@ -792,7 +789,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                                                 .map((attachment) => (
                                                                                     <div
                                                                                         key={attachment.id}
-                                                                                        className="relative aspect-square rounded-lg overflow-hidden bg-zinc-700/40 border border-zinc-600/30 cursor-pointer group"
+                                                                                        className="relative aspect-square rounded-lg overflow-hidden bg-muted border border-border cursor-pointer group"
                                                                                         onClick={() => handleAttachmentClick(attachment)}
                                                                                     >
                                                                                         <img
@@ -806,8 +803,8 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                                                                 const parent = target.parentElement;
                                                                                                 if (parent) {
                                                                                                     parent.innerHTML = `
-                                                                                        <div class="w-full h-full flex items-center justify-center bg-zinc-700/60">
-                                                                                            <div class="text-zinc-400 text-center">
+                                                                                        <div class="w-full h-full flex items-center justify-center bg-muted">
+                                                                                            <div class="text-muted-foreground text-center">
                                                                                                 <div class="text-2xl mb-1">📁</div>
                                                                                                 <div class="text-xs">${attachment.original_filename}</div>
                                                                                             </div>
@@ -834,14 +831,14 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                                                 .map((attachment) => (
                                                                                     <div
                                                                                         key={attachment.id}
-                                                                                        className="flex items-center space-x-2 p-2 bg-zinc-700/30 rounded-lg border border-zinc-600/30 hover:border-zinc-500/50 transition-colors cursor-pointer"
+                                                                                        className="flex items-center space-x-2 p-2 bg-muted rounded-lg border border-border hover:border-accent transition-colors cursor-pointer"
                                                                                         onClick={() => handleAttachmentClick(attachment)}
                                                                                     >
                                                                                         <div
                                                                                             className="text-lg">{getFileIcon(attachment.original_filename)}</div>
                                                                                         <div className="flex-1 min-w-0">
-                                                                                            <p className="text-xs text-zinc-300 truncate">{attachment.original_filename}</p>
-                                                                                            <p className="text-xs text-zinc-500">
+                                                                                            <p className="text-xs text-foreground truncate">{attachment.original_filename}</p>
+                                                                                            <p className="text-xs text-muted-foreground">
                                                                                                 {formatDistanceToNow(new Date(attachment.uploaded_at), {addSuffix: true})}
                                                                                             </p>
                                                                                         </div>
@@ -852,7 +849,7 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                                                                                                 e.stopPropagation();
                                                                                                 handleDownloadAttachment(attachment.id);
                                                                                             }}
-                                                                                            className="text-zinc-400 hover:text-zinc-200 h-6 w-6 p-0"
+                                                                                            className="text-muted-foreground hover:text-foreground h-6 w-6 p-0"
                                                                                         >
                                                                                             <Download
                                                                                                 className="h-3 w-3"/>
@@ -875,26 +872,26 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                     )}
                 </div>
                 {isAuthenticated && (
-                    <div className="space-y-4 p-7 bg-zinc-800/40 rounded-xl border border-zinc-700/50">
+                    <div className="space-y-4 p-7 bg-muted/40 rounded-xl border border-border">
                         <div className="space-y-3">
                             <Textarea
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
                                 placeholder="Write a comment..."
                                 rows={3}
-                                className="bg-zinc-800/60 border-zinc-700 text-zinc-100 resize-none focus:border-primary/60 focus:ring-primary/20"
+                                className="bg-input border-border text-foreground resize-none focus:border-primary/60 focus:ring-primary/20"
                             />
 
                             {commentAttachments.length > 0 && (
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-sm text-zinc-300">Attachments
+                                        <Label className="text-sm text-foreground">Attachments
                                             ({commentAttachments.length})</Label>
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={() => setCommentAttachments([])}
-                                            className="text-zinc-400 hover:text-red-400 h-6 text-xs"
+                                            className="text-muted-foreground hover:text-red-400 h-6 text-xs"
                                         >
                                             Clear all
                                         </Button>

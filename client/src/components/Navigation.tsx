@@ -57,7 +57,7 @@ export const Navigation = ({
                 <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
                         <img src="/favicon.png" alt="TigerBug" className="h-8 w-8"/>
-                        <h1 className="text-xl font-bold text-primary">TigerBug</h1>
+                        <h1 className="text-xl font-bold text-primary cursor-default">TigerBug</h1>
                     </div>
 
                     {selectedProject && (
@@ -125,7 +125,7 @@ export const Navigation = ({
                             <DropdownMenuTrigger asChild>
                                 <Button
                                     variant="ghost"
-                                    className="flex items-center space-x-2 text-muted-foreground hover:text-foreground hover:bg-accent"
+                                    className="flex items-center space-x-2 text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer transition-colors"
                                 >
                                     <Avatar className="h-6 w-6">
                                         <AvatarImage src="/placeholder.svg?height=24&width=24"

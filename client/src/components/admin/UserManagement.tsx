@@ -98,6 +98,7 @@ export const UserManagement = () => {
                                                 size="sm"
                                                 onClick={() => handleUserRoleUpdate(userData.id, !userData.is_admin)}
                                                 disabled={userData.id === currentUser?.id}
+                                                className="cursor-pointer transition-all hover:scale-105 disabled:cursor-not-allowed disabled:hover:scale-100"
                                             >
                                                 {userData.is_admin ? 'Remove Admin' : 'Make Admin'}
                                             </Button>
