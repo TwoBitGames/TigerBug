@@ -12,15 +12,18 @@ import {AttachmentDialog} from './issue/AttachmentDialog';
 import {CommentsList} from './issue/CommentsList';
 import {CommentForm} from './issue/CommentForm';
 import {EditIssueSheet} from './issue/EditIssueSheet';
+import {SubIssues} from './issue/SubIssues';
 import {isImageFile} from './issue/fileUtils';
 
 interface IssueDetailProps {
     issueId: number;
     projectId: number;
     onBack: () => void;
+    onNavigateToIssue?: (issueId: number) => void;
+    onCreateSubIssue?: (parentIssueId: number) => void;
 }
 
-export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
+export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCreateSubIssue}: IssueDetailProps) => {
     const {isAuthenticated} = useAuth();
     const {confirm, alert} = useDialog();
     const [issue, setIssue] = useState<Post | null>(null);
@@ -296,6 +299,18 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
         }
     };
 
+    const handleSubIssueClick = (subIssueId: number) => {
+        if (onNavigateToIssue) {
+            onNavigateToIssue(subIssueId);
+        }
+    };
+
+    const handleCreateSubIssue = () => {
+        if (onCreateSubIssue && issue) {
+            onCreateSubIssue(issue.id);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -349,6 +364,14 @@ export const IssueDetail = ({issueId, projectId, onBack}: IssueDetailProps) => {
                 onDownload={handleDownloadAttachment}
                 onDelete={handleDeleteAttachment}
             />
+
+            {!issue.parent_issue_id && (
+                <SubIssues
+                    issue={issue}
+                    onSubIssueClick={handleSubIssueClick}
+                    onCreateSubIssue={handleCreateSubIssue}
+                />
+            )}
 
             <CommentsList
                 comments={comments}

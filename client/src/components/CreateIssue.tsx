@@ -10,16 +10,17 @@ import {Badge} from './ui/badge';
 import {useDialog} from '../contexts/DialogContext';
 import {useAuth} from '../contexts/AuthContext';
 import {projectsApi} from '../services/api';
-import type {Project, CreatePostData, User as UserType} from '../types';
+import type {Project, CreatePostData, User as UserType, Post} from '../types';
 
 interface CreateIssueProps {
     projects: Project[];
     selectedProject: number | null;
+    parentIssue?: Post | null;
     onSubmit: (projectId: number, data: CreatePostData, files: File[]) => Promise<void>;
     onCancel: () => void;
 }
 
-export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: CreateIssueProps) => {
+export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, onCancel}: CreateIssueProps) => {
     const {alert} = useDialog();
     const {user} = useAuth();
     const [projectId, setProjectId] = useState<string>(selectedProject?.toString() || '');
@@ -40,6 +41,14 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
     const [projectMembers, setProjectMembers] = useState<UserType[]>([]);
 
     const canEditManagerFields = user?.is_admin || false;
+
+    useEffect(() => {
+        if (parentIssue) {
+            setProjectId(parentIssue.project_id.toString());
+            setTitle(`[SUB] ${parentIssue.title} - `);
+            setPriority(parentIssue.priority || 'Medium');
+        }
+    }, [parentIssue]);
 
     useEffect(() => {
         if (projectId) {
@@ -154,6 +163,10 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
                 priority,
             };
 
+            if (parentIssue) {
+                postData.parent_issue_id = parentIssue.id;
+            }
+
             if (canEditManagerFields) {
                 if (assigneeId && assigneeId !== "unassigned") postData.assignee_id = parseInt(assigneeId);
                 if (storyPoints) postData.story_points = parseInt(storyPoints);
@@ -186,18 +199,36 @@ export const CreateIssue = ({projects, selectedProject, onSubmit, onCancel}: Cre
     return (
         <main className="container py-8 px-4 max-w-2xl mx-auto">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold tracking-tight mb-2 text-foreground">Create New Issue</h1>
-                <p className="text-muted-foreground">Report a bug or request a new feature</p>
-            </div>
+                <h1 className="text-3xl font-bold tracking-tight mb-2 text-foreground">
+                    {parentIssue ? 'Create Sub-Issue' : 'Create New Issue'}
+                </h1>
+                <p className="text-muted-foreground">
+                    {parentIssue 
+                        ? `Create a sub-issue for: ${parentIssue.title}` 
+                        : 'Report a bug or request a new feature'
+                    }
+                </p>                </div>
 
-            <div className="space-y-6">
+                {parentIssue && (
+                    <div className="bg-accent/30 border border-accent/50 rounded-lg p-4">
+                        <div className="flex items-center space-x-3">
+                            <div className="text-sm text-muted-foreground">Parent Issue:</div>
+                            <div className="flex-1">
+                                <div className="font-medium text-sm text-foreground">{parentIssue.title}</div>
+                                <div className="text-xs text-muted-foreground">#{parentIssue.id}</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="space-y-6">
                 <div className={`grid gap-6 ${canEditManagerFields ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                     <div className="space-y-2">
                         <Label htmlFor="project-select" className="text-foreground font-medium">
                             Select Project
                         </Label>
-                        <Select value={projectId} onValueChange={setProjectId}>
-                            <SelectTrigger className="bg-secondary border-border text-foreground hover:bg-accent">
+                        <Select value={projectId} onValueChange={setProjectId} disabled={!!parentIssue}>
+                            <SelectTrigger className="bg-secondary border-border text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
                                 <SelectValue placeholder="Choose a project"/>
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border backdrop-blur-xl">

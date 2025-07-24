@@ -42,6 +42,7 @@ export interface Post {
     due_date?: string;
     labels?: string[];
     is_private: boolean;
+    parent_issue_id?: number;
     created_at: string;
     updated_at: string;
     author?: User;
@@ -55,6 +56,11 @@ export interface Post {
     can_delete?: boolean;
     can_change_status?: boolean;
     can_edit_manager_fields?: boolean;
+    can_create_sub_issue?: boolean;
+    sub_issues?: Post[];
+    parent_issue?: Post;
+    sub_issue_count?: number;
+    sub_issues_closed_count?: number;
 }
 
 export interface Comment {
@@ -100,6 +106,7 @@ export interface CreatePostData {
     time_estimate?: number;
     due_date?: string;
     labels?: string[];
+    parent_issue_id?: number;
 }
 
 export interface UpdatePostData {

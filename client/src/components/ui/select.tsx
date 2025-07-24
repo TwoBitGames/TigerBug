@@ -1,6 +1,6 @@
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
+import { CheckIcon, ChevronDownIcon, ArrowUpFromLineIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -146,7 +146,7 @@ function SelectScrollUpButton({
       )}
       {...props}
     >
-      <ChevronUpIcon className="size-4" />
+      <ArrowUpFromLineIcon className="size-4" />
     </SelectPrimitive.ScrollUpButton>
   )
 }

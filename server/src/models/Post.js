@@ -58,6 +58,14 @@ const Post = sequelize.define('Post', {
             key: 'id',
         },
     },
+    parent_issue_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'posts',
+            key: 'id',
+        },
+    },
     story_points: {
         type: DataTypes.INTEGER,
         allowNull: true,

@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { CreateIssue } from '../components/CreateIssue';
 import { projectsApi, postsApi, attachmentsApi } from '../services/api';
-import type { Project, CreatePostData } from '../types';
+import type { Project, CreatePostData, Post } from '../types';
 
 export const CreateIssuePage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [parentIssue, setParentIssue] = useState<Post | null>(null);
+  const [isLoadingParent, setIsLoadingParent] = useState(false);
 
   useEffect(() => {
     if (!projectId) {
@@ -17,7 +20,12 @@ export const CreateIssuePage = () => {
       return;
     }
     loadProjects();
-  }, [projectId, navigate]);
+
+    const parentId = searchParams.get('parent');
+    if (parentId) {
+      loadParentIssue(parseInt(parentId));
+    }
+  }, [projectId, navigate, searchParams]);
 
   const loadProjects = async () => {
     setIsLoadingProjects(true);
@@ -29,6 +37,18 @@ export const CreateIssuePage = () => {
       setProjects([]);
     } finally {
       setIsLoadingProjects(false);
+    }
+  };
+
+  const loadParentIssue = async (issueId: number) => {
+    setIsLoadingParent(true);
+    try {
+      const issue = await postsApi.getById(parseInt(projectId!), issueId);
+      setParentIssue(issue);
+    } catch (error) {
+      console.error('Failed to load parent issue:', error);
+    } finally {
+      setIsLoadingParent(false);
     }
   };
 
@@ -61,7 +81,7 @@ export const CreateIssuePage = () => {
     return null;
   }
 
-  if (isLoadingProjects) {
+  if (isLoadingProjects || isLoadingParent) {
     return (
       <div className="container py-8 px-4 text-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -75,6 +95,7 @@ export const CreateIssuePage = () => {
       <CreateIssue
         projects={projects}
         selectedProject={parseInt(projectId)}
+        parentIssue={parentIssue}
         onSubmit={handleSubmitIssue}
         onCancel={handleCancel}
       />

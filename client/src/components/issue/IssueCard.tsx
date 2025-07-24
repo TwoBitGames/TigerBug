@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from 'date-fns';
-import { User, Calendar, Tag, Lock, ChevronUp, Loader2 } from 'lucide-react';
+import { User, Calendar, Tag, Lock, ArrowUpFromLine, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -90,7 +90,7 @@ export const IssueCard = ({ issue, isAuthenticated, isVoting = false, onToggleVo
                                 {isVoting ? (
                                     <Loader2 className="h-4 w-4 animate-spin"/>
                                 ) : (
-                                    <ChevronUp className="h-4 w-4"/>
+                                    <ArrowUpFromLine className="h-4 w-4"/>
                                 )}
                                 <span>{issue.vote_count || 0}</span>
                             </Button>
@@ -98,7 +98,7 @@ export const IssueCard = ({ issue, isAuthenticated, isVoting = false, onToggleVo
 
                         {!isAuthenticated && (
                             <div className="flex items-center space-x-1 text-muted-foreground text-sm">
-                                <ChevronUp className="h-4 w-4"/>
+                                <ArrowUpFromLine className="h-4 w-4"/>
                                 <span>{issue.vote_count || 0} votes</span>
                             </div>
                         )}

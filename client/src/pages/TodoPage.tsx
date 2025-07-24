@@ -8,7 +8,7 @@ import {
     Target,
     Filter,
     ChevronDown,
-    ChevronUp,
+    ArrowUpFromLine,
     Loader2,
     BarChart3,
     TrendingUp,
@@ -194,7 +194,7 @@ export const TodoPage = () => {
                         {votingPosts.has(post.id) ? (
                             <Loader2 className="h-3.5 w-3.5 mb-0.5 animate-spin"/>
                         ) : (
-                            <ChevronUp className="h-3.5 w-3.5 mb-0.5"/>
+                            <ArrowUpFromLine className="h-3.5 w-3.5 mb-0.5"/>
                         )}
                         <span className="text-xs font-medium">{post.vote_count || 0}</span>
                     </Button>
@@ -334,7 +334,7 @@ export const TodoPage = () => {
                         </div>
                     </div>
                     <Button variant="ghost" size="sm">
-                        {isCollapsed ? <ChevronDown className="h-4 w-4"/> : <ChevronUp className="h-4 w-4"/>}
+                        {isCollapsed ? <ChevronDown className="h-4 w-4"/> : <ArrowUpFromLine className="h-4 w-4"/>}
                     </Button>
                 </div>
 

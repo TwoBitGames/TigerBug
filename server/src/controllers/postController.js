@@ -10,7 +10,8 @@ const {
     canDeletePost,
     canViewPrivatePost,
     canChangePostStatus,
-    canEditManagerFields
+    canEditManagerFields,
+    canCreateSubIssue
 } = require('../utils/permissions');
 
 const validatePost = [
@@ -24,6 +25,7 @@ const validatePost = [
     body('time_estimate').optional().isInt({min: 0, max: 999}),
     body('due_date').optional().isISO8601(),
     body('labels').optional().isArray(),
+    body('parent_issue_id').optional().isInt(),
 ];
 
 const validateUpdatePost = [
@@ -52,7 +54,7 @@ const createPost = async (req, res) => {
         }
 
         const {projectId} = req.params;
-        const {title, description, is_private = false, priority = 'Medium', issue_type = 'Bug', assignee_id, story_points, time_estimate, due_date, labels = []} = req.body;
+        const {title, description, is_private = false, priority = 'Medium', issue_type = 'Bug', assignee_id, story_points, time_estimate, due_date, labels = [], parent_issue_id} = req.body;
 
         const project = await Project.findByPk(projectId);
         if (!project) {
@@ -67,6 +69,20 @@ const createPost = async (req, res) => {
         const isProjectMember = permission.hasAccess;
         const canEditMgrFields = canEditManagerFields(req.user, isProjectMember, req.user.is_admin);
 
+        if (parent_issue_id) {
+            const parentIssue = await Post.findOne({
+                where: { id: parent_issue_id, project_id: projectId }
+            });
+            
+            if (!parentIssue) {
+                return res.status(404).json({error: 'Parent issue not found'});
+            }
+
+            if (!canCreateSubIssue(req.user, isProjectMember, req.user.is_admin)) {
+                return res.status(403).json({error: 'Only administrators and project managers can create sub-issues'});
+            }
+        }
+
         const postData = {
             project_id: projectId,
             author_id: req.user.id,
@@ -74,6 +90,10 @@ const createPost = async (req, res) => {
             description,
             is_private,
         };
+
+        if (parent_issue_id) {
+            postData.parent_issue_id = parent_issue_id;
+        }
 
         if (canEditMgrFields) {
             if (priority) postData.priority = priority;
@@ -139,7 +159,7 @@ const getPosts = async (req, res) => {
         }
 
         const offset = (page - 1) * limit;
-        const where = {project_id: projectId};
+        const where = {project_id: projectId, parent_issue_id: null}; // Only get parent issues, not sub-issues
 
         if (status) {
             where.status = status;
@@ -174,6 +194,14 @@ const getPosts = async (req, res) => {
                     attributes: ['id'],
                     separate: true,
                 },
+                {
+                    model: Post,
+                    as: 'sub_issues',
+                    attributes: ['id', 'title', 'status', 'priority', 'issue_type', 'assignee_id', 'created_at'],
+                    include: [
+                        {model: User, as: 'assignee', attributes: ['id', 'username', 'profile_picture']}
+                    ]
+                }
             ],
             order: [['created_at', 'DESC']],
             limit: parseInt(limit),
@@ -185,6 +213,8 @@ const getPosts = async (req, res) => {
             vote_count: post.votes.length,
             user_voted: req.user ? post.votes.some(vote => vote.user_id === req.user.id) : false,
             comment_count: post.comments.length,
+            sub_issue_count: post.sub_issues.length,
+            sub_issues_closed_count: post.sub_issues.filter(sub => sub.status === 'Closed').length,
         }));
 
         res.json({
@@ -218,6 +248,22 @@ const getPost = async (req, res) => {
                 {model: User, as: 'assignee', attributes: ['id', 'username', 'email', 'profile_picture']},
                 {model: Project, attributes: ['id', 'name']},
                 {model: PostVote, as: 'votes', attributes: ['user_id']},
+                {
+                    model: Post,
+                    as: 'sub_issues',
+                    include: [
+                        {model: User, as: 'author', attributes: ['id', 'username']},
+                        {model: User, as: 'assignee', attributes: ['id', 'username', 'profile_picture']}
+                    ]
+                },
+                {
+                    model: Post,
+                    as: 'parent_issue',
+                    attributes: ['id', 'title'],
+                    include: [
+                        {model: User, as: 'author', attributes: ['id', 'username']}
+                    ]
+                }
             ],
         });
 
@@ -251,6 +297,9 @@ const getPost = async (req, res) => {
             can_delete: req.user ? canDeletePost(req.user, post, isProjectMember, req.user.is_admin) : false,
             can_change_status: req.user ? canChangePostStatus(req.user, post, isProjectMember, req.user.is_admin) : false,
             can_edit_manager_fields: req.user ? canEditManagerFields(req.user, isProjectMember, req.user.is_admin) : false,
+            can_create_sub_issue: req.user ? canCreateSubIssue(req.user, isProjectMember, req.user.is_admin) : false,
+            sub_issue_count: post.sub_issues ? post.sub_issues.length : 0,
+            sub_issues_closed_count: post.sub_issues ? post.sub_issues.filter(sub => sub.status === 'Closed').length : 0,
             attachments: attachments
         };
 
@@ -329,6 +378,10 @@ const updatePost = async (req, res) => {
             }
             
             await post.update(updates);
+        }
+
+        if (updates.status && post.parent_issue_id) {
+            await checkAndCloseParentIssue(post.parent_issue_id);
         }
 
         setImmediate(async () => {
@@ -449,6 +502,25 @@ const toggleVote = async (req, res) => {
     }
 };
 
+const checkAndCloseParentIssue = async (parentIssueId) => {
+    try {
+        const subIssues = await Post.findAll({
+            where: { parent_issue_id: parentIssueId }
+        });
+
+        const allClosed = subIssues.length > 0 && subIssues.every(subIssue => subIssue.status === 'Closed');
+        
+        if (allClosed) {
+            await Post.update(
+                { status: 'Closed' },
+                { where: { id: parentIssueId } }
+            );
+        }
+    } catch (error) {
+        console.error('Error checking parent issue status:', error);
+    }
+};
+
 module.exports = {
     validatePost,
     validateUpdatePost,
@@ -458,4 +530,5 @@ module.exports = {
     updatePost,
     deletePost,
     toggleVote,
+    checkAndCloseParentIssue,
 };

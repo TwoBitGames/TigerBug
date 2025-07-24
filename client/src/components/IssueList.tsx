@@ -1,4 +1,17 @@
-import {ChevronUp, Circle, Clock, CheckCircle, User, Calendar, Target, Search, Filter, X, Loader2} from 'lucide-react';
+import {
+    ArrowUpFromLine,
+    Circle,
+    Clock,
+    CheckCircle,
+    User,
+    Calendar,
+    Target,
+    Search,
+    Filter,
+    X,
+    Loader2,
+    GitBranch
+} from 'lucide-react';
 import {Button} from './ui/button';
 import {Card, CardContent} from './ui/card';
 import {Badge} from './ui/badge';
@@ -92,7 +105,7 @@ export const IssueList = ({
                 const authorMatch = post.author?.username.toLowerCase().includes(query);
                 const assigneeMatch = post.assignee?.username.toLowerCase().includes(query);
                 const labelMatch = post.labels?.some(label => label.toLowerCase().includes(query));
-                
+
                 if (!titleMatch && !descriptionMatch && !authorMatch && !assigneeMatch && !labelMatch) {
                     return false;
                 }
@@ -203,7 +216,8 @@ export const IssueList = ({
             <div className="mb-6 space-y-4">
                 <div className="flex items-center space-x-4">
                     <div className="flex-1 relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Search
+                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4"/>
                         <Input
                             placeholder="Search issues by title, description, author, assignee, or labels..."
                             value={searchQuery}
@@ -217,7 +231,7 @@ export const IssueList = ({
                                 onClick={() => setSearchQuery('')}
                                 className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                             >
-                                <X className="h-3 w-3" />
+                                <X className="h-3 w-3"/>
                             </Button>
                         )}
                     </div>
@@ -228,7 +242,7 @@ export const IssueList = ({
                             onClick={clearFilters}
                             className="border-border text-muted-foreground hover:bg-accent"
                         >
-                            <X className="h-3 w-3 mr-1" />
+                            <X className="h-3 w-3 mr-1"/>
                             Clear Filters
                         </Button>
                     )}
@@ -236,13 +250,13 @@ export const IssueList = ({
 
                 <div className="flex items-center space-x-3 flex-wrap gap-2">
                     <div className="flex items-center space-x-2">
-                        <Filter className="h-4 w-4 text-muted-foreground" />
+                        <Filter className="h-4 w-4 text-muted-foreground"/>
                         <span className="text-sm text-muted-foreground">Filters:</span>
                     </div>
-                    
+
                     <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                         <SelectTrigger className="w-[120px] h-8 bg-background border-border">
-                            <SelectValue placeholder="Priority" />
+                            <SelectValue placeholder="Priority"/>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Priorities</SelectItem>
@@ -255,7 +269,7 @@ export const IssueList = ({
 
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                         <SelectTrigger className="w-[110px] h-8 bg-background border-border">
-                            <SelectValue placeholder="Type" />
+                            <SelectValue placeholder="Type"/>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Types</SelectItem>
@@ -266,7 +280,7 @@ export const IssueList = ({
 
                     <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
                         <SelectTrigger className="w-[130px] h-8 bg-background border-border">
-                            <SelectValue placeholder="Assignee" />
+                            <SelectValue placeholder="Assignee"/>
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Assignees</SelectItem>
@@ -304,23 +318,25 @@ export const IssueList = ({
                                         {votingPosts.has(post.id) ? (
                                             <Loader2 className="h-3.5 w-3.5 mb-0.5 animate-spin"/>
                                         ) : (
-                                            <ChevronUp className="h-3.5 w-3.5 mb-0.5"/>
+                                            <ArrowUpFromLine className="h-3.5 w-3.5 mb-0.5"/>
                                         )}
                                         <span className="text-xs font-medium">{post.vote_count || 0}</span>
                                     </Button>
 
                                     <div className="flex items-center space-x-2">
                                         {getStatusIcon(post.status)}
-                                        <PriorityBadge priority={post.priority || 'Medium'} size="sm" />
-                                        <IssueTypeBadge issueType={post.issue_type || 'Bug'} size="sm" />
+                                        <PriorityBadge priority={post.priority || 'Medium'} size="sm"/>
+                                        <IssueTypeBadge issueType={post.issue_type || 'Bug'} size="sm"/>
                                     </div>
 
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-medium text-sm leading-tight mb-1 text-card-foreground">{post.title}</h3>
                                         <div className="flex items-center space-x-2 text-xs text-muted-foreground mb-2">
                                             <Avatar className="h-4 w-4">
-                                                <AvatarImage src={post.author?.profile_picture || undefined} alt={post.author?.username || 'User'}/>
-                                                <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">
+                                                <AvatarImage src={post.author?.profile_picture || undefined}
+                                                             alt={post.author?.username || 'User'}/>
+                                                <AvatarFallback
+                                                    className="text-[10px] bg-secondary text-secondary-foreground">
                                                     {post.author?.username?.charAt(0).toUpperCase() || 'U'}
                                                 </AvatarFallback>
                                             </Avatar>
@@ -332,8 +348,10 @@ export const IssueList = ({
                                             {post.assignee && (
                                                 <div className="flex items-center space-x-1">
                                                     <Avatar className="h-3 w-3">
-                                                        <AvatarImage src={post.assignee?.profile_picture || undefined} alt={post.assignee?.username || 'User'}/>
-                                                        <AvatarFallback className="text-[8px] bg-secondary text-secondary-foreground">
+                                                        <AvatarImage src={post.assignee?.profile_picture || undefined}
+                                                                     alt={post.assignee?.username || 'User'}/>
+                                                        <AvatarFallback
+                                                            className="text-[8px] bg-secondary text-secondary-foreground">
                                                             {post.assignee?.username?.charAt(0).toUpperCase() || 'U'}
                                                         </AvatarFallback>
                                                     </Avatar>
@@ -352,6 +370,12 @@ export const IssueList = ({
                                                     <span>{new Date(post.due_date).toLocaleDateString()}</span>
                                                 </div>
                                             )}
+                                            {post.sub_issue_count && post.sub_issue_count > 0 && (
+                                                <div className="flex items-center space-x-1">
+                                                    <GitBranch className="h-3 w-3"/>
+                                                    <span>{post.sub_issues_closed_count || 0}/{post.sub_issue_count} sub-issues</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -368,7 +392,8 @@ export const IssueList = ({
                             <div className="flex items-center space-x-2 mb-4">
                                 {getStatusIcon(column.status)}
                                 <h3 className="font-semibold text-foreground">{column.title}</h3>
-                                <Badge variant="secondary" className="bg-secondary text-secondary-foreground border-border">
+                                <Badge variant="secondary"
+                                       className="bg-secondary text-secondary-foreground border-border">
                                     {getPostsByStatus(column.status).length}
                                 </Badge>
                             </div>
@@ -396,20 +421,21 @@ export const IssueList = ({
                                         <CardContent className="p-3">
                                             <div className="space-y-2">
                                                 <div className="flex items-start justify-between">
-                                                    <h4 className="font-medium text-sm leading-tight text-card-foreground pr-2">{post.title}</h4>                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            disabled={votingPosts.has(post.id)}
-                                                            className="flex-col h-auto p-1 min-w-[40px] text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                onUpvote(post.id);
-                                                            }}
-                                                        >
+                                                    <h4 className="font-medium text-sm leading-tight text-card-foreground pr-2">{post.title}</h4>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        disabled={votingPosts.has(post.id)}
+                                                        className="flex-col h-auto p-1 min-w-[40px] text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onUpvote(post.id);
+                                                        }}
+                                                    >
                                                         {votingPosts.has(post.id) ? (
                                                             <Loader2 className="h-3 w-3 mb-0.5 animate-spin"/>
                                                         ) : (
-                                                            <ChevronUp className="h-3 w-3 mb-0.5"/>
+                                                            <ArrowUpFromLine className="h-3 w-3 mb-0.5"/>
                                                         )}
                                                         <span
                                                             className="text-xs font-medium">{post.vote_count || 0}</span>
@@ -418,10 +444,11 @@ export const IssueList = ({
 
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center space-x-2">
-                                                        <PriorityBadge priority={post.priority || 'Medium'} size="sm" />
-                                                        <IssueTypeBadge issueType={post.issue_type || 'Bug'} size="sm" />
+                                                        <PriorityBadge priority={post.priority || 'Medium'} size="sm"/>
+                                                        <IssueTypeBadge issueType={post.issue_type || 'Bug'} size="sm"/>
                                                     </div>
-                                                    <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                                                    <div
+                                                        className="flex items-center space-x-1 text-xs text-muted-foreground">
                                                         <Avatar className="h-3 w-3">
                                                             <AvatarImage src={post.author?.profile_picture || undefined}
                                                                          alt={post.author?.username || 'User'}/>
@@ -434,20 +461,29 @@ export const IssueList = ({
                                                             className="truncate max-w-[80px]">{post.author?.username || 'Unknown'}</span>
                                                     </div>
                                                 </div>
-                                                
-                                                {(post.assignee || post.story_points || post.due_date) && (
-                                                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+
+                                                {(post.assignee || post.story_points || post.due_date || (post.sub_issue_count && post.sub_issue_count > 0)) && (
+                                                    <div
+                                                        className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
                                                         <div className="flex items-center space-x-2">
                                                             {post.assignee && (
                                                                 <div className="flex items-center space-x-1">
                                                                     <User className="h-3 w-3"/>
-                                                                    <span className="truncate max-w-[60px]">{post.assignee.username}</span>
+                                                                    <span
+                                                                        className="truncate max-w-[60px]">{post.assignee.username}</span>
                                                                 </div>
                                                             )}
                                                             {post.story_points && (
                                                                 <div className="flex items-center space-x-1">
                                                                     <Target className="h-3 w-3"/>
                                                                     <span>{post.story_points}</span>
+                                                                </div>
+                                                            )}
+                                                            {post.sub_issue_count && post.sub_issue_count > 0 && (
+                                                                <div className="flex items-center space-x-1">
+                                                                    <GitBranch className="h-3 w-3"/>
+                                                                    <span
+                                                                        className="text-[10px]">{post.sub_issues_closed_count || 0}/{post.sub_issue_count}</span>
                                                                 </div>
                                                             )}
                                                         </div>
