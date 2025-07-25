@@ -19,7 +19,9 @@ import type {
     UpdateSMTPConfigData,
     BrandingConfig,
     UpdateBrandingConfigData,
-} from '../types';
+    NotificationPreferences,
+    UpdateNotificationPreferencesData,
+} from '@/types';
 
 export const authApi = {
     login: (credentials: LoginCredentials) =>
@@ -232,4 +234,12 @@ export const todoApi = {
             };
         }>(`/todo${queryString ? `?${queryString}` : ''}`);
     },
+};
+
+export const notificationApi = {
+    getPreferences: () =>
+        get<{ preferences: NotificationPreferences }>('/notifications/preferences').then(response => response.preferences),
+
+    updatePreferences: (data: UpdateNotificationPreferencesData) =>
+        put<{ preferences: NotificationPreferences; message: string }>('/notifications/preferences', data).then(response => response.preferences),
 };

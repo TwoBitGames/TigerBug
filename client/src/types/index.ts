@@ -206,3 +206,29 @@ export interface UpdateBrandingConfigData {
     } | null;
     client_url?: string | null;
 }
+
+export interface NotificationPreferences {
+    id: number;
+    user_id: number;
+    notification_level: 'off' | 'important_only' | 'all';
+    post_created: boolean;
+    post_assigned: boolean;
+    post_status_changed: boolean;
+    comment_on_my_post: boolean;
+    admin_comment: boolean;
+    added_to_project: boolean;
+    removed_from_project: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface UpdateNotificationPreferencesData {
+    notification_level?: 'off' | 'important_only' | 'all';
+    post_created?: boolean;
+    post_assigned?: boolean;
+    post_status_changed?: boolean;
+    comment_on_my_post?: boolean;
+    admin_comment?: boolean;
+    added_to_project?: boolean;
+    removed_from_project?: boolean;
+}

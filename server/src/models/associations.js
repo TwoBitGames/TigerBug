@@ -7,8 +7,8 @@ const PostVote = require('./PostVote');
 const Attachment = require('./Attachment');
 const SMTPConfig = require('./SMTPConfig');
 const BrandingConfig = require('./BrandingConfig');
+const UserNotificationPreferences = require('./UserNotificationPreferences');
 
-// User and Project many-to-many through ProjectMembership
 User.belongsToMany(Project, {
   through: ProjectMembership,
   foreignKey: 'user_id',
@@ -72,6 +72,9 @@ Comment.hasMany(Attachment, {
   constraints: false
 });
 
+User.hasOne(UserNotificationPreferences, { foreignKey: 'user_id', as: 'notificationPreferences' });
+UserNotificationPreferences.belongsTo(User, { foreignKey: 'user_id' });
+
 module.exports = {
   User,
   Project,
@@ -81,5 +84,6 @@ module.exports = {
   PostVote,
   Attachment,
   SMTPConfig,
-  BrandingConfig
+  BrandingConfig,
+  UserNotificationPreferences
 };

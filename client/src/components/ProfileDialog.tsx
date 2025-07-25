@@ -12,7 +12,8 @@ import {
     DialogTitle,
 } from './ui/dialog';
 import {Avatar, AvatarFallback, AvatarImage} from './ui/avatar';
-import {Camera, Trash2} from 'lucide-react';
+import {Camera, Trash2, Bell} from 'lucide-react';
+import {NotificationSettingsDialog} from './NotificationSettingsDialog';
 
 interface ProfileDialogProps {
     isOpen: boolean;
@@ -24,6 +25,7 @@ export function ProfileDialog({isOpen, onClose}: ProfileDialogProps) {
     const [username, setUsername] = useState(user?.username || '');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showNotificationSettings, setShowNotificationSettings] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -185,6 +187,24 @@ export function ProfileDialog({isOpen, onClose}: ProfileDialogProps) {
                                     title="Email cannot be changed"
                                 />
                             </div>
+                            
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right">
+                                    Notifications
+                                </Label>
+                                <div className="col-span-3">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setShowNotificationSettings(true)}
+                                        className="w-full justify-start"
+                                    >
+                                        <Bell className="h-4 w-4 mr-2" />
+                                        Email Notification Settings
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     {error && (
@@ -210,6 +230,11 @@ export function ProfileDialog({isOpen, onClose}: ProfileDialogProps) {
                     </DialogFooter>
                 </form>
             </DialogContent>
+            
+            <NotificationSettingsDialog
+                isOpen={showNotificationSettings}
+                onClose={() => setShowNotificationSettings(false)}
+            />
         </Dialog>
     );
 }
