@@ -20,6 +20,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '../ui/select';
+import { DatePicker } from '../ui/date-picker';
 import type { User as UserType } from '../../types';
 
 interface EditIssueSheetProps {
@@ -45,8 +46,8 @@ interface EditIssueSheetProps {
     setEditStoryPoints: (value: string) => void;
     editTimeEstimate: string;
     setEditTimeEstimate: (value: string) => void;
-    editDueDate: string;
-    setEditDueDate: (value: string) => void;
+    editDueDate: Date | undefined;
+    setEditDueDate: (value: Date | undefined) => void;
     editLabels: string[];
     setEditLabels: (value: string[]) => void;
     newEditLabel: string;
@@ -330,11 +331,11 @@ export const EditIssueSheet = ({
                                             <Calendar className="h-4 w-4"/>
                                             Due Date
                                         </Label>
-                                        <Input
+                                        <DatePicker
                                             id="edit-due-date"
-                                            type="date"
-                                            value={editDueDate}
-                                            onChange={(e) => setEditDueDate(e.target.value)}
+                                            date={editDueDate}
+                                            onDateChange={setEditDueDate}
+                                            placeholder="Select due date"
                                             className="bg-input border-border text-foreground"
                                         />
                                     </div>

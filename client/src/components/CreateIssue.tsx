@@ -7,6 +7,7 @@ import {Label} from './ui/label';
 import {Textarea} from './ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from './ui/select';
 import {Badge} from './ui/badge';
+import {DatePicker} from './ui/date-picker';
 import {useDialog} from '../contexts/DialogContext';
 import {useAuth} from '../contexts/AuthContext';
 import {projectsApi} from '../services/api';
@@ -32,7 +33,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
     const [assigneeId, setAssigneeId] = useState<string>('unassigned');
     const [storyPoints, setStoryPoints] = useState<string>('');
     const [timeEstimate, setTimeEstimate] = useState<string>('');
-    const [dueDate, setDueDate] = useState<string>('');
+    const [dueDate, setDueDate] = useState<Date | undefined>();
     const [labels, setLabels] = useState<string[]>([]);
     const [newLabel, setNewLabel] = useState('');
     const [attachments, setAttachments] = useState<File[]>([]);
@@ -171,7 +172,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                 if (assigneeId && assigneeId !== "unassigned") postData.assignee_id = parseInt(assigneeId);
                 if (storyPoints) postData.story_points = parseInt(storyPoints);
                 if (timeEstimate) postData.time_estimate = parseInt(timeEstimate);
-                if (dueDate) postData.due_date = dueDate;
+                if (dueDate) postData.due_date = dueDate.toISOString().split('T')[0];
                 if (labels.length > 0) postData.labels = labels;
             }
 
@@ -186,7 +187,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
             setAssigneeId('unassigned');
             setStoryPoints('');
             setTimeEstimate('');
-            setDueDate('');
+            setDueDate(undefined);
             setLabels([]);
             setAttachments([]);
         } catch (error) {
@@ -455,11 +456,11 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                                 <Calendar className="h-4 w-4"/>
                                 Due Date
                             </Label>
-                            <Input
+                            <DatePicker
                                 id="due-date"
-                                type="date"
-                                value={dueDate}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDueDate(e.target.value)}
+                                date={dueDate}
+                                onDateChange={setDueDate}
+                                placeholder="Select due date"
                                 className="bg-input border-border text-foreground"
                             />
                         </div>

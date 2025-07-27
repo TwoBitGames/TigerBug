@@ -46,7 +46,7 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
     const [editAssigneeId, setEditAssigneeId] = useState<string>('unassigned');
     const [editStoryPoints, setEditStoryPoints] = useState<string>('');
     const [editTimeEstimate, setEditTimeEstimate] = useState<string>('');
-    const [editDueDate, setEditDueDate] = useState<string>('');
+    const [editDueDate, setEditDueDate] = useState<Date | undefined>();
     const [editLabels, setEditLabels] = useState<string[]>([]);
     const [newEditLabel, setNewEditLabel] = useState('');
 
@@ -92,7 +92,7 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
             setEditAssigneeId(data.assignee_id?.toString() || 'unassigned');
             setEditStoryPoints(data.story_points?.toString() || '');
             setEditTimeEstimate(data.time_estimate?.toString() || '');
-            setEditDueDate(data.due_date ? data.due_date.split('T')[0] : '');
+            setEditDueDate(data.due_date ? new Date(data.due_date) : undefined);
             setEditLabels(data.labels || []);
 
             if (data.attachments) {
@@ -119,7 +119,7 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
             setEditAssigneeId(data.assignee_id?.toString() || 'unassigned');
             setEditStoryPoints(data.story_points?.toString() || '');
             setEditTimeEstimate(data.time_estimate?.toString() || '');
-            setEditDueDate(data.due_date ? data.due_date.split('T')[0] : '');
+            setEditDueDate(data.due_date ? new Date(data.due_date) : undefined);
             setEditLabels(data.labels || []);
 
             if (data.attachments) {
@@ -159,7 +159,7 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
                 updateData.assignee_id = editAssigneeId && editAssigneeId !== 'unassigned' ? parseInt(editAssigneeId) : undefined;
                 updateData.story_points = editStoryPoints ? parseInt(editStoryPoints) : undefined;
                 updateData.time_estimate = editTimeEstimate ? parseInt(editTimeEstimate) : undefined;
-                updateData.due_date = editDueDate || undefined;
+                updateData.due_date = editDueDate ? editDueDate.toISOString().split('T')[0] : undefined;
                 updateData.labels = editLabels;
             }
 
@@ -183,7 +183,7 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
             setEditAssigneeId(issue.assignee_id?.toString() || 'unassigned');
             setEditStoryPoints(issue.story_points?.toString() || '');
             setEditTimeEstimate(issue.time_estimate?.toString() || '');
-            setEditDueDate(issue.due_date ? issue.due_date.split('T')[0] : '');
+            setEditDueDate(issue.due_date ? new Date(issue.due_date) : undefined);
             setEditLabels(issue.labels || []);
             setNewEditLabel('');
             setIsEditSheetOpen(true);
