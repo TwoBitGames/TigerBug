@@ -7,6 +7,10 @@ import { CreateIssuePage } from './pages/CreateIssuePage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { EmailVerificationPage } from './pages/EmailVerificationPage';
 import { TodoPage } from './pages/TodoPage';
+import { UserManagement } from './components/admin/UserManagement';
+import { ProjectManagement } from './components/admin/ProjectManagement';
+import { SMTPConfiguration } from './components/admin/SMTPConfiguration';
+import { BrandingConfiguration } from './components/admin/BrandingConfiguration';
 
 export const router = createBrowserRouter([
   {
@@ -35,7 +39,29 @@ export const router = createBrowserRouter([
       },
       {
         path: '/admin',
-        element: <AdminDashboard />
+        element: <AdminDashboard />,
+        children: [
+          {
+            index: true,
+            element: <UserManagement />
+          },
+          {
+            path: 'users',
+            element: <UserManagement />
+          },
+          {
+            path: 'projects',
+            element: <ProjectManagement />
+          },
+          {
+            path: 'smtp',
+            element: <SMTPConfiguration />
+          },
+          {
+            path: 'branding',
+            element: <BrandingConfiguration />
+          }
+        ]
       }
     ]
   },
