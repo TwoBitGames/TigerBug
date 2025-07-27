@@ -66,6 +66,9 @@ export const projectsApi = {
     update: (id: number, data: Partial<CreateProjectData>) =>
         put<{ project: Project }>(`/projects/${id}`, data).then(response => response.project),
 
+    delete: (id: number) =>
+        del(`/projects/${id}`),
+
     addMember: (projectId: number, data: AddMemberData) =>
         post(`/projects/${projectId}/members`, data),
 

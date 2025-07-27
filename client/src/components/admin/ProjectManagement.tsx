@@ -7,10 +7,11 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../ui/table';
 import {Textarea} from '../ui/textarea';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger} from '../ui/dialog';
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '../ui/dropdown-menu';
 import {useDialog} from '../../contexts/DialogContext';
 import {adminApi, projectsApi} from '../../services/api';
 import type {Project, ProjectMembership, CreateProjectData, User} from '../../types';
-import {Plus, Calendar, Users, Eye, UserPlus, Trash2} from 'lucide-react';
+import {Plus, Calendar, Users, Eye, UserPlus, Trash2, MoreVertical, Edit, Trash} from 'lucide-react';
 
 export const ProjectManagement = () => {
     const {confirm, toast} = useDialog();
@@ -21,7 +22,10 @@ export const ProjectManagement = () => {
     const [loading, setLoading] = useState(true);
     const [membersLoading, setMembersLoading] = useState(false);
     const [newProject, setNewProject] = useState<CreateProjectData>({name: '', description: ''});
+    const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [editProjectData, setEditProjectData] = useState<CreateProjectData>({name: '', description: ''});
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string>('');
 
@@ -109,6 +113,57 @@ export const ProjectManagement = () => {
         }
     };
 
+    const handleEditProject = (project: Project) => {
+        setEditingProject(project);
+        setEditProjectData({name: project.name, description: project.description});
+        setIsEditDialogOpen(true);
+    };
+
+    const handleUpdateProject = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingProject) return;
+
+        try {
+            const updatedProject = await projectsApi.update(editingProject.id, editProjectData);
+            setProjects(projects.map(p => p.id === editingProject.id ? updatedProject : p));
+
+            if (selectedProject?.id === editingProject.id) {
+                setSelectedProject(updatedProject);
+            }
+            
+            setIsEditDialogOpen(false);
+            setEditingProject(null);
+            toast('Project updated successfully!');
+        } catch (error) {
+            console.error('Failed to update project:', error);
+            toast('Failed to update project.', { variant: 'destructive' });
+        }
+    };
+
+    const handleDeleteProject = async (project: Project) => {
+        const confirmed = await confirm(
+            `Are you sure you want to delete "${project.name}"? This action cannot be undone and will remove all associated data.`,
+            'Delete Project'
+        );
+        
+        if (confirmed) {
+            try {
+                await projectsApi.delete(project.id);
+                setProjects(projects.filter(p => p.id !== project.id));
+
+                if (selectedProject?.id === project.id) {
+                    setSelectedProject(null);
+                    setProjectMembers([]);
+                }
+                
+                toast('Project deleted successfully!');
+            } catch (error) {
+                console.error('Failed to delete project:', error);
+                toast('Failed to delete project.', { variant: 'destructive' });
+            }
+        }
+    };
+
     if (loading) {
         return (
             <div className="p-6">
@@ -175,7 +230,46 @@ export const ProjectManagement = () => {
                 </Dialog>
             </div>
 
-            {/* Projects Grid */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit Project</DialogTitle>
+                        <DialogDescription>
+                            Update the project name and description.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleUpdateProject} className="space-y-4 mt-4">
+                        <div>
+                            <Label htmlFor="edit-name">Project Name</Label>
+                            <Input
+                                id="edit-name"
+                                value={editProjectData.name}
+                                onChange={(e) => setEditProjectData({...editProjectData, name: e.target.value})}
+                                placeholder="Enter project name"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="edit-description">Description</Label>
+                            <Textarea
+                                id="edit-description"
+                                value={editProjectData.description}
+                                onChange={(e) => setEditProjectData({...editProjectData, description: e.target.value})}
+                                placeholder="Describe what this project is about"
+                                required
+                                rows={3}
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit">Update Project</Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {projects.map((project) => (
                     <Card
@@ -188,9 +282,42 @@ export const ProjectManagement = () => {
                         <CardHeader className="pb-3">
                             <div className="flex justify-between items-start">
                                 <CardTitle className="text-lg">{project.name}</CardTitle>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <Eye className="h-4 w-4"/>
-                                </Button>
+                                <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <Eye className="h-4 w-4"/>
+                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                className="h-8 w-8 p-0"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <MoreVertical className="h-4 w-4"/>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditProject(project);
+                                            }}>
+                                                <Edit className="h-4 w-4 mr-2"/>
+                                                Edit Project
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteProject(project);
+                                                }}
+                                                className="text-destructive focus:text-destructive"
+                                            >
+                                                <Trash className="h-4 w-4 mr-2"/>
+                                                Delete Project
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
                             </div>
                             <CardDescription className="line-clamp-2">
                                 {project.description}
