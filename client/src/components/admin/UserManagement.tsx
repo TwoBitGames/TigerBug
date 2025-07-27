@@ -1,32 +1,76 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/card';
 import {Button} from '../ui/button';
+import {Input} from '../ui/input';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../ui/table';
 import {Badge} from '../ui/badge';
-import {adminApi} from '../../services/api';
-import type {User} from '../../types';
+import {ChevronLeft, ChevronRight, Search, Loader} from 'lucide-react';
+import {adminApi} from '@/services/api.ts';
+import type {User} from '@/types';
 import {useAuth} from '../../contexts/AuthContext';
+
+interface UserPagination {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+}
 
 export const UserManagement = () => {
     const {user: currentUser} = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState<UserPagination>({
+        total: 0,
+        page: 1,
+        limit: 25,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false
+    });
+    const [isSearching, setIsSearching] = useState(false);
+    const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
 
-    useEffect(() => {
-        loadUsers();
-    }, []);
-
-    const loadUsers = async () => {
-        setLoading(true);
+    const loadUsers = useCallback(async (page: number = 1, search: string = '') => {
+        setIsSearching(search !== '');
+        
         try {
-            const usersData = await adminApi.getUsers();
-            setUsers(usersData);
+            const response = await adminApi.getUsers(page, 25, search);
+            setUsers(response.users);
+            setPagination(response.pagination);
+            setCurrentPage(page);
         } catch (error) {
             console.error('Failed to load users:', error);
         } finally {
-            setLoading(false);
+            if (!hasInitiallyLoaded) {
+                setLoading(false);
+                setHasInitiallyLoaded(true);
+            }
+            setIsSearching(false);
         }
-    };
+    }, [hasInitiallyLoaded]);
+
+    useEffect(() => {
+        loadUsers();
+    }, [loadUsers]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchTerm !== '') {
+                loadUsers(1, searchTerm);
+                setCurrentPage(1);
+            } else if (searchTerm === '') {
+                loadUsers(1, '');
+                setCurrentPage(1);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm, loadUsers]);
 
     const handleUserRoleUpdate = async (userId: number, isAdmin: boolean) => {
         try {
@@ -37,11 +81,24 @@ export const UserManagement = () => {
         }
     };
 
+    const handlePageChange = (page: number) => {
+        if (page >= 1 && page <= pagination.totalPages) {
+            loadUsers(page, searchTerm);
+        }
+    };
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+    };
+
     if (loading) {
         return (
             <div className="p-6">
                 <div className="flex items-center justify-center h-64">
-                    <div>Loading users...</div>
+                    <div className="flex items-center gap-2">
+                        <Loader className="h-4 w-4 animate-spin"/>
+                        <span>Loading users...</span>
+                    </div>
                 </div>
             </div>
         );
@@ -56,10 +113,28 @@ export const UserManagement = () => {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>System Users</CardTitle>
-                    <CardDescription>
-                        View and manage user roles across the system
-                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>System Users</CardTitle>
+                            <CardDescription>
+                                View and manage user roles across the system
+                            </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                                <Input
+                                    placeholder="Search users..."
+                                    value={searchTerm}
+                                    onChange={handleSearchChange}
+                                    className="pl-10 w-64"
+                                />
+                                {isSearching && (
+                                    <Loader className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground"/>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <div className="overflow-x-auto">
@@ -111,6 +186,72 @@ export const UserManagement = () => {
                             </TableBody>
                         </Table>
                     </div>
+
+                    {pagination.totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-6">
+                            <div className="text-sm text-muted-foreground">
+                                Showing {((currentPage - 1) * 25) + 1} to {Math.min(currentPage * 25, pagination.total)} of {pagination.total} users
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={!pagination.hasPrev}
+                                    className="flex items-center gap-1"
+                                >
+                                    <ChevronLeft className="h-4 w-4"/>
+                                    Previous
+                                </Button>
+                                
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+                                        let pageNum;
+                                        if (pagination.totalPages <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage >= pagination.totalPages - 2) {
+                                            pageNum = pagination.totalPages - 4 + i;
+                                        } else {
+                                            pageNum = currentPage - 2 + i;
+                                        }
+                                        
+                                        return (
+                                            <Button
+                                                key={pageNum}
+                                                variant={pageNum === currentPage ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() => handlePageChange(pageNum)}
+                                                className="w-8 h-8 p-0"
+                                            >
+                                                {pageNum}
+                                            </Button>
+                                        );
+                                    })}
+                                </div>
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={!pagination.hasNext}
+                                    className="flex items-center gap-1"
+                                >
+                                    Next
+                                    <ChevronRight className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {users.length === 0 && !loading && (
+                        <div className="text-center py-8">
+                            <p className="text-muted-foreground">
+                                {searchTerm ? `No users found matching "${searchTerm}"` : 'No users found'}
+                            </p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

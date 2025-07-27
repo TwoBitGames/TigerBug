@@ -130,8 +130,24 @@ export const attachmentsApi = {
 };
 
 export const adminApi = {
-    getUsers: () =>
-        get<{ users: User[] }>('/admin/users').then(response => response.users),
+    getUsers: (page: number = 1, limit: number = 25, search: string = '') => {
+        const params = new URLSearchParams({
+            page: page.toString(),
+            limit: limit.toString(),
+            ...(search && { search })
+        });
+        return get<{ 
+            users: User[]; 
+            pagination: {
+                total: number;
+                page: number;
+                limit: number;
+                totalPages: number;
+                hasNext: boolean;
+                hasPrev: boolean;
+            }
+        }>(`/admin/users?${params.toString()}`);
+    },
 
     updateUserRole: (userId: number, isAdmin: boolean) =>
         put(`/admin/users/${userId}/role`, {is_admin: isAdmin}),

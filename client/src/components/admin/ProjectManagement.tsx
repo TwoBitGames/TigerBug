@@ -10,16 +10,15 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Dia
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '../ui/dropdown-menu';
 import {ProjectLogo} from '../ui/project-logo';
 import {useDialog} from '../../contexts/DialogContext';
-import {adminApi, projectsApi} from '../../services/api';
-import type {Project, ProjectMembership, CreateProjectData, User} from '../../types';
-import {Plus, Calendar, Users, Eye, UserPlus, Trash2, MoreVertical, Edit, Trash, Upload, X} from 'lucide-react';
+import {adminApi, projectsApi} from '@/services/api.ts';
+import type {Project, ProjectMembership, CreateProjectData, User} from '@/types';
+import {Plus, Calendar, Users, Eye, UserPlus, Trash2, MoreVertical, Edit, Trash, Upload, X, Search, Check, Loader} from 'lucide-react';
 
 export const ProjectManagement = () => {
     const {confirm, toast} = useDialog();
     const [projects, setProjects] = useState<Project[]>([]);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [projectMembers, setProjectMembers] = useState<ProjectMembership[]>([]);
-    const [allUsers, setAllUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [membersLoading, setMembersLoading] = useState(false);
     const [newProject, setNewProject] = useState<CreateProjectData>({name: '', description: ''});
@@ -35,9 +34,14 @@ export const ProjectManagement = () => {
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
+    const [userSearchTerm, setUserSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState<User[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showResults, setShowResults] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
     useEffect(() => {
         loadProjects();
-        loadAllUsers();
     }, []);
 
     const loadProjects = async () => {
@@ -52,14 +56,35 @@ export const ProjectManagement = () => {
         }
     };
 
-    const loadAllUsers = async () => {
+    const searchUsers = async (searchTerm: string) => {
+        if (!searchTerm.trim()) {
+            setSearchResults([]);
+            setShowResults(false);
+            return;
+        }
+
+        setIsSearching(true);
         try {
-            const usersData = await adminApi.getUsers();
-            setAllUsers(usersData);
+            const response = await adminApi.getUsers(1, 10, searchTerm);
+            const filteredUsers = response.users.filter(
+                user => !projectMembers.some(member => member.user_id === user.id)
+            );
+            setSearchResults(filteredUsers);
+            setShowResults(true);
         } catch (error) {
-            console.error('Failed to load users:', error);
+            console.error('Failed to search users:', error);
+        } finally {
+            setIsSearching(false);
         }
     };
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            searchUsers(userSearchTerm);
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [userSearchTerm, projectMembers]);
 
     const loadProjectMembers = async (project: Project) => {
         setMembersLoading(true);
@@ -75,16 +100,20 @@ export const ProjectManagement = () => {
     };
 
     const handleAddMember = async () => {
-        if (!selectedProject || !selectedUserId) return;
+        if (!selectedProject || !selectedUser) return;
 
         try {
             await adminApi.addProjectMember(selectedProject.id, {
-                user_id: parseInt(selectedUserId)
+                user_id: selectedUser.id
             });
 
             await loadProjectMembers(selectedProject);
 
-            setSelectedUserId('');
+            // Reset the search state
+            setSelectedUser(null);
+            setUserSearchTerm('');
+            setSearchResults([]);
+            setShowResults(false);
             setIsAddMemberDialogOpen(false);
         } catch (error) {
             console.error('Failed to add member:', error);
@@ -242,7 +271,6 @@ export const ProjectManagement = () => {
 
     return (
         <div className="p-6 space-y-6">
-            {/* Header with Create Button */}
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold">Project Management</h1>
@@ -438,7 +466,6 @@ export const ProjectManagement = () => {
                 </Card>
             )}
 
-            {/* Project Members Management */}
             {selectedProject && (
                 <Card>
                     <CardHeader>
@@ -470,33 +497,91 @@ export const ProjectManagement = () => {
                                 </DialogHeader>
                                     <div className="space-y-4 mt-4">
                                         <div>
-                                            <Label htmlFor="user-select">Select User</Label>
-                                            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Choose a user"/>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {allUsers
-                                                        .filter(user => !projectMembers.some(member => member.user_id === user.id))
-                                                        .map((user) => (
-                                                            <SelectItem key={user.id} value={user.id.toString()}>
-                                                                {user.username} ({user.email})
-                                                            </SelectItem>
+                                            <Label htmlFor="user-search">Search for User</Label>
+                                            <div className="relative">
+                                                <div className="relative">
+                                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                                                    <Input
+                                                        id="user-search"
+                                                        placeholder="Type to search users..."
+                                                        value={userSearchTerm}
+                                                        onChange={(e) => {
+                                                            setUserSearchTerm(e.target.value);
+                                                            if (selectedUser) {
+                                                                setSelectedUser(null);
+                                                            }
+                                                        }}
+                                                        className="pl-10"
+                                                    />
+                                                    {isSearching && (
+                                                        <Loader className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground"/>
+                                                    )}
+                                                </div>
+
+                                                {selectedUser && (
+                                                    <div className="mt-2 p-2 bg-primary/10 rounded-md flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <Check className="h-4 w-4 text-primary"/>
+                                                            <span className="font-medium">{selectedUser.username}</span>
+                                                            <span className="text-sm text-muted-foreground">({selectedUser.email})</span>
+                                                        </div>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setSelectedUser(null);
+                                                                setUserSearchTerm('');
+                                                            }}
+                                                            className="h-6 w-6 p-0"
+                                                        >
+                                                            <X className="h-3 w-3"/>
+                                                        </Button>
+                                                    </div>
+                                                )}
+
+                                                {showResults && searchResults.length > 0 && !selectedUser && (
+                                                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                                                        {searchResults.map((user) => (
+                                                            <div
+                                                                key={user.id}
+                                                                className="p-2 cursor-pointer hover:bg-accent hover:text-accent-foreground border-b border-border last:border-b-0"
+                                                                onClick={() => {
+                                                                    setSelectedUser(user);
+                                                                    setUserSearchTerm(user.username);
+                                                                    setShowResults(false);
+                                                                }}
+                                                            >
+                                                                <div className="font-medium">{user.username}</div>
+                                                                <div className="text-sm text-muted-foreground">{user.email}</div>
+                                                            </div>
                                                         ))}
-                                                </SelectContent>
-                                            </Select>
+                                                    </div>
+                                                )}
+
+                                                {showResults && searchResults.length === 0 && userSearchTerm.trim() && !isSearching && (
+                                                    <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg p-3 text-center text-muted-foreground">
+                                                        No users found matching "{userSearchTerm}"
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex justify-end gap-2">
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                onClick={() => setIsAddMemberDialogOpen(false)}
+                                                onClick={() => {
+                                                    setIsAddMemberDialogOpen(false);
+                                                    setSelectedUser(null);
+                                                    setUserSearchTerm('');
+                                                    setSearchResults([]);
+                                                    setShowResults(false);
+                                                }}
                                             >
                                                 Cancel
                                             </Button>
                                             <Button
                                                 onClick={handleAddMember}
-                                                disabled={!selectedUserId}
+                                                disabled={!selectedUser}
                                             >
                                                 Add Member
                                             </Button>

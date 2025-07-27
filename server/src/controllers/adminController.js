@@ -1,16 +1,47 @@
 const {User, Project, ProjectMembership, SMTPConfig, BrandingConfig} = require('../models/associations');
+const { Op } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
 const {sendSimpleTestEmail, refreshMailer} = require('../utils/email');
 
 const getUsers = async (req, res) => {
     try {
-        const users = await User.findAll({
+        const { 
+            page = 1, 
+            limit = 25, 
+            search = '' 
+        } = req.query;
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        
+        const whereClause = search ? {
+            [Op.or]: [
+                { username: { [Op.like]: `%${search}%` } },
+                { email: { [Op.like]: `%${search}%` } }
+            ]
+        } : {};
+
+        const { count, rows: users } = await User.findAndCountAll({
+            where: whereClause,
             attributes: ['id', 'username', 'email', 'is_admin', 'created_at', 'profile_picture'],
             order: [['created_at', 'DESC']],
+            limit: parseInt(limit),
+            offset: offset,
         });
 
-        res.json({users});
+        const totalPages = Math.ceil(count / parseInt(limit));
+
+        res.json({
+            users,
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages,
+                hasNext: parseInt(page) < totalPages,
+                hasPrev: parseInt(page) > 1
+            }
+        });
     } catch (error) {
         console.error('Error fetching users:', error);
         res.status(500).json({error: 'Internal server error'});
