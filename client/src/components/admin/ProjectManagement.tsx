@@ -8,10 +8,11 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../
 import {Textarea} from '../ui/textarea';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger} from '../ui/dialog';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '../ui/dropdown-menu';
+import {ProjectLogo} from '../ui/project-logo';
 import {useDialog} from '../../contexts/DialogContext';
 import {adminApi, projectsApi} from '../../services/api';
 import type {Project, ProjectMembership, CreateProjectData, User} from '../../types';
-import {Plus, Calendar, Users, Eye, UserPlus, Trash2, MoreVertical, Edit, Trash} from 'lucide-react';
+import {Plus, Calendar, Users, Eye, UserPlus, Trash2, MoreVertical, Edit, Trash, Upload, X} from 'lucide-react';
 
 export const ProjectManagement = () => {
     const {confirm, toast} = useDialog();
@@ -28,6 +29,11 @@ export const ProjectManagement = () => {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string>('');
+    const [isLogoUploadDialogOpen, setIsLogoUploadDialogOpen] = useState(false);
+    const [logoUploadProject, setLogoUploadProject] = useState<Project | null>(null);
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
     useEffect(() => {
         loadProjects();
@@ -164,6 +170,66 @@ export const ProjectManagement = () => {
         }
     };
 
+    const handleLogoUpload = (project: Project) => {
+        setLogoUploadProject(project);
+        setLogoFile(null);
+        setLogoPreview(null);
+        setIsLogoUploadDialogOpen(true);
+    };
+
+    const handleLogoFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setLogoFile(file);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setLogoPreview(e.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleLogoSubmit = async () => {
+        if (!logoFile || !logoUploadProject) return;
+
+        setIsUploadingLogo(true);
+        try {
+            const updatedProject = await projectsApi.uploadLogo(logoUploadProject.id, logoFile);
+            setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+            if (selectedProject?.id === updatedProject.id) {
+                setSelectedProject(updatedProject);
+            }
+            setIsLogoUploadDialogOpen(false);
+            toast('Project logo uploaded successfully!');
+        } catch (error) {
+            console.error('Failed to upload logo:', error);
+            toast('Failed to upload logo. Please try again.', { variant: 'destructive' });
+        } finally {
+            setIsUploadingLogo(false);
+        }
+    };
+
+    const handleDeleteLogo = async (project: Project) => {
+        const confirmed = await confirm(
+            'Delete Logo',
+            'Are you sure you want to delete this project logo? This action cannot be undone.'
+        );
+        
+        if (confirmed) {
+            try {
+                const updatedProject = await projectsApi.deleteLogo(project.id);
+                setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+                if (selectedProject?.id === updatedProject.id) {
+                    setSelectedProject(updatedProject);
+                }
+                toast('Project logo deleted successfully!');
+            } catch (error) {
+                console.error('Failed to delete logo:', error);
+                toast('Failed to delete logo. Please try again.', { variant: 'destructive' });
+            }
+        }
+    };
+
     if (loading) {
         return (
             <div className="p-6">
@@ -281,7 +347,10 @@ export const ProjectManagement = () => {
                     >
                         <CardHeader className="pb-3">
                             <div className="flex justify-between items-start">
-                                <CardTitle className="text-lg">{project.name}</CardTitle>
+                                <div className="flex items-center space-x-3">
+                                    <ProjectLogo project={project} size="md" />
+                                    <CardTitle className="text-lg">{project.name}</CardTitle>
+                                </div>
                                 <div className="flex items-center gap-1">
                                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                         <Eye className="h-4 w-4"/>
@@ -305,6 +374,22 @@ export const ProjectManagement = () => {
                                                 <Edit className="h-4 w-4 mr-2"/>
                                                 Edit Project
                                             </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleLogoUpload(project);
+                                            }}>
+                                                <Upload className="h-4 w-4 mr-2"/>
+                                                {project.logo_url ? 'Change Logo' : 'Upload Logo'}
+                                            </DropdownMenuItem>
+                                            {project.logo_url && (
+                                                <DropdownMenuItem onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteLogo(project);
+                                                }}>
+                                                    <X className="h-4 w-4 mr-2"/>
+                                                    Remove Logo
+                                                </DropdownMenuItem>
+                                            )}
                                             <DropdownMenuItem 
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -491,6 +576,67 @@ export const ProjectManagement = () => {
                     </CardContent>
                 </Card>
             )}
+
+            <Dialog open={isLogoUploadDialogOpen} onOpenChange={setIsLogoUploadDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {logoUploadProject?.logo_url ? 'Change Project Logo' : 'Upload Project Logo'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Upload an image file to use as the project logo. Supported formats: JPG, PNG, GIF, WebP, SVG.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                        {logoUploadProject && (
+                            <div className="text-center">
+                                <div className="text-sm text-muted-foreground mb-2">Current logo:</div>
+                                <ProjectLogo project={logoUploadProject} size="lg" className="mx-auto" />
+                            </div>
+                        )}
+                        
+                        <div>
+                            <Label htmlFor="logo-file">Select Logo</Label>
+                            <Input
+                                id="logo-file"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleLogoFileChange}
+                                className="mt-1"
+                            />
+                        </div>
+
+                        {logoPreview && (
+                            <div className="text-center">
+                                <div className="text-sm text-muted-foreground mb-2">Preview:</div>
+                                <div className="h-16 w-16 mx-auto rounded-lg border border-border overflow-hidden">
+                                    <img 
+                                        src={logoPreview} 
+                                        alt="Logo preview" 
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-2">
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={() => setIsLogoUploadDialogOpen(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button 
+                                onClick={handleLogoSubmit}
+                                disabled={!logoFile || isUploadingLogo}
+                            >
+                                {isUploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

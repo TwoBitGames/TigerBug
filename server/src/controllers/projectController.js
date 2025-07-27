@@ -1,5 +1,7 @@
 const {body, validationResult} = require('express-validator');
 const { Project, User, ProjectMembership } = require('../models/associations');
+const path = require('path');
+const fs = require('fs');
 
 const validateProject = [
     body('name').trim().isLength({min: 1}).withMessage('Project name is required'),
@@ -33,7 +35,7 @@ const createProject = async (req, res) => {
 const getProjects = async (req, res) => {
     try {
         const projects = await Project.findAll({
-            attributes: ['id', 'name', 'description', 'created_at'],
+            attributes: ['id', 'name', 'description', 'logo_url', 'created_at'],
             order: [['created_at', 'DESC']],
         });
 
@@ -49,7 +51,7 @@ const getProject = async (req, res) => {
         const {id} = req.params;
 
         const project = await Project.findByPk(id, {
-            attributes: ['id', 'name', 'description', 'created_at'],
+            attributes: ['id', 'name', 'description', 'logo_url', 'created_at'],
         });
 
         if (!project) {
@@ -208,6 +210,101 @@ const getProjectMembers = async (req, res) => {
     }
 };
 
+const uploadProjectLogo = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({error: 'No file uploaded'});
+        }
+
+        const {id} = req.params;
+
+        if (!req.user.is_admin) {
+            return res.status(403).json({error: 'Admin privileges required'});
+        }
+
+        const project = await Project.findByPk(id);
+
+        if (!project) {
+            return res.status(404).json({error: 'Project not found'});
+        }
+
+        // Delete old logo if it exists
+        if (project.logo_url) {
+            const oldFilePath = path.join(process.env.UPLOAD_PATH || './attachments', 'project-logos', path.basename(project.logo_url));
+            if (fs.existsSync(oldFilePath)) {
+                try {
+                    fs.unlinkSync(oldFilePath);
+                } catch (error) {
+                    console.error('Error deleting old project logo:', error);
+                }
+            }
+        }
+
+        const relativePath = `/api/project-logos/${path.basename(req.file.path)}`;
+        await project.update({logo_url: relativePath});
+
+        res.json({
+            message: 'Project logo uploaded successfully',
+            project: {
+                id: project.id,
+                name: project.name,
+                description: project.description,
+                logo_url: project.logo_url,
+                created_at: project.created_at,
+            },
+        });
+    } catch (error) {
+        console.error('Project logo upload error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
+const deleteProjectLogo = async (req, res) => {
+    try {
+        const {id} = req.params;
+
+        if (!req.user.is_admin) {
+            return res.status(403).json({error: 'Admin privileges required'});
+        }
+
+        const project = await Project.findByPk(id);
+
+        if (!project) {
+            return res.status(404).json({error: 'Project not found'});
+        }
+
+        if (!project.logo_url) {
+            return res.status(400).json({error: 'No project logo to delete'});
+        }
+
+        // Delete the logo file
+        const filePath = path.join(process.env.UPLOAD_PATH || './attachments', 'project-logos', path.basename(project.logo_url));
+        if (fs.existsSync(filePath)) {
+            try {
+                fs.unlinkSync(filePath);
+            } catch (error) {
+                console.error('Error deleting project logo file:', error);
+            }
+        }
+
+        await project.update({logo_url: null});
+
+        res.json({
+            message: 'Project logo deleted successfully',
+            project: {
+                id: project.id,
+                name: project.name,
+                description: project.description,
+                logo_url: null,
+                created_at: project.created_at,
+            },
+        });
+    } catch (error) {
+        console.error('Project logo delete error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
 module.exports = {
     validateProject,
     createProject,
@@ -218,4 +315,6 @@ module.exports = {
     addMember,
     removeMember,
     getProjectMembers,
+    uploadProjectLogo,
+    deleteProjectLogo,
 };

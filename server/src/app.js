@@ -57,6 +57,8 @@ app.use('/attachments', express.static(process.env.UPLOAD_PATH || path.join(__di
 
 app.use('/api/profile-pictures', express.static(path.join(process.env.UPLOAD_PATH || path.join(__dirname, '../attachments'), 'profiles')));
 
+app.use('/api/project-logos', express.static(path.join(process.env.UPLOAD_PATH || path.join(__dirname, '../attachments'), 'project-logos')));
+
 app.use(express.static(path.join(__dirname, '../../client/dist')));
 
 app.use('/api/auth', authRoutes);

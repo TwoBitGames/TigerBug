@@ -63,20 +63,17 @@ export const projectsApi = {
     create: (data: CreateProjectData) =>
         post<{ project: Project }>('/projects', data).then(response => response.project),
 
-    update: (id: number, data: Partial<CreateProjectData>) =>
+    update: (id: number, data: CreateProjectData) =>
         put<{ project: Project }>(`/projects/${id}`, data).then(response => response.project),
 
     delete: (id: number) =>
         del(`/projects/${id}`),
 
-    addMember: (projectId: number, data: AddMemberData) =>
-        post(`/projects/${projectId}/members`, data),
+    uploadLogo: (id: number, file: File) =>
+        uploadFile<{ project: Project }>(`/projects/${id}/logo`, file, 'logo').then(response => response.project),
 
-    removeMember: (projectId: number, userId: number) =>
-        del(`/projects/${projectId}/members/${userId}`),
-
-    getMembers: (projectId: number) =>
-        get<{ members: User[] }>(`/projects/${projectId}/members`).then(response => response.members),
+    deleteLogo: (id: number) =>
+        del<{ project: Project }>(`/projects/${id}/logo`).then(response => response.project),
 };
 
 export const postsApi = {

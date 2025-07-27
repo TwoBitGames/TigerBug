@@ -15,6 +15,10 @@ const Project = sequelize.define('Project', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  logo_url: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   status: {
     type: DataTypes.TEXT,
     defaultValue: 'active',

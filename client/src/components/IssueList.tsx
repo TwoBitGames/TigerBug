@@ -20,6 +20,7 @@ import {Input} from './ui/input';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from './ui/select';
 import {PriorityBadge} from './ui/priority-badge';
 import {IssueTypeBadge} from './ui/issue-type-badge';
+import {ProjectLogo} from './ui/project-logo';
 import type {Post, Project} from '../types';
 import {useState, useMemo} from 'react';
 
@@ -160,12 +161,7 @@ export const IssueList = ({
         <main className="container py-6 px-4">
             <div className="mb-6">
                 <div className="flex items-center space-x-3 mb-2">
-                    <div
-                        className="h-8 w-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
-            <span className="text-primary font-semibold">
-              {project.name.charAt(0).toUpperCase()}
-            </span>
-                    </div>
+                    <ProjectLogo project={project} size="sm" />
                     <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
                 </div>
                 <p className="text-muted-foreground">{project.description}</p>

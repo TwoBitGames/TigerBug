@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { ProjectLogo } from './ui/project-logo';
 import type { Project } from '../types';
 
 interface ProjectListProps {
@@ -29,12 +30,7 @@ export const ProjectList = ({ projects, onProjectSelect }: ProjectListProps) => 
                         >
                             <CardHeader className="pb-3">
                                 <div className="flex items-center space-x-3">
-                                    <div
-                                        className="h-10 w-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
-                      <span className="text-primary font-semibold text-lg">
-                        {project.name.charAt(0).toUpperCase()}
-                      </span>
-                                    </div>
+                                    <ProjectLogo project={project} size="md" />
                                     <div className="flex-1 min-w-0">
                                         <CardTitle
                                             className="text-lg leading-tight text-card-foreground">{project.name}</CardTitle>

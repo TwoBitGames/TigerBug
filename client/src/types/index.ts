@@ -15,6 +15,7 @@ export interface Project {
     id: number;
     name: string;
     description: string;
+    logo_url?: string | null;
     created_at: string;
 }
 
