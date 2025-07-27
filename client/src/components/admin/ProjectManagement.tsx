@@ -3,7 +3,6 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/c
 import {Button} from '../ui/button';
 import {Input} from '../ui/input';
 import {Label} from '../ui/label';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../ui/select';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../ui/table';
 import {Textarea} from '../ui/textarea';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger} from '../ui/dialog';
@@ -27,7 +26,6 @@ export const ProjectManagement = () => {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
-    const [selectedUserId, setSelectedUserId] = useState<string>('');
     const [isLogoUploadDialogOpen, setIsLogoUploadDialogOpen] = useState(false);
     const [logoUploadProject, setLogoUploadProject] = useState<Project | null>(null);
     const [logoFile, setLogoFile] = useState<File | null>(null);
