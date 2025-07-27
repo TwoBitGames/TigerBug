@@ -59,6 +59,8 @@ app.use('/api/profile-pictures', express.static(path.join(process.env.UPLOAD_PAT
 
 app.use('/api/project-logos', express.static(path.join(process.env.UPLOAD_PATH || path.join(__dirname, '../attachments'), 'project-logos')));
 
+app.use('/api/branding', express.static(path.join(process.env.UPLOAD_PATH || path.join(__dirname, '../attachments'), 'branding')));
+
 app.use(express.static(path.join(__dirname, '../../client/dist')));
 
 app.use('/api/auth', authRoutes);

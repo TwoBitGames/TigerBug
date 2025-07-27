@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/card';
 import {Button} from '../ui/button';
 import {Input} from '../ui/input';
@@ -8,7 +8,7 @@ import {Separator} from '../ui/separator';
 import {useDialog} from '../../contexts/DialogContext';
 import {useBranding} from '../../contexts/BrandingContext';
 import {adminApi} from '@/services/api.ts';
-import {Palette, Upload, Link, Trash2} from 'lucide-react';
+import {Palette, Upload, Link, Trash2, Image} from 'lucide-react';
 import type {UpdateBrandingConfigData} from '@/types';
 
 const SOCIAL_PLATFORMS = [
@@ -26,9 +26,13 @@ export const BrandingConfiguration = () => {
     const {alert, toast} = useDialog();
     const {refreshBranding} = useBranding();
     const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState<{ logo: boolean; banner: boolean }>({logo: false, banner: false});
+    const logoInputRef = useRef<HTMLInputElement>(null);
+    const bannerInputRef = useRef<HTMLInputElement>(null);
     const [brandingForm, setBrandingForm] = useState<UpdateBrandingConfigData>({
         app_name: '',
         logo_url: null,
+        banner_url: null,
         tagline: null,
         social_links: null,
         client_url: null,
@@ -45,6 +49,7 @@ export const BrandingConfiguration = () => {
             setBrandingForm({
                 app_name: brandingData.app_name,
                 logo_url: brandingData.logo_url,
+                banner_url: brandingData.banner_url,
                 tagline: brandingData.tagline,
                 social_links: brandingData.social_links,
                 client_url: brandingData.client_url,
@@ -100,6 +105,70 @@ export const BrandingConfiguration = () => {
         return brandingForm.social_links?.[platform as keyof typeof brandingForm.social_links] || '';
     };
 
+    const handleFileUpload = async (type: 'logo' | 'banner', file: File) => {
+        if (!file.type.startsWith('image/')) {
+            toast('Please select an image file', {variant: 'destructive'});
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            toast('Image file size must be less than 5MB', {variant: 'destructive'});
+            return;
+        }
+
+        setUploading(prev => ({...prev, [type]: true}));
+
+        try {
+            const updatedConfig = await adminApi.uploadBrandingAsset(file, type);
+            setBrandingForm(prev => ({
+                ...prev,
+                [`${type}_url`]: updatedConfig[`${type}_url`],
+            }));
+            toast(`${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully!`, {variant: 'success'});
+            await refreshBranding();
+        } catch (error: any) {
+            console.error(`Failed to upload ${type}:`, error);
+            toast(error.message || `Failed to upload ${type}`, {variant: 'destructive'});
+        } finally {
+            setUploading(prev => ({...prev, [type]: false}));
+        }
+    };
+
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleFileUpload('logo', file);
+        }
+        if (logoInputRef.current) {
+            logoInputRef.current.value = '';
+        }
+    };
+
+    const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleFileUpload('banner', file);
+        }
+        if (bannerInputRef.current) {
+            bannerInputRef.current.value = '';
+        }
+    };
+
+    const handleDeleteAsset = async (type: 'logo' | 'banner') => {
+        try {
+            const updatedConfig = await adminApi.deleteBrandingAsset(type);
+            setBrandingForm(prev => ({
+                ...prev,
+                [`${type}_url`]: updatedConfig[`${type}_url`],
+            }));
+            toast(`${type.charAt(0).toUpperCase() + type.slice(1)} removed successfully!`, {variant: 'success'});
+            await refreshBranding();
+        } catch (error: any) {
+            console.error(`Failed to delete ${type}:`, error);
+            toast(error.message || `Failed to remove ${type}`, {variant: 'destructive'});
+        }
+    };
+
     if (loading) {
         return (
             <div className="p-6">
@@ -146,23 +215,111 @@ export const BrandingConfiguration = () => {
                             </div>
 
                             <div>
-                                <Label htmlFor="logo_url" className="flex items-center gap-2">
+                                <Label className="flex items-center gap-2">
                                     <Upload className="h-4 w-4"/>
-                                    Logo URL
+                                    Logo
                                 </Label>
-                                <Input
-                                    id="logo_url"
-                                    value={brandingForm.logo_url || ''}
-                                    onChange={(e) => setBrandingForm({
-                                        ...brandingForm,
-                                        logo_url: e.target.value || null
-                                    })}
-                                    placeholder="https://example.com/logo.png"
-                                    type="url"
-                                    maxLength={2000}
-                                />
+                                <div className="flex flex-col gap-3">
+                                    {brandingForm.logo_url && (
+                                        <div className="flex items-center gap-3 p-3 border rounded-lg">
+                                            <img
+                                                src={brandingForm.logo_url}
+                                                alt="Current logo"
+                                                className="h-12 w-12 rounded-full object-cover"
+                                            />
+                                            <div className="flex-1">
+                                                <p className="text-sm font-medium">Current Logo</p>
+                                                <p className="text-xs text-muted-foreground">Click upload to replace</p>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleDeleteAsset('logo')}
+                                                className="text-destructive hover:text-destructive"
+                                            >
+                                                <Trash2 className="h-4 w-4"/>
+                                            </Button>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => logoInputRef.current?.click()}
+                                            disabled={uploading.logo}
+                                            className="flex-1"
+                                        >
+                                            <Upload className="h-4 w-4 mr-2"/>
+                                            {uploading.logo ? 'Uploading...' : brandingForm.logo_url ? 'Replace Logo' : 'Upload Logo'}
+                                        </Button>
+                                    </div>
+                                    <input
+                                        ref={logoInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleLogoUpload}
+                                        className="hidden"
+                                    />
+                                </div>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    Optional: Direct URL to your logo image. Leave empty to use the default favicon.
+                                    Optional: Upload your logo image. Leave empty to use the default favicon.
+                                </p>
+                            </div>
+
+                            <div>
+                                <Label className="flex items-center gap-2">
+                                    <Image className="h-4 w-4"/>
+                                    Banner
+                                </Label>
+                                <div className="flex flex-col gap-3">
+                                    {brandingForm.banner_url && (
+                                        <div className="flex flex-col gap-3 p-3 border rounded-lg">
+                                            <img
+                                                src={brandingForm.banner_url}
+                                                alt="Current banner"
+                                                className="w-full h-24 rounded-lg object-cover"
+                                            />
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-sm font-medium">Current Banner</p>
+                                                    <p className="text-xs text-muted-foreground">Click upload to
+                                                        replace</p>
+                                                </div>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteAsset('banner')}
+                                                    className="text-destructive hover:text-destructive"
+                                                >
+                                                    <Trash2 className="h-4 w-4"/>
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => bannerInputRef.current?.click()}
+                                            disabled={uploading.banner}
+                                            className="flex-1"
+                                        >
+                                            <Upload className="h-4 w-4 mr-2"/>
+                                            {uploading.banner ? 'Uploading...' : brandingForm.banner_url ? 'Replace Banner' : 'Upload Banner'}
+                                        </Button>
+                                    </div>
+                                    <input
+                                        ref={bannerInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleBannerUpload}
+                                        className="hidden"
+                                    />
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Optional: Upload a banner image that will be displayed on the homepage.
                                 </p>
                             </div>
 

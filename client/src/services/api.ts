@@ -164,6 +164,16 @@ export const adminApi = {
         put<{
             brandingConfig: BrandingConfig
         }>('/admin/branding-config', data).then(response => response.brandingConfig),
+
+    uploadBrandingAsset: (file: File, type: 'logo' | 'banner') =>
+        uploadFile<{
+            brandingConfig: BrandingConfig
+        }>('/admin/branding-config/upload', file, 'file', { type }).then(response => response.brandingConfig),
+
+    deleteBrandingAsset: (type: 'logo' | 'banner') =>
+        del<{
+            brandingConfig: BrandingConfig
+        }>(`/admin/branding-config/${type}`).then(response => response.brandingConfig),
 };
 
 export const publicApi = {

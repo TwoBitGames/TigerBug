@@ -11,8 +11,11 @@ const {
   testSMTPConfig,
   getBrandingConfig,
   updateBrandingConfig,
+  uploadBrandingAsset,
+  deleteBrandingAsset,
 } = require('../controllers/adminController');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { brandingUploadMiddleware, handleBrandingUploadError } = require('../middleware/brandingUpload');
 
 router.use(authenticateToken, requireAdmin);
 
@@ -29,5 +32,7 @@ router.post('/smtp-config/test', testSMTPConfig);
 
 router.get('/branding-config', getBrandingConfig);
 router.put('/branding-config', updateBrandingConfig);
+router.post('/branding-config/upload', brandingUploadMiddleware, handleBrandingUploadError, uploadBrandingAsset);
+router.delete('/branding-config/:type', deleteBrandingAsset);
 
 module.exports = router;

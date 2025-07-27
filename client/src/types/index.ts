@@ -172,6 +172,7 @@ export interface BrandingConfig {
     id: number;
     app_name: string;
     logo_url: string | null;
+    banner_url: string | null;
     tagline: string | null;
     social_links: {
         github?: string;
@@ -191,6 +192,7 @@ export interface BrandingConfig {
 export interface UpdateBrandingConfigData {
     app_name: string;
     logo_url?: string | null;
+    banner_url?: string | null;
     tagline?: string | null;
     social_links?: {
         github?: string;

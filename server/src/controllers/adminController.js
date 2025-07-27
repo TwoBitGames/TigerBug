@@ -1,4 +1,6 @@
 const {User, Project, ProjectMembership, SMTPConfig, BrandingConfig} = require('../models/associations');
+const path = require('path');
+const fs = require('fs');
 const {sendSimpleTestEmail, refreshMailer} = require('../utils/email');
 
 const getUsers = async (req, res) => {
@@ -359,6 +361,118 @@ const updateBrandingConfig = async (req, res) => {
     }
 };
 
+const uploadBrandingAsset = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({error: 'No file uploaded'});
+        }
+
+        const {type} = req.body;
+        
+        if (!type || !['logo', 'banner'].includes(type)) {
+            return res.status(400).json({error: 'Invalid asset type. Must be "logo" or "banner"'});
+        }
+
+        let brandingConfig = await BrandingConfig.findByPk(1);
+        
+        if (!brandingConfig) {
+            brandingConfig = await BrandingConfig.create({
+                id: 1,
+                app_name: 'TigerBug',
+                logo_url: null,
+                banner_url: null,
+                tagline: null,
+                social_links: null,
+                client_url: null,
+            });
+        }
+
+        const currentAssetField = type === 'logo' ? 'logo_url' : 'banner_url';
+        const currentAssetUrl = brandingConfig[currentAssetField];
+        
+        if (currentAssetUrl) {
+            const oldFilePath = path.join(process.env.UPLOAD_PATH || './attachments', 'branding', path.basename(currentAssetUrl));
+            if (fs.existsSync(oldFilePath)) {
+                try {
+                    fs.unlinkSync(oldFilePath);
+                } catch (error) {
+                    console.error('Error deleting old branding asset:', error);
+                }
+            }
+        }
+
+        const relativePath = `/api/branding/${path.basename(req.file.path)}`;
+        const updateData = {[currentAssetField]: relativePath};
+        
+        await brandingConfig.update(updateData);
+
+        res.json({
+            message: `Branding ${type} uploaded successfully`,
+            brandingConfig: {
+                id: brandingConfig.id,
+                app_name: brandingConfig.app_name,
+                logo_url: brandingConfig.logo_url,
+                banner_url: brandingConfig.banner_url,
+                tagline: brandingConfig.tagline,
+                social_links: brandingConfig.social_links,
+                client_url: brandingConfig.client_url,
+            },
+        });
+    } catch (error) {
+        console.error('Branding asset upload error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
+const deleteBrandingAsset = async (req, res) => {
+    try {
+        const {type} = req.params;
+        
+        if (!type || !['logo', 'banner'].includes(type)) {
+            return res.status(400).json({error: 'Invalid asset type. Must be "logo" or "banner"'});
+        }
+
+        let brandingConfig = await BrandingConfig.findByPk(1);
+        
+        if (!brandingConfig) {
+            return res.status(404).json({error: 'Branding configuration not found'});
+        }
+
+        const assetField = type === 'logo' ? 'logo_url' : 'banner_url';
+        const currentAssetUrl = brandingConfig[assetField];
+        
+        if (currentAssetUrl) {
+            const filePath = path.join(process.env.UPLOAD_PATH || './attachments', 'branding', path.basename(currentAssetUrl));
+            if (fs.existsSync(filePath)) {
+                try {
+                    fs.unlinkSync(filePath);
+                } catch (error) {
+                    console.error('Error deleting branding asset file:', error);
+                }
+            }
+        }
+
+        const updateData = {[assetField]: null};
+        await brandingConfig.update(updateData);
+
+        res.json({
+            message: `Branding ${type} deleted successfully`,
+            brandingConfig: {
+                id: brandingConfig.id,
+                app_name: brandingConfig.app_name,
+                logo_url: brandingConfig.logo_url,
+                banner_url: brandingConfig.banner_url,
+                tagline: brandingConfig.tagline,
+                social_links: brandingConfig.social_links,
+                client_url: brandingConfig.client_url,
+            },
+        });
+    } catch (error) {
+        console.error('Branding asset deletion error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
 module.exports = {
     getUsers,
     updateUserRole,
@@ -370,4 +484,6 @@ module.exports = {
     testSMTPConfig,
     getBrandingConfig,
     updateBrandingConfig,
+    uploadBrandingAsset,
+    deleteBrandingAsset,
 };

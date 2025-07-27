@@ -16,6 +16,10 @@ const BrandingConfig = sequelize.define('BrandingConfig', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  banner_url: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
   tagline: {
     type: DataTypes.TEXT,
     allowNull: true,
