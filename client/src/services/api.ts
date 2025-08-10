@@ -62,6 +62,9 @@ export const projectsApi = {
     getById: (id: number) =>
         get<{ project: Project }>(`/projects/${id}`).then(response => response.project),
 
+    getMembers: (id: number) =>
+        get<{ members: User[] }>(`/projects/${id}/members`).then(response => response.members),
+
     create: (data: CreateProjectData) =>
         post<{ project: Project }>('/projects', data).then(response => response.project),
 
