@@ -82,8 +82,93 @@ export const projectsApi = {
 };
 
 export const postsApi = {
-    getAll: (projectId: number) =>
-        get<{ posts: Post[] }>(`/projects/${projectId}/posts`).then(response => response.posts),
+    getAll: (projectId: number, params?: {
+        page?: number;
+        limit?: number;
+        status?: string;
+        search?: string;
+        priority?: string;
+        issue_type?: string;
+        assignee_id?: string;
+        sort?: string;
+        order?: 'ASC' | 'DESC';
+        view_mode?: 'list' | 'kanban';
+    }) => {
+        const query = new URLSearchParams();
+        if (params?.page) query.append('page', params.page.toString());
+        if (params?.limit) query.append('limit', params.limit.toString());
+        if (params?.status) query.append('status', params.status);
+        if (params?.search) query.append('search', params.search);
+        if (params?.priority) query.append('priority', params.priority);
+        if (params?.issue_type) query.append('issue_type', params.issue_type);
+        if (params?.assignee_id) query.append('assignee_id', params.assignee_id);
+        if (params?.sort) query.append('sort', params.sort);
+        if (params?.order) query.append('order', params.order);
+        if (params?.view_mode) query.append('view_mode', params.view_mode);
+
+        const queryString = query.toString();
+        return get<{ 
+            posts: Post[]; 
+            pagination?: {
+                total: number;
+                page: number;
+                limit: number;
+                totalPages: number;
+                hasNext: boolean;
+                hasPrev: boolean;
+            };
+            statusCounts?: {
+                'Open': number;
+                'In Progress': number;
+                'Closed': number;
+            };
+            total?: number;
+        }>(`/projects/${projectId}/posts${queryString ? `?${queryString}` : ''}`);
+    },
+
+    getKanban: (projectId: number, params?: {
+        search?: string;
+        priority?: string;
+        issue_type?: string;
+        assignee_id?: string;
+        column_page?: number;
+        column_limit?: number;
+    }) => {
+        const query = new URLSearchParams();
+        if (params?.search) query.append('search', params.search);
+        if (params?.priority) query.append('priority', params.priority);
+        if (params?.issue_type) query.append('issue_type', params.issue_type);
+        if (params?.assignee_id) query.append('assignee_id', params.assignee_id);
+        if (params?.column_page) query.append('column_page', params.column_page.toString());
+        if (params?.column_limit) query.append('column_limit', params.column_limit.toString());
+
+        const queryString = query.toString();
+        return get<{
+            columns: {
+                'Open': {
+                    posts: Post[];
+                    total: number;
+                    hasMore: boolean;
+                };
+                'In Progress': {
+                    posts: Post[];
+                    total: number;
+                    hasMore: boolean;
+                };
+                'Closed': {
+                    posts: Post[];
+                    total: number;
+                    totalShowing: number;
+                    hasMore: boolean;
+                    note?: string;
+                };
+            };
+            pagination: {
+                page: number;
+                limit: number;
+            };
+        }>(`/projects/${projectId}/posts/kanban${queryString ? `?${queryString}` : ''}`);
+    },
 
     getById: (projectId: number, postId: number) =>
         get<{ post: Post }>(`/projects/${projectId}/posts/${postId}`).then(response => response.post),

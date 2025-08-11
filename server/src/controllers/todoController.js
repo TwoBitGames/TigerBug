@@ -75,6 +75,23 @@ const getTodoTasks = async (req, res) => {
             order,
         });
 
+        const summaryWhere = {
+            assignee_id: req.user.id,
+        };
+
+        if (priority && priority !== 'all') {
+            summaryWhere.priority = priority;
+        }
+
+        if (project && project !== 'all') {
+            summaryWhere.project_id = project;
+        }
+
+        const allUserTasks = await Post.findAll({
+            where: summaryWhere,
+            attributes: ['id', 'status', 'due_date'],
+        });
+
         let postsWithVotes = posts.map(post => ({
             ...post.toJSON(),
             vote_count: post.votes.length,
@@ -130,6 +147,25 @@ const getTodoTasks = async (req, res) => {
             }
         });
 
+        let overdueCount = 0;
+        let todayCount = 0;
+        let thisWeekCount = 0;
+
+        allUserTasks.forEach(task => {
+            if (task.due_date) {
+                const dueDate = new Date(task.due_date);
+                const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+
+                if (dueDateOnly < today) {
+                    overdueCount++;
+                } else if (dueDateOnly.getTime() === today.getTime()) {
+                    todayCount++;
+                } else if (dueDateOnly <= nextWeek) {
+                    thisWeekCount++;
+                }
+            }
+        });
+
         const userProjects = await Post.findAll({
             where: {assignee_id: req.user.id},
             include: [{
@@ -151,12 +187,12 @@ const getTodoTasks = async (req, res) => {
             groupedTasks,
             projects,
             summary: {
-                total: postsWithVotes.length,
-                overdue: groupedTasks.overdue.length,
-                today: groupedTasks.today.length,
-                thisWeek: groupedTasks.thisWeek.length + groupedTasks.tomorrow.length,
-                open: postsWithVotes.filter(task => task.status !== 'Closed').length,
-                closed: postsWithVotes.filter(task => task.status === 'Closed').length
+                total: allUserTasks.length,
+                overdue: overdueCount,
+                today: todayCount,
+                thisWeek: thisWeekCount,
+                open: allUserTasks.filter(task => task.status !== 'Closed').length,
+                closed: allUserTasks.filter(task => task.status === 'Closed').length
             }
         });
     } catch (error) {

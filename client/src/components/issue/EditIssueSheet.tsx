@@ -93,7 +93,7 @@ export const EditIssueSheet = ({
 }: EditIssueSheetProps) => {
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
-            <SheetContent side="right" className="w-[400px] sm:w-[540px] px-0 flex flex-col">
+            <SheetContent side="right" className="w-[400px] sm:w-[600px] px-0 flex flex-col">
                 <SheetHeader className="px-6 pb-6 border-b border-border">
                     <SheetTitle className="flex items-center gap-2 text-lg">
                         <Edit2 className="h-5 w-5"/>
@@ -166,7 +166,7 @@ export const EditIssueSheet = ({
                             </div>
                         )}
 
-                        <div className="grid gap-6 md:grid-cols-2">
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-priority" className="text-foreground font-medium">
                                     Priority
@@ -291,7 +291,7 @@ export const EditIssueSheet = ({
                                     </div>
                                 )}
 
-                                <div className="grid gap-6 md:grid-cols-3">
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <div className="space-y-2">
                                         <Label htmlFor="edit-story-points" className="text-foreground font-medium flex items-center gap-2">
                                             <Target className="h-4 w-4"/>
@@ -326,7 +326,7 @@ export const EditIssueSheet = ({
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 sm:col-span-2 lg:col-span-1 min-w-0">
                                         <Label htmlFor="edit-due-date" className="text-foreground font-medium flex items-center gap-2">
                                             <Calendar className="h-4 w-4"/>
                                             Due Date
@@ -336,7 +336,7 @@ export const EditIssueSheet = ({
                                             date={editDueDate}
                                             onDateChange={setEditDueDate}
                                             placeholder="Select due date"
-                                            className="bg-input border-border text-foreground"
+                                            className="bg-input border-border text-foreground w-full max-w-full"
                                         />
                                     </div>
                                 </div>

@@ -11,7 +11,11 @@ import {
     X,
     Loader2,
     GitBranch,
-    Lock
+    Lock,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight
 } from 'lucide-react';
 import {Button} from './ui/button';
 import {Card, CardContent} from './ui/card';
@@ -23,23 +27,23 @@ import {PriorityBadge} from './ui/priority-badge';
 import {IssueTypeBadge} from './ui/issue-type-badge';
 import {ProjectLogo} from './ui/project-logo';
 import type {Post, Project} from '../types';
-import {useState, useMemo} from 'react';
+import {useState, useEffect, useCallback} from 'react';
+import {postsApi} from '../services/api';
+import {useDebounce} from '../hooks/use-debounce';
 
 interface IssueListProps {
     project: Project;
-    posts: Post[];
     filterType: 'all' | 'open' | 'closed';
     viewMode: 'list' | 'kanban';
     votingPosts?: Set<number>;
     onFilterChange: (filter: 'all' | 'open' | 'closed') => void;
-    onUpvote: (postId: number) => void;
+    onUpvote: (postId: number) => Promise<void>;
     onStatusChange: (postId: number, status: 'Open' | 'In Progress' | 'Closed') => void;
     onIssueClick: (postId: number) => void;
 }
 
 export const IssueList = ({
                               project,
-                              posts,
                               filterType,
                               viewMode,
                               votingPosts = new Set(),
@@ -55,6 +59,155 @@ export const IssueList = ({
     const [priorityFilter, setPriorityFilter] = useState<string>('all');
     const [typeFilter, setTypeFilter] = useState<string>('all');
     const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<string>('created_at');
+    const [sortOrder, setSortOrder] = useState<'ASC' | 'DESC'>('DESC');
+
+    const [posts, setPosts] = useState<Post[]>([]);
+    const [kanbanData, setKanbanData] = useState<any>(null);
+    const [pagination, setPagination] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadingColumns, setLoadingColumns] = useState<Set<string>>(new Set());
+    const [currentPage, setCurrentPage] = useState(1);
+    const [columnPages, setColumnPages] = useState({
+        'Open': 1,
+        'In Progress': 1,
+        'Closed': 1
+    });
+    const [uniqueAssignees, setUniqueAssignees] = useState<any[]>([]);
+
+    const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+    const loadPosts = useCallback(async (page: number = 1, resetPage: boolean = false, silent: boolean = false) => {
+        if (viewMode === 'kanban') {
+            return loadKanbanData(undefined, undefined, silent);
+        }
+
+        if (!silent) {
+            setIsLoading(true);
+        }
+        try {
+            const params: any = {
+                page: resetPage ? 1 : page,
+                limit: 25,
+                status: filterType === 'all' ? undefined : filterType,
+                search: debouncedSearchQuery || undefined,
+                priority: priorityFilter === 'all' ? undefined : priorityFilter,
+                issue_type: typeFilter === 'all' ? undefined : typeFilter,
+                assignee_id: assigneeFilter === 'all' ? undefined : assigneeFilter,
+                sort: sortBy,
+                order: sortOrder,
+                view_mode: 'list',
+            };
+
+            const response = await postsApi.getAll(project.id, params);
+            setPosts(response.posts);
+            setPagination(response.pagination);
+
+            if (resetPage) {
+                setCurrentPage(1);
+            } else {
+                setCurrentPage(page);
+            }
+        } catch (error) {
+            console.error('Failed to load posts:', error);
+            setPosts([]);
+        } finally {
+            if (!silent) {
+                setIsLoading(false);
+            }
+        }
+    }, [project.id, filterType, debouncedSearchQuery, priorityFilter, typeFilter, assigneeFilter, sortBy, sortOrder, viewMode]);
+
+    const loadKanbanData = useCallback(async (columnToUpdate?: string, page?: number, silent: boolean = false) => {
+        if (columnToUpdate) {
+            setLoadingColumns(prev => new Set(prev).add(columnToUpdate));
+        } else if (!silent) {
+            setIsLoading(true);
+        }
+
+        try {
+            const params: any = {
+                search: debouncedSearchQuery || undefined,
+                priority: priorityFilter === 'all' ? undefined : priorityFilter,
+                issue_type: typeFilter === 'all' ? undefined : typeFilter,
+                assignee_id: assigneeFilter === 'all' ? undefined : assigneeFilter,
+                column_page: columnToUpdate ? (page || columnPages[columnToUpdate as keyof typeof columnPages]) : 1,
+                column_limit: 20,
+            };
+
+            const response = await postsApi.getKanban(project.id, params);
+
+            if (columnToUpdate && page && page > 1) {
+                setKanbanData((prev: any) => {
+                    if (!prev) return response;
+
+                    return {
+                        ...response,
+                        columns: {
+                            ...prev.columns,
+                            [columnToUpdate]: {
+                                ...response.columns[columnToUpdate as keyof typeof response.columns],
+                                posts: [
+                                    ...prev.columns[columnToUpdate].posts,
+                                    ...response.columns[columnToUpdate as keyof typeof response.columns].posts
+                                ]
+                            }
+                        }
+                    };
+                });
+                setColumnPages(prev => ({
+                    ...prev,
+                    [columnToUpdate]: page
+                }));
+            } else {
+                setKanbanData(response);
+                if (!silent) {
+                    setColumnPages({'Open': 1, 'In Progress': 1, 'Closed': 1});
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load kanban data:', error);
+            setKanbanData(null);
+        } finally {
+            if (columnToUpdate) {
+                setLoadingColumns(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(columnToUpdate);
+                    return newSet;
+                });
+            } else if (!silent) {
+                setIsLoading(false);
+            }
+        }
+    }, [project.id, debouncedSearchQuery, priorityFilter, typeFilter, assigneeFilter, columnPages]);
+
+    const loadUniqueAssignees = useCallback(async () => {
+        try {
+            const response = await postsApi.getAll(project.id, {
+                limit: 1000,
+                view_mode: 'list'
+            });
+
+            const assignees = response.posts
+                .filter(post => post.assignee)
+                .map(post => post.assignee!)
+                .filter((assignee, index, self) =>
+                    index === self.findIndex(a => a.id === assignee.id)
+                );
+
+            setUniqueAssignees(assignees);
+        } catch (error) {
+            console.error('Failed to load assignees:', error);
+        }
+    }, [project.id]);
+
+    useEffect(() => {
+        loadPosts(1, true);
+    }, [filterType, debouncedSearchQuery, priorityFilter, typeFilter, assigneeFilter, sortBy, sortOrder, viewMode]);
+
+    useEffect(() => {
+        loadUniqueAssignees();
+    }, [loadUniqueAssignees]);
 
     const handleDragStart = (e: React.DragEvent, postId: number) => {
         setDraggedPost(postId);
@@ -79,61 +232,49 @@ export const IssueList = ({
         }
     };
 
-    const handleDrop = (e: React.DragEvent, newStatus: 'Open' | 'In Progress' | 'Closed') => {
+    const handleDrop = async (e: React.DragEvent, newStatus: 'Open' | 'In Progress' | 'Closed') => {
         e.preventDefault();
         if (draggedPost) {
-            onStatusChange(draggedPost, newStatus);
+            await onStatusChange(draggedPost, newStatus);
             setDraggedPost(null);
             setDragOverColumn(null);
+            if (viewMode === 'kanban') {
+                loadKanbanData(undefined, undefined, true);
+            } else {
+                loadPosts(currentPage, true);
+            }
         }
     };
-
-    const uniqueAssignees = useMemo(() => {
-        const assignees = posts.filter(post => post.assignee).map(post => post.assignee!);
-        const uniqueSet = new Map();
-        assignees.forEach(assignee => uniqueSet.set(assignee.id, assignee));
-        return Array.from(uniqueSet.values());
-    }, [posts]);
-
-    const filteredPosts = useMemo(() => {
-        return posts.filter(post => {
-            if (filterType === 'open' && post.status === 'Closed') return false;
-            if (filterType === 'closed' && post.status !== 'Closed') return false;
-
-            if (searchQuery.trim()) {
-                const query = searchQuery.toLowerCase();
-                const titleMatch = post.title.toLowerCase().includes(query);
-                const descriptionMatch = post.description?.toLowerCase().includes(query);
-                const authorMatch = post.author?.username.toLowerCase().includes(query);
-                const assigneeMatch = post.assignee?.username.toLowerCase().includes(query);
-                const labelMatch = post.labels?.some(label => label.toLowerCase().includes(query));
-
-                if (!titleMatch && !descriptionMatch && !authorMatch && !assigneeMatch && !labelMatch) {
-                    return false;
-                }
-            }
-
-            if (priorityFilter !== 'all' && post.priority !== priorityFilter) return false;
-
-            if (typeFilter !== 'all' && post.issue_type !== typeFilter) return false;
-
-            if (assigneeFilter !== 'all') {
-                if (assigneeFilter === 'unassigned' && post.assignee) return false;
-                if (assigneeFilter !== 'unassigned' && post.assignee?.id.toString() !== assigneeFilter) return false;
-            }
-
-            return true;
-        }).sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
-    }, [posts, filterType, searchQuery, priorityFilter, typeFilter, assigneeFilter]);
 
     const clearFilters = () => {
         setSearchQuery('');
         setPriorityFilter('all');
         setTypeFilter('all');
         setAssigneeFilter('all');
+        setSortBy('created_at');
+        setSortOrder('DESC');
     };
 
-    const hasActiveFilters = searchQuery || priorityFilter !== 'all' || typeFilter !== 'all' || assigneeFilter !== 'all';
+    const hasActiveFilters = searchQuery || priorityFilter !== 'all' || typeFilter !== 'all' || assigneeFilter !== 'all' || sortBy !== 'created_at' || sortOrder !== 'DESC';
+
+    const handlePageChange = (page: number) => {
+        loadPosts(page);
+    };
+
+    const handleLoadMoreInColumn = (columnStatus: string) => {
+        const nextPage = columnPages[columnStatus as keyof typeof columnPages] + 1;
+
+        const columnElement = document.querySelector(`[data-column="${columnStatus}"]`);
+        const scrollTop = columnElement?.scrollTop || 0;
+
+        loadKanbanData(columnStatus, nextPage).then(() => {
+            setTimeout(() => {
+                if (columnElement) {
+                    columnElement.scrollTop = scrollTop;
+                }
+            }, 50);
+        });
+    };
 
     const getStatusIcon = (status: string) => {
         switch (status) {
@@ -155,21 +296,87 @@ export const IssueList = ({
     ];
 
     const getPostsByStatus = (status: string) => {
-        return filteredPosts.filter(post => post.status === status);
+        if (viewMode === 'kanban' && kanbanData) {
+            return kanbanData.columns[status]?.posts || [];
+        }
+        return posts.filter(post => post.status === status);
+    };
+
+    const getColumnInfo = (status: string) => {
+        if (viewMode === 'kanban' && kanbanData) {
+            return kanbanData.columns[status] || {total: 0, hasMore: false};
+        }
+        return {total: posts.filter(post => post.status === status).length, hasMore: false};
+    };
+
+    const renderPagination = () => {
+        if (!pagination || viewMode !== 'list') return null;
+
+        const {page, totalPages, hasNext, hasPrev} = pagination;
+
+        return (
+            <div className="flex items-center justify-between px-2 py-3 mt-6">
+                <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                    <span>
+                        Page {page} of {totalPages} ({pagination.total} total issues)
+                    </span>
+                </div>
+                <div className="flex items-center space-x-1">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(1)}
+                        disabled={!hasPrev || isLoading}
+                    >
+                        <ChevronsLeft className="h-4 w-4"/>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(page - 1)}
+                        disabled={!hasPrev || isLoading}
+                    >
+                        <ChevronLeft className="h-4 w-4"/>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(page + 1)}
+                        disabled={!hasNext || isLoading}
+                    >
+                        <ChevronRight className="h-4 w-4"/>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(totalPages)}
+                        disabled={!hasNext || isLoading}
+                    >
+                        <ChevronsRight className="h-4 w-4"/>
+                    </Button>
+                </div>
+            </div>
+        );
     };
 
     return (
         <main className="container py-6 px-4">
             <div className="mb-6">
                 <div className="flex items-center space-x-3 mb-2">
-                    <ProjectLogo project={project} size="sm" />
+                    <ProjectLogo project={project} size="sm"/>
                     <h1 className="text-2xl font-bold text-foreground">{project.name}</h1>
                 </div>
                 <p className="text-muted-foreground">{project.description}</p>
             </div>
 
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-foreground">Issues ({filteredPosts.length})</h2>
+                <h2 className="text-xl font-semibold text-foreground">
+                    Issues ({
+                    viewMode === 'kanban' && kanbanData
+                        ? kanbanData.columns['Open'].total + kanbanData.columns['In Progress'].total + kanbanData.columns['Closed'].total
+                        : pagination?.total || posts.length
+                })
+                </h2>
                 <div className="flex items-center space-x-1">
                     <Button
                         variant={filterType === "all" ? "default" : "outline"}
@@ -289,12 +496,48 @@ export const IssueList = ({
                             ))}
                         </SelectContent>
                     </Select>
+
+                    {viewMode === 'list' && (
+                        <>
+                            <Select value={sortBy} onValueChange={setSortBy}>
+                                <SelectTrigger className="w-[120px] h-8 bg-background border-border">
+                                    <SelectValue placeholder="Sort by"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="created_at">Created</SelectItem>
+                                    <SelectItem value="updated_at">Updated</SelectItem>
+                                    <SelectItem value="title">Title</SelectItem>
+                                    <SelectItem value="vote_count">Votes</SelectItem>
+                                    <SelectItem value="priority">Priority</SelectItem>
+                                    <SelectItem value="due_date">Due Date</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                            <Select value={sortOrder}
+                                    onValueChange={(value: string) => setSortOrder(value as 'ASC' | 'DESC')}>
+                                <SelectTrigger className="w-[90px] h-8 bg-background border-border">
+                                    <SelectValue placeholder="Order"/>
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="DESC">Desc</SelectItem>
+                                    <SelectItem value="ASC">Asc</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </>
+                    )}
                 </div>
             </div>
 
-            {viewMode === "list" && (
+            {isLoading && (
+                <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin"/>
+                    <span className="ml-2 text-muted-foreground">Loading issues...</span>
+                </div>
+            )}
+
+            {!isLoading && viewMode === "list" && (
                 <div className="space-y-2">
-                    {filteredPosts.map((post) => (
+                    {posts.map((post) => (
                         <Card
                             key={post.id}
                             className="hover:shadow-lg transition-shadow bg-card border-border hover:border-accent backdrop-blur-sm hover:bg-accent/5 cursor-pointer py-0"
@@ -307,9 +550,10 @@ export const IssueList = ({
                                         size="sm"
                                         disabled={votingPosts.has(post.id)}
                                         className="flex-col h-auto p-1.5 min-w-[50px] text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
-                                        onClick={(e) => {
+                                        onClick={async (e) => {
                                             e.stopPropagation();
-                                            onUpvote(post.id);
+                                            await onUpvote(post.id);
+                                            loadPosts(currentPage, true);
                                         }}
                                     >
                                         {votingPosts.has(post.id) ? (
@@ -384,132 +628,172 @@ export const IssueList = ({
                             </CardContent>
                         </Card>
                     ))}
+
+                    {renderPagination()}
                 </div>
             )}
 
-            {viewMode === "kanban" && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {kanbanColumns.map((column) => (
-                        <div key={column.id} className="space-y-3">
-                            <div className="flex items-center space-x-2 mb-4">
-                                {getStatusIcon(column.status)}
-                                <h3 className="font-semibold text-foreground">{column.title}</h3>
-                                <Badge variant="secondary"
-                                       className="bg-secondary text-secondary-foreground border-border">
-                                    {getPostsByStatus(column.status).length}
-                                </Badge>
-                            </div>
-                            <div
-                                className={`space-y-3 min-h-[400px] bg-muted/30 rounded-lg p-4 border-2 transition-colors backdrop-blur-sm ${
-                                    dragOverColumn === column.status
-                                        ? "border-primary/60 bg-primary/10"
-                                        : "border-border border-dashed"
-                                }`}
-                                onDragOver={(e) => handleDragOver(e, column.status)}
-                                onDragLeave={(e) => handleDragLeave(e)}
-                                onDrop={(e) => handleDrop(e, column.status)}
-                            >
-                                {getPostsByStatus(column.status).map((post) => (
-                                    <Card
-                                        key={post.id}
-                                        className={`cursor-move transition-shadow bg-card border-border hover:border-accent backdrop-blur-sm hover:bg-accent/5 py-0 hover:shadow-lg ${
-                                            draggedPost === post.id ? "opacity-50 rotate-2 scale-105" : ""
+            {!isLoading && viewMode === "kanban" && (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {kanbanColumns.map((column) => {
+                            const columnInfo = getColumnInfo(column.status);
+                            const columnPosts = getPostsByStatus(column.status);
+
+                            return (
+                                <div key={column.id} className="space-y-3">
+                                    <div className="flex items-center space-x-2 mb-4">
+                                        {getStatusIcon(column.status)}
+                                        <h3 className="font-semibold text-foreground">{column.title}</h3>
+                                        <Badge variant="secondary"
+                                               className="bg-secondary text-secondary-foreground border-border">
+                                            {columnInfo.total}
+                                        </Badge>
+                                        {column.status === 'Closed' && kanbanData?.columns['Closed'].note && (
+                                            <span className="text-xs text-muted-foreground">
+                                                (showing {kanbanData.columns['Closed'].totalShowing})
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div
+                                        data-column={column.status}
+                                        className={`space-y-3 min-h-[400px] max-h-[70vh] bg-muted/30 rounded-lg p-4 border-2 transition-colors backdrop-blur-sm overflow-y-auto custom-scrollbar ${
+                                            dragOverColumn === column.status
+                                                ? "border-primary/60 bg-primary/10"
+                                                : "border-border border-dashed"
                                         }`}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, post.id)}
-                                        onDragEnd={handleDragEnd}
-                                        onClick={() => onIssueClick(post.id)}
+                                        onDragOver={(e) => handleDragOver(e, column.status)}
+                                        onDragLeave={(e) => handleDragLeave(e)}
+                                        onDrop={(e) => handleDrop(e, column.status)}
                                     >
-                                        <CardContent className="p-3">
-                                            <div className="space-y-2">
-                                                <div className="flex items-start justify-between">
-                                                    <h4 className="font-medium text-sm leading-tight text-card-foreground pr-2">{post.title}</h4>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        disabled={votingPosts.has(post.id)}
-                                                        className="flex-col h-auto p-1 min-w-[40px] text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onUpvote(post.id);
-                                                        }}
-                                                    >
-                                                        {votingPosts.has(post.id) ? (
-                                                            <Loader2 className="h-3 w-3 mb-0.5 animate-spin"/>
-                                                        ) : (
-                                                            <ArrowUpFromLine className="h-3 w-3 mb-0.5"/>
-                                                        )}
-                                                        <span
-                                                            className="text-xs font-medium">{post.vote_count || 0}</span>
-                                                    </Button>
-                                                </div>
-
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center space-x-2">
-                                                        <PriorityBadge priority={post.priority || 'Medium'} size="sm"/>
-                                                        <IssueTypeBadge issueType={post.issue_type || 'Bug'} size="sm"/>
-                                                        {post.is_private && (
-                                                            <div title="Private Issue">
-                                                                <Lock className="h-3 w-3 text-orange-400"/>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div
-                                                        className="flex items-center space-x-1 text-xs text-muted-foreground">
-                                                        <Avatar className="h-3 w-3">
-                                                            <AvatarImage src={post.author?.profile_picture || undefined}
-                                                                         alt={post.author?.username || 'User'}/>
-                                                            <AvatarFallback
-                                                                className="text-[8px] bg-secondary text-secondary-foreground">
-                                                                {post.author?.username?.charAt(0).toUpperCase() || 'U'}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                        <span
-                                                            className="truncate max-w-[80px]">{post.author?.username || 'Unknown'}</span>
-                                                    </div>
-                                                </div>
-
-                                                {(post.assignee || post.story_points || post.due_date || (post.sub_issue_count && post.sub_issue_count > 0)) && (
-                                                    <div
-                                                        className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
-                                                        <div className="flex items-center space-x-2">
-                                                            {post.assignee && (
-                                                                <div className="flex items-center space-x-1">
-                                                                    <User className="h-3 w-3"/>
-                                                                    <span
-                                                                        className="truncate max-w-[60px]">{post.assignee.username}</span>
-                                                                </div>
-                                                            )}
-                                                            {post.story_points && (
-                                                                <div className="flex items-center space-x-1">
-                                                                    <Target className="h-3 w-3"/>
-                                                                    <span>{post.story_points}</span>
-                                                                </div>
-                                                            )}
-                                                            {post.sub_issue_count && post.sub_issue_count > 0 && (
-                                                                <div className="flex items-center space-x-1">
-                                                                    <GitBranch className="h-3 w-3"/>
-                                                                    <span
-                                                                        className="text-[10px]">{post.sub_issues_closed_count || 0}/{post.sub_issue_count}</span>
-                                                                </div>
-                                                            )}
+                                        {columnPosts.map((post: Post) => (
+                                            <Card
+                                                key={post.id}
+                                                className={`cursor-move transition-shadow bg-card border-border hover:border-accent backdrop-blur-sm hover:bg-accent/5 py-0 hover:shadow-lg ${
+                                                    draggedPost === post.id ? "opacity-50 rotate-2 scale-105" : ""
+                                                }`}
+                                                draggable
+                                                onDragStart={(e) => handleDragStart(e, post.id)}
+                                                onDragEnd={handleDragEnd}
+                                                onClick={() => onIssueClick(post.id)}
+                                            >
+                                                <CardContent className="p-3">
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-start justify-between">
+                                                            <h4 className="font-medium text-sm leading-tight text-card-foreground pr-2">{post.title}</h4>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                disabled={votingPosts.has(post.id)}
+                                                                className="flex-col h-auto p-1 min-w-[40px] text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
+                                                                onClick={async (e) => {
+                                                                    e.stopPropagation();
+                                                                    await onUpvote(post.id);
+                                                                    loadKanbanData(undefined, undefined, true);
+                                                                }}
+                                                            >
+                                                                {votingPosts.has(post.id) ? (
+                                                                    <Loader2 className="h-3 w-3 mb-0.5 animate-spin"/>
+                                                                ) : (
+                                                                    <ArrowUpFromLine className="h-3 w-3 mb-0.5"/>
+                                                                )}
+                                                                <span
+                                                                    className="text-xs font-medium">{post.vote_count || 0}</span>
+                                                            </Button>
                                                         </div>
-                                                        {post.due_date && (
-                                                            <div className="flex items-center space-x-1">
-                                                                <Calendar className="h-3 w-3"/>
-                                                                <span>{new Date(post.due_date).toLocaleDateString()}</span>
+
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center space-x-2">
+                                                                <PriorityBadge priority={post.priority || 'Medium'}
+                                                                               size="sm"/>
+                                                                <IssueTypeBadge issueType={post.issue_type || 'Bug'}
+                                                                                size="sm"/>
+                                                                {post.is_private && (
+                                                                    <div title="Private Issue">
+                                                                        <Lock className="h-3 w-3 text-orange-400"/>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div
+                                                                className="flex items-center space-x-1 text-xs text-muted-foreground">
+                                                                <Avatar className="h-3 w-3">
+                                                                    <AvatarImage
+                                                                        src={post.author?.profile_picture || undefined}
+                                                                        alt={post.author?.username || 'User'}/>
+                                                                    <AvatarFallback
+                                                                        className="text-[8px] bg-secondary text-secondary-foreground">
+                                                                        {post.author?.username?.charAt(0).toUpperCase() || 'U'}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <span
+                                                                    className="truncate max-w-[80px]">{post.author?.username || 'Unknown'}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {(post.assignee || post.story_points || post.due_date || (post.sub_issue_count && post.sub_issue_count > 0)) && (
+                                                            <div
+                                                                className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+                                                                <div className="flex items-center space-x-2">
+                                                                    {post.assignee && (
+                                                                        <div className="flex items-center space-x-1">
+                                                                            <User className="h-3 w-3"/>
+                                                                            <span
+                                                                                className="truncate max-w-[60px]">{post.assignee.username}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {post.story_points && (
+                                                                        <div className="flex items-center space-x-1">
+                                                                            <Target className="h-3 w-3"/>
+                                                                            <span>{post.story_points}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    {post.sub_issue_count && post.sub_issue_count > 0 && (
+                                                                        <div className="flex items-center space-x-1">
+                                                                            <GitBranch className="h-3 w-3"/>
+                                                                            <span
+                                                                                className="text-[10px]">{post.sub_issues_closed_count || 0}/{post.sub_issue_count}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                {post.due_date && (
+                                                                    <div className="flex items-center space-x-1">
+                                                                        <Calendar className="h-3 w-3"/>
+                                                                        <span>{new Date(post.due_date).toLocaleDateString()}</span>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+
+                                        {columnInfo.hasMore && (
+                                            <div className="flex flex-col items-center pt-2 space-y-2">
+                                                {loadingColumns.has(column.status) && (
+                                                    <div
+                                                        className="flex items-center space-x-2 text-xs text-muted-foreground">
+                                                        <Loader2 className="h-3 w-3 animate-spin"/>
+                                                        <span>Loading more...</span>
                                                     </div>
                                                 )}
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleLoadMoreInColumn(column.status)}
+                                                    disabled={loadingColumns.has(column.status)}
+                                                    className="text-xs w-full"
+                                                >
+                                                    Load More ({columnInfo.total - columnPosts.length} remaining)
+                                                </Button>
                                             </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </>
             )}
         </main>
     );

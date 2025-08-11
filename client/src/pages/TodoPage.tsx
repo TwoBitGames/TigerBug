@@ -8,6 +8,10 @@ import {
     Target,
     Filter,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
     ArrowUpFromLine,
     Loader2,
     BarChart3,
@@ -61,6 +65,16 @@ export const TodoPage = () => {
     const [sortBy, setSortBy] = useState('due_date');
 
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+    const [sectionPages, setSectionPages] = useState<{ [key: string]: number }>({
+        'overdue': 1,
+        'today': 1,
+        'tomorrow': 1,
+        'thisWeek': 1,
+        'later': 1,
+        'noDueDate': 1
+    });
+
+    const ITEMS_PER_PAGE = 25;
 
     const fetchTodoData = async () => {
         try {
@@ -73,6 +87,14 @@ export const TodoPage = () => {
             });
             setTodoData(data);
             setError(null);
+            setSectionPages({
+                'overdue': 1,
+                'today': 1,
+                'tomorrow': 1,
+                'thisWeek': 1,
+                'later': 1,
+                'noDueDate': 1
+            });
         } catch (err) {
             console.error('Error fetching todo data:', err);
             setError('Failed to load tasks');
@@ -176,7 +198,7 @@ export const TodoPage = () => {
     const TaskCard = ({post}: { post: Post }) => (
         <Card
             key={post.id}
-            className="hover:shadow-lg transition-shadow bg-card border-border hover:border-accent backdrop-blur-sm hover:bg-accent/5 cursor-pointer"
+            className="hover:shadow-lg transition-shadow bg-card border-border hover:border-accent backdrop-blur-sm hover:bg-accent/5 cursor-pointer py-0"
             onClick={() => handleIssueClick(post.id)}
         >
             <CardContent className="p-4">
@@ -309,27 +331,58 @@ export const TodoPage = () => {
         if (tasks.length === 0) return null;
 
         const isCollapsed = collapsedSections.has(sectionKey);
+        const currentPage = sectionPages[sectionKey] || 1;
+        const totalPages = Math.ceil(tasks.length / ITEMS_PER_PAGE);
+        const showPagination = tasks.length > ITEMS_PER_PAGE;
+        
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const currentTasks = tasks.slice(startIndex, endIndex);
+
+        const handlePageChange = (newPage: number) => {
+            setSectionPages(prev => ({
+                ...prev,
+                [sectionKey]: newPage
+            }));
+        };
+
+        const handlePrevPage = () => {
+            if (currentPage > 1) {
+                handlePageChange(currentPage - 1);
+            }
+        };
+
+        const handleNextPage = () => {
+            if (currentPage < totalPages) {
+                handlePageChange(currentPage + 1);
+            }
+        };
 
         return (
-            <div className="space-y-3">
+            <div className="space-y-2">
                 <div
                     className="flex items-center justify-between cursor-pointer"
                     onClick={() => toggleSection(sectionKey)}
                 >
                     <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${color}`}>
+                        <div className={`p-1.5 rounded-lg ${color}`}>
                             {icon}
                         </div>
                         <div>
-                            <h3 className="font-semibold text-lg text-foreground flex items-center space-x-2">
+                            <h3 className="font-semibold text-base text-foreground flex items-center space-x-2">
                                 <span>{title}</span>
                                 <Badge variant="secondary"
-                                       className="bg-secondary text-secondary-foreground border-border">
+                                       className="bg-secondary text-secondary-foreground border-border text-xs">
                                     {tasks.length}
                                 </Badge>
+                                {showPagination && !isCollapsed && (
+                                    <Badge variant="outline" className="text-xs">
+                                        Page {currentPage} of {totalPages}
+                                    </Badge>
+                                )}
                             </h3>
                             {description && (
-                                <p className="text-sm text-muted-foreground">{description}</p>
+                                <p className="text-xs text-muted-foreground">{description}</p>
                             )}
                         </div>
                     </div>
@@ -339,10 +392,62 @@ export const TodoPage = () => {
                 </div>
 
                 {!isCollapsed && (
-                    <div className="space-y-3 ml-12">
-                        {tasks.map(task => (
-                            <TaskCard key={task.id} post={task}/>
-                        ))}
+                    <div className="space-y-2 ml-8">
+                        <div className="space-y-2">
+                            {currentTasks.map(task => (
+                                <TaskCard key={task.id} post={task}/>
+                            ))}
+                        </div>
+
+                        {showPagination && (
+                            <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                                <div className="flex items-center space-x-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handlePageChange(1)}
+                                        disabled={currentPage === 1}
+                                        className="h-8"
+                                        title="First page"
+                                    >
+                                        <ChevronsLeft className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handlePrevPage}
+                                        disabled={currentPage === 1}
+                                        className="h-8"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleNextPage}
+                                        disabled={currentPage === totalPages}
+                                        className="h-8"
+                                    >
+                                        Next
+                                        <ChevronRight className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handlePageChange(totalPages)}
+                                        disabled={currentPage === totalPages}
+                                        className="h-8"
+                                        title="Last page"
+                                    >
+                                        <ChevronsRight className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                    Showing {startIndex + 1}-{Math.min(endIndex, tasks.length)} of {tasks.length} tasks
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -389,148 +494,140 @@ export const TodoPage = () => {
     }
 
     return (
-        <main className="container py-6 px-4 max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="mb-8">
-                <div className="flex items-center space-x-3 mb-4">
+        <main className="container py-4 px-4 max-w-6xl mx-auto">
+            <div className="mb-6">
+                <div className="flex items-center space-x-3 mb-3">
                     <div
-                        className="h-10 w-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
-                        <BarChart3 className="h-5 w-5 text-primary"/>
+                        className="h-8 w-8 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
+                        <BarChart3 className="h-4 w-4 text-primary"/>
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold text-foreground">My To-Do</h1>
-                        <p className="text-muted-foreground">Manage your assigned tasks and track progress</p>
+                        <h1 className="text-2xl font-bold text-foreground">My To-Do</h1>
+                        <p className="text-sm text-muted-foreground">Manage your assigned tasks and track progress</p>
                     </div>
                 </div>
 
-                {/* Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                    <Card className="bg-card border-border">
-                        <CardContent className="p-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                    <Card className="bg-card border-border py-0">
+                        <CardContent className="p-3">
                             <div className="flex items-center space-x-2">
                                 <TrendingUp className="h-4 w-4 text-blue-500"/>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Total Tasks</p>
-                                    <p className="text-2xl font-bold">{todoData.summary.total}</p>
+                                    <p className="text-xs text-muted-foreground">Total Tasks</p>
+                                    <p className="text-xl font-bold">{todoData.summary.total}</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-card border-border">
-                        <CardContent className="p-4">
+                    <Card className="bg-card border-border py-0">
+                        <CardContent className="p-3">
                             <div className="flex items-center space-x-2">
                                 <AlertTriangle className="h-4 w-4 text-red-500"/>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Overdue</p>
-                                    <p className="text-2xl font-bold text-red-500">{todoData.summary.overdue}</p>
+                                    <p className="text-xs text-muted-foreground">Overdue</p>
+                                    <p className="text-xl font-bold text-red-500">{todoData.summary.overdue}</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-card border-border">
-                        <CardContent className="p-4">
+                    <Card className="bg-card border-border py-0">
+                        <CardContent className="p-3">
                             <div className="flex items-center space-x-2">
                                 <Clock className="h-4 w-4 text-orange-500"/>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Due Today</p>
-                                    <p className="text-2xl font-bold text-orange-500">{todoData.summary.today}</p>
+                                    <p className="text-xs text-muted-foreground">Due Today</p>
+                                    <p className="text-xl font-bold text-orange-500">{todoData.summary.today}</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-card border-border">
-                        <CardContent className="p-4">
+                    <Card className="bg-card border-border py-0">
+                        <CardContent className="p-3">
                             <div className="flex items-center space-x-2">
                                 <Calendar className="h-4 w-4 text-blue-500"/>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">This Week</p>
-                                    <p className="text-2xl font-bold">{todoData.summary.thisWeek}</p>
+                                    <p className="text-xs text-muted-foreground">This Week</p>
+                                    <p className="text-xl font-bold">{todoData.summary.thisWeek}</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-card border-border">
-                        <CardContent className="p-4">
+                    <Card className="bg-card border-border py-0">
+                        <CardContent className="p-3">
                             <div className="flex items-center space-x-2">
                                 <CheckCircle className="h-4 w-4 text-green-500"/>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Completed</p>
-                                    <p className="text-2xl font-bold text-green-500">{todoData.summary.closed}</p>
+                                    <p className="text-xs text-muted-foreground">Completed</p>
+                                    <p className="text-xl font-bold text-green-500">{todoData.summary.closed}</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
 
-                {/* Filters */}
-                <Card className="bg-card border-border">
-                    <CardContent className="p-4">
-                        <div className="flex items-center space-x-4 flex-wrap gap-2">
-                            <div className="flex items-center space-x-2">
-                                <Filter className="h-4 w-4 text-muted-foreground"/>
-                                <span className="text-sm text-muted-foreground">Filters:</span>
-                            </div>
+                <div className="flex items-center space-x-3 flex-wrap gap-2 mb-6">
+                    <div className="flex items-center space-x-2">
+                        <Filter className="h-4 w-4 text-muted-foreground"/>
+                        <span className="text-sm text-muted-foreground">Filters:</span>
+                    </div>
 
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-[130px] h-8 bg-background border-border">
-                                    <SelectValue placeholder="Status"/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="open">Open & In Progress</SelectItem>
-                                    <SelectItem value="closed">Completed</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-[130px] h-8 bg-background border-border">
+                            <SelectValue placeholder="Status"/>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="open">Open & In Progress</SelectItem>
+                            <SelectItem value="closed">Completed</SelectItem>
+                        </SelectContent>
+                    </Select>
 
-                            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                                <SelectTrigger className="w-[120px] h-8 bg-background border-border">
-                                    <SelectValue placeholder="Priority"/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Priorities</SelectItem>
-                                    <SelectItem value="Critical">Critical</SelectItem>
-                                    <SelectItem value="High">High</SelectItem>
-                                    <SelectItem value="Medium">Medium</SelectItem>
-                                    <SelectItem value="Low">Low</SelectItem>
-                                </SelectContent>
-                            </Select>
+                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                        <SelectTrigger className="w-[120px] h-8 bg-background border-border">
+                            <SelectValue placeholder="Priority"/>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Priorities</SelectItem>
+                            <SelectItem value="Critical">Critical</SelectItem>
+                            <SelectItem value="High">High</SelectItem>
+                            <SelectItem value="Medium">Medium</SelectItem>
+                            <SelectItem value="Low">Low</SelectItem>
+                        </SelectContent>
+                    </Select>
 
-                            <Select value={projectFilter} onValueChange={setProjectFilter}>
-                                <SelectTrigger className="w-[140px] h-8 bg-background border-border">
-                                    <SelectValue placeholder="Project"/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Projects</SelectItem>
-                                    {todoData.projects.map(project => (
-                                        <SelectItem key={project.id} value={project.id.toString()}>
-                                            {project.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                    <Select value={projectFilter} onValueChange={setProjectFilter}>
+                        <SelectTrigger className="w-[140px] h-8 bg-background border-border">
+                            <SelectValue placeholder="Project"/>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Projects</SelectItem>
+                            {todoData.projects.map(project => (
+                                <SelectItem key={project.id} value={project.id.toString()}>
+                                    {project.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
-                            <Select value={sortBy} onValueChange={setSortBy}>
-                                <SelectTrigger className="w-[120px] h-8 bg-background border-border">
-                                    <SelectValue placeholder="Sort by"/>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="due_date">Due Date</SelectItem>
-                                    <SelectItem value="priority">Priority</SelectItem>
-                                    <SelectItem value="story_points">Story Points</SelectItem>
-                                    <SelectItem value="created_date">Created Date</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardContent>
-                </Card>
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                        <SelectTrigger className="w-[120px] h-8 bg-background border-border">
+                            <SelectValue placeholder="Sort by"/>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="due_date">Due Date</SelectItem>
+                            <SelectItem value="priority">Priority</SelectItem>
+                            <SelectItem value="story_points">Story Points</SelectItem>
+                            <SelectItem value="created_date">Created Date</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
-            {/* Task Sections */}
-            <div className="space-y-8">
+            <div className="space-y-6">
                 <TaskSection
                     title="Overdue"
                     tasks={todoData.groupedTasks.overdue}

@@ -148,10 +148,194 @@ const createPost = async (req, res) => {
     }
 };
 
+const getKanbanPosts = async (req, res) => {
+    try {
+        const {projectId} = req.params;
+        const {
+            search,
+            priority,
+            issue_type,
+            assignee_id,
+            column_page = 1,
+            column_limit = 20
+        } = req.query;
+
+        const project = await Project.findByPk(projectId);
+        if (!project) {
+            return res.status(404).json({error: 'Project not found'});
+        }
+
+        const baseWhere = {project_id: projectId, parent_issue_id: null};
+
+        if (priority && priority !== 'all') {
+            baseWhere.priority = priority;
+        }
+
+        if (issue_type && issue_type !== 'all') {
+            baseWhere.issue_type = issue_type;
+        }
+
+        if (assignee_id && assignee_id !== 'all') {
+            if (assignee_id === 'unassigned') {
+                baseWhere.assignee_id = null;
+            } else {
+                baseWhere.assignee_id = parseInt(assignee_id);
+            }
+        }
+
+        let searchConditions = null;
+        if (search) {
+            searchConditions = [
+                {title: {[Op.like]: `%${search}%`}},
+                {description: {[Op.like]: `%${search}%`}},
+                {labels: {[Op.like]: `%${search}%`}},
+                {'$author.username$': {[Op.like]: `%${search}%`}},
+                {'$assignee.username$': {[Op.like]: `%${search}%`}},
+            ];
+        }
+
+        let privacyConditions = null;
+        if (!req.user) {
+            privacyConditions = [{is_private: false}];
+        } else if (!req.user.is_admin) {
+            privacyConditions = [
+                {is_private: false},
+                {author_id: req.user.id, is_private: true},
+            ];
+        }
+
+        const buildWhereClause = (status, includeTimeFilter = false) => {
+            const where = {...baseWhere, status};
+            
+            if (includeTimeFilter && status === 'Closed') {
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                where.updated_at = {[Op.gte]: thirtyDaysAgo};
+            }
+
+            const conditions = [];
+            if (searchConditions) conditions.push(...searchConditions);
+            if (privacyConditions) conditions.push(...privacyConditions);
+
+            if (conditions.length > 0) {
+                where[Op.or] = conditions;
+            }
+
+            return where;
+        };
+
+        const includeOptions = [
+            {model: User, as: 'author', attributes: ['id', 'username', 'email', 'profile_picture']},
+            {model: User, as: 'assignee', attributes: ['id', 'username', 'email', 'profile_picture']},
+            {model: PostVote, as: 'votes', attributes: ['user_id']},
+            {
+                model: Comment,
+                as: 'comments',
+                attributes: ['id'],
+                separate: true,
+            },
+            {
+                model: Post,
+                as: 'sub_issues',
+                attributes: ['id', 'title', 'status', 'priority', 'issue_type', 'assignee_id', 'created_at'],
+                include: [
+                    {model: User, as: 'assignee', attributes: ['id', 'username', 'profile_picture']}
+                ]
+            }
+        ];
+
+        const [openCount, inProgressCount, closedCount, recentClosedCount] = await Promise.all([
+            Post.count({where: buildWhereClause('Open')}),
+            Post.count({where: buildWhereClause('In Progress')}),
+            Post.count({where: buildWhereClause('Closed')}),
+            Post.count({where: buildWhereClause('Closed', true)}),
+        ]);
+
+        const offset = (parseInt(column_page) - 1) * parseInt(column_limit);
+
+        const [openPosts, inProgressPosts, closedPosts] = await Promise.all([
+            Post.findAll({
+                where: buildWhereClause('Open'),
+                include: includeOptions,
+                order: [['created_at', 'DESC']],
+                limit: parseInt(column_limit),
+                offset: offset,
+            }),
+            Post.findAll({
+                where: buildWhereClause('In Progress'),
+                include: includeOptions,
+                order: [['updated_at', 'DESC']],
+                limit: parseInt(column_limit),
+                offset: offset,
+            }),
+            Post.findAll({
+                where: buildWhereClause('Closed', true),
+                include: includeOptions,
+                order: [['updated_at', 'DESC']],
+                limit: parseInt(column_limit),
+                offset: offset,
+            })
+        ]);
+
+        const processPostsWithVotes = (posts) => {
+            return posts.map(post => ({
+                ...post.toJSON(),
+                vote_count: post.votes.length,
+                user_voted: req.user ? post.votes.some(vote => vote.user_id === req.user.id) : false,
+                comment_count: post.comments.length,
+                sub_issue_count: post.sub_issues.length,
+                sub_issues_closed_count: post.sub_issues.filter(sub => sub.status === 'Closed').length,
+            }));
+        };
+
+        const response = {
+            columns: {
+                'Open': {
+                    posts: processPostsWithVotes(openPosts),
+                    total: openCount,
+                    hasMore: openCount > offset + openPosts.length,
+                },
+                'In Progress': {
+                    posts: processPostsWithVotes(inProgressPosts),
+                    total: inProgressCount,
+                    hasMore: inProgressCount > offset + inProgressPosts.length,
+                },
+                'Closed': {
+                    posts: processPostsWithVotes(closedPosts),
+                    total: closedCount,
+                    totalShowing: recentClosedCount,
+                    hasMore: recentClosedCount > offset + closedPosts.length,
+                    note: recentClosedCount < closedCount ? `Showing ${recentClosedCount} recent items of ${closedCount} total` : null,
+                }
+            },
+            pagination: {
+                page: parseInt(column_page),
+                limit: parseInt(column_limit),
+            }
+        };
+
+        res.json(response);
+    } catch (error) {
+        console.error('Get kanban posts error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
 const getPosts = async (req, res) => {
     try {
         const {projectId} = req.params;
-        const {page = 1, limit = 10, status, search} = req.query;
+        const {
+            page = 1,
+            limit = 25,
+            status,
+            search,
+            priority,
+            issue_type,
+            assignee_id,
+            sort = 'created_at',
+            order = 'DESC',
+            view_mode = 'list'
+        } = req.query;
 
         const project = await Project.findByPk(projectId);
         if (!project) {
@@ -159,30 +343,122 @@ const getPosts = async (req, res) => {
         }
 
         const offset = (page - 1) * limit;
-        const where = {project_id: projectId, parent_issue_id: null}; // Only get parent issues, not sub-issues
+        const where = {project_id: projectId, parent_issue_id: null};
 
-        if (status) {
-            where.status = status;
+        if (status && status !== 'all') {
+            if (status.toLowerCase() === 'open') {
+                where.status = 'Open';
+            } else if (status.toLowerCase() === 'closed') {
+                where.status = 'Closed';
+            } else if (status.toLowerCase() === 'in progress') {
+                where.status = 'In Progress';
+            } else {
+                where.status = status;
+            }
+        }
+
+        if (priority && priority !== 'all') {
+            where.priority = priority;
+        }
+
+        if (issue_type && issue_type !== 'all') {
+            where.issue_type = issue_type;
+        }
+
+        if (assignee_id && assignee_id !== 'all') {
+            if (assignee_id === 'unassigned') {
+                where.assignee_id = null;
+            } else {
+                where.assignee_id = parseInt(assignee_id);
+            }
         }
 
         if (search) {
-            where[Op.or] = [
+            const searchConditions = [
                 {title: {[Op.like]: `%${search}%`}},
                 {description: {[Op.like]: `%${search}%`}},
             ];
+
+            if (search) {
+                searchConditions.push({
+                    labels: {
+                        [Op.like]: `%${search}%`
+                    }
+                });
+            }
+
+            searchConditions.push({
+                '$author.username$': {[Op.like]: `%${search}%`}
+            });
+
+            searchConditions.push({
+                '$assignee.username$': {[Op.like]: `%${search}%`}
+            });
+
+            where[Op.or] = searchConditions;
         }
+
         if (!req.user) {
             where.is_private = false;
-        } else if (req.user.is_admin) {
-
-        } else {
-            where[Op.or] = [
+        } else if (!req.user.is_admin) {
+            where[Op.or] = where[Op.or] ? [
+                ...where[Op.or],
+                {is_private: false},
+                {author_id: req.user.id, is_private: true},
+            ] : [
                 {is_private: false},
                 {author_id: req.user.id, is_private: true},
             ];
         }
 
-        const {count, rows: posts} = await Post.findAndCountAll({
+        if (view_mode === 'kanban' && (!status || status === 'all' || status === 'Closed')) {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            if (where[Op.or]) {
+                where[Op.or] = [
+                    ...where[Op.or],
+                    {
+                        status: {[Op.ne]: 'Closed'}
+                    },
+                    {
+                        status: 'Closed',
+                        updated_at: {[Op.gte]: thirtyDaysAgo}
+                    }
+                ];
+            } else {
+                where[Op.or] = [
+                    {
+                        status: {[Op.ne]: 'Closed'}
+                    },
+                    {
+                        status: 'Closed',
+                        updated_at: {[Op.gte]: thirtyDaysAgo}
+                    }
+                ];
+            }
+        }
+
+        let orderClause;
+        const validSorts = ['created_at', 'updated_at', 'title', 'vote_count', 'priority', 'due_date'];
+        const validOrders = ['ASC', 'DESC'];
+        
+        if (validSorts.includes(sort) && validOrders.includes(order.toUpperCase())) {
+            if (sort === 'vote_count') {
+                orderClause = [['created_at', 'DESC']];
+            } else if (sort === 'priority') {
+                orderClause = [
+                    ['priority', 'DESC'],
+                    ['created_at', 'DESC']
+                ];
+            } else {
+                orderClause = [[sort, order.toUpperCase()]];
+            }
+        } else {
+            orderClause = [['created_at', 'DESC']];
+        }
+
+        const findOptions = {
             where,
             include: [
                 {model: User, as: 'author', attributes: ['id', 'username', 'email', 'profile_picture']},
@@ -203,12 +479,19 @@ const getPosts = async (req, res) => {
                     ]
                 }
             ],
-            order: [['created_at', 'DESC']],
-            limit: parseInt(limit),
-            offset,
-        });
+            order: orderClause,
+        };
 
-        const postsWithVotes = posts.map(post => ({
+        if (view_mode === 'kanban') {
+            findOptions.limit = 1000;
+        } else {
+            findOptions.limit = parseInt(limit);
+            findOptions.offset = offset;
+        }
+
+        const {count, rows: posts} = await Post.findAndCountAll(findOptions);
+
+        let postsWithVotes = posts.map(post => ({
             ...post.toJSON(),
             vote_count: post.votes.length,
             user_voted: req.user ? post.votes.some(vote => vote.user_id === req.user.id) : false,
@@ -217,15 +500,45 @@ const getPosts = async (req, res) => {
             sub_issues_closed_count: post.sub_issues.filter(sub => sub.status === 'Closed').length,
         }));
 
-        res.json({
+        if (sort === 'vote_count') {
+            postsWithVotes.sort((a, b) => {
+                const direction = order.toUpperCase() === 'DESC' ? -1 : 1;
+                return direction * (a.vote_count - b.vote_count);
+            });
+        }
+
+        if (view_mode === 'list' && sort === 'vote_count') {
+            const startIndex = offset;
+            const endIndex = startIndex + parseInt(limit);
+            postsWithVotes = postsWithVotes.slice(startIndex, endIndex);
+        }
+
+        const response = {
             posts: postsWithVotes,
-            pagination: {
+        };
+
+        if (view_mode === 'list') {
+            response.pagination = {
                 total: count,
                 page: parseInt(page),
                 limit: parseInt(limit),
                 totalPages: Math.ceil(count / limit),
-            },
-        });
+                hasNext: page * limit < count,
+                hasPrev: page > 1,
+            };
+        }
+
+        if (view_mode === 'kanban') {
+            const statusCounts = {
+                'Open': postsWithVotes.filter(p => p.status === 'Open').length,
+                'In Progress': postsWithVotes.filter(p => p.status === 'In Progress').length,
+                'Closed': postsWithVotes.filter(p => p.status === 'Closed').length,
+            };
+            response.statusCounts = statusCounts;
+            response.total = postsWithVotes.length;
+        }
+
+        res.json(response);
     } catch (error) {
         console.error('Get posts error:', error);
         res.status(500).json({error: 'Internal server error'});
@@ -526,6 +839,7 @@ module.exports = {
     validateUpdatePost,
     createPost,
     getPosts,
+    getKanbanPosts,
     getPost,
     updatePost,
     deletePost,

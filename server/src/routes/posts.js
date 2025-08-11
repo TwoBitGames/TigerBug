@@ -6,6 +6,7 @@ const {
     validateUpdatePost,
     createPost,
     getPosts,
+    getKanbanPosts,
     getPost,
     updatePost,
     deletePost,
@@ -25,6 +26,7 @@ const createPostLimiter = rateLimit({
 });
 
 router.get('/', optionalAuth, getPosts);
+router.get('/kanban', optionalAuth, getKanbanPosts);
 router.get('/:id', optionalAuth, getPost);
 
 router.post('/', createPostLimiter, optionalAuth, validatePost, createPost);

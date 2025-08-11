@@ -211,7 +211,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                 </p>                </div>
 
                 {parentIssue && (
-                    <div className="bg-accent/30 border border-accent/50 rounded-lg p-4">
+                    <div className="bg-accent/30 border border-accent/50 rounded-lg p-4 mb-6">
                         <div className="flex items-center space-x-3">
                             <div className="text-sm text-muted-foreground">Parent Issue:</div>
                             <div className="flex-1">
@@ -223,7 +223,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                 )}
 
                 <div className="space-y-6">
-                <div className={`grid gap-6 ${canEditManagerFields ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
+                <div className={`grid gap-4 ${canEditManagerFields ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'}`}>
                     <div className="space-y-2">
                         <Label htmlFor="project-select" className="text-foreground font-medium">
                             Select Project
@@ -319,7 +319,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
 
                 <div className="space-y-3">
                     <Label className="text-foreground font-medium">Issue Type</Label>
-                    <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid gap-3 sm:grid-cols-2">
                         <Card
                             className={`cursor-pointer transition-all bg-card border-border backdrop-blur-sm ${
                                 issueType === "Bug"
@@ -416,7 +416,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                 )}
 
                 {canEditManagerFields && (
-                    <div className="grid gap-6 md:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         <div className="space-y-2">
                             <Label htmlFor="story-points" className="text-foreground font-medium flex items-center gap-2">
                                 <Target className="h-4 w-4"/>
@@ -451,7 +451,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                             />
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 sm:col-span-2 lg:col-span-1 min-w-0">
                             <Label htmlFor="due-date" className="text-foreground font-medium flex items-center gap-2">
                                 <Calendar className="h-4 w-4"/>
                                 Due Date
@@ -461,7 +461,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                                 date={dueDate}
                                 onDateChange={setDueDate}
                                 placeholder="Select due date"
-                                className="bg-input border-border text-foreground"
+                                className="bg-input border-border text-foreground w-full max-w-full"
                             />
                         </div>
                     </div>

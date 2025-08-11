@@ -5,7 +5,7 @@ import {useDialog} from '../contexts/DialogContext';
 import {useViewMode} from '../contexts/ViewModeContext';
 import {IssueList} from '../components/IssueList';
 import {projectsApi, postsApi} from '../services/api';
-import type {Project, Post} from '../types';
+import type {Project} from '../types';
 
 export const ProjectPage = () => {
     const {projectId} = useParams<{ projectId: string }>();
@@ -15,16 +15,13 @@ export const ProjectPage = () => {
     const {viewMode} = useViewMode();
 
     const [project, setProject] = useState<Project | null>(null);
-    const [posts, setPosts] = useState<Post[]>([]);
     const [filterType, setFilterType] = useState<'all' | 'open' | 'closed'>('all');
     const [isLoadingProject, setIsLoadingProject] = useState(false);
-    const [isLoadingPosts, setIsLoadingPosts] = useState(false);
     const [votingPosts, setVotingPosts] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         if (projectId) {
             loadProject();
-            loadPosts();
         }
     }, [projectId]);
 
@@ -44,33 +41,7 @@ export const ProjectPage = () => {
         }
     };
 
-    const loadPosts = async () => {
-        if (!projectId) return;
-
-        setIsLoadingPosts(true);
-        try {
-            const postData = await postsApi.getAll(parseInt(projectId));
-            setPosts(Array.isArray(postData) ? postData : []);
-        } catch (error) {
-            console.error('Failed to load posts:', error);
-            setPosts([]);
-        } finally {
-            setIsLoadingPosts(false);
-        }
-    };
-
-    const refreshPosts = async () => {
-        if (!projectId) return;
-
-        try {
-            const postData = await postsApi.getAll(parseInt(projectId));
-            setPosts(Array.isArray(postData) ? postData : []);
-        } catch (error) {
-            console.error('Failed to refresh posts:', error);
-        }
-    };
-
-    const handleUpvote = async (postId: number) => {
+    const handleUpvote = async (postId: number): Promise<void> => {
         if (!isAuthenticated) {
             await alert('Please login to vote on issues');
             return;
@@ -81,7 +52,6 @@ export const ProjectPage = () => {
         try {
             setVotingPosts(prev => new Set(prev).add(postId));
             await postsApi.toggleVote(parseInt(projectId), postId);
-            await refreshPosts();
         } catch (error) {
             console.error('Failed to toggle vote:', error);
         } finally {
@@ -103,7 +73,6 @@ export const ProjectPage = () => {
 
         try {
             await postsApi.update(parseInt(projectId), postId, {status});
-            await refreshPosts();
         } catch (error) {
             console.error('Failed to update post status:', error);
         }
@@ -132,20 +101,9 @@ export const ProjectPage = () => {
         );
     }
 
-    if (isLoadingPosts) {
-        return (
-            <div className="container py-8 px-4 text-center">
-                <div
-                    className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading issues...</p>
-            </div>
-        );
-    }
-
     return (
         <IssueList
             project={project}
-            posts={posts}
             filterType={filterType}
             viewMode={viewMode}
             votingPosts={votingPosts}
