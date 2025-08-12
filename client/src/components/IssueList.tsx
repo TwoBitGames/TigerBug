@@ -616,7 +616,7 @@ export const IssueList = ({
                                                     <span>{new Date(post.due_date).toLocaleDateString()}</span>
                                                 </div>
                                             )}
-                                            {post.sub_issue_count && post.sub_issue_count > 0 && (
+                                            {(post.sub_issue_count ?? 0) > 0 && (
                                                 <div className="flex items-center space-x-1">
                                                     <GitBranch className="h-3 w-3"/>
                                                     <span>{post.sub_issues_closed_count || 0}/{post.sub_issue_count} sub-issues</span>
@@ -730,7 +730,7 @@ export const IssueList = ({
                                                             </div>
                                                         </div>
 
-                                                        {(post.assignee || post.story_points || post.due_date || (post.sub_issue_count && post.sub_issue_count > 0)) && (
+                                                        {(post.assignee || post.story_points || post.due_date || (post.sub_issue_count ?? 0) > 0) && (
                                                             <div
                                                                 className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
                                                                 <div className="flex items-center space-x-2">
@@ -747,7 +747,7 @@ export const IssueList = ({
                                                                             <span>{post.story_points}</span>
                                                                         </div>
                                                                     )}
-                                                                    {post.sub_issue_count && post.sub_issue_count > 0 && (
+                                                                    {(post.sub_issue_count ?? 0) > 0 && (
                                                                         <div className="flex items-center space-x-1">
                                                                             <GitBranch className="h-3 w-3"/>
                                                                             <span
