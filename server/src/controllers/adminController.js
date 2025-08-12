@@ -352,7 +352,7 @@ const updateBrandingConfig = async (req, res) => {
                 return res.status(400).json({error: 'Social links must be an object'});
             }
 
-            const allowedKeys = ['github', 'youtube', 'steam', 'twitter', 'linkedin', 'facebook', 'instagram', 'discord'];
+            const allowedKeys = ['website', 'github', 'youtube', 'steam', 'twitter', 'linkedin', 'facebook', 'instagram', 'discord'];
             for (const [key, value] of Object.entries(social_links)) {
                 if (!allowedKeys.includes(key)) {
                     return res.status(400).json({error: `Invalid social link key: ${key}`});

@@ -1,4 +1,4 @@
-import {Github, Youtube, Gamepad2, Twitter, Linkedin, Facebook, Instagram, MessageSquare} from 'lucide-react';
+import {Github, Youtube, Gamepad2, Twitter, Linkedin, Facebook, Instagram, MessageSquare, Globe} from 'lucide-react';
 import {useBranding} from '../contexts/BrandingContext';
 
 const SOCIAL_ICONS = {
@@ -10,6 +10,7 @@ const SOCIAL_ICONS = {
     facebook: Facebook,
     instagram: Instagram,
     discord: MessageSquare,
+    website: Globe,
 } as const;
 
 const COPYRIGHT_URL = 'https://github.com/TwoBitGames/TigerBug';

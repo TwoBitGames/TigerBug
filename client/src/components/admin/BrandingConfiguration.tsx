@@ -12,6 +12,7 @@ import {Palette, Upload, Link, Trash2, Image} from 'lucide-react';
 import type {UpdateBrandingConfigData} from '@/types';
 
 const SOCIAL_PLATFORMS = [
+    {key: 'website', label: 'Website', placeholder: 'https://yourcompany.com'},
     {key: 'github', label: 'GitHub', placeholder: 'https://github.com/yourorganization'},
     {key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/@yourchannel'},
     {key: 'steam', label: 'Steam', placeholder: 'https://store.steampowered.com/publisher/yourpublisher'},
