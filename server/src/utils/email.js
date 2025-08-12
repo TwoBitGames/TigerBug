@@ -268,6 +268,27 @@ ${clientUrl}
     return await sendEmail(email, emailData.subject, textContent, htmlContent);
 };
 
+const sendWelcomeEmail = async (email) => {
+    const clientUrl = await getClientUrl();
+    const emailData = emailContents.welcome(email, clientUrl);
+    const htmlContent = await templateEngine.renderEmail(emailData);
+
+    const textContent = `
+Welcome to TigerBug!
+
+Hi there!
+
+Welcome to TigerBug! We're excited to have you on board. Your account (${email}) is now verified and ready to use.
+
+Get started: ${clientUrl}
+
+---
+TigerBug Team
+  `.trim();
+
+    return await sendEmail(email, emailData.subject, textContent, htmlContent);
+};
+
 const sendSimpleTestEmail = async (email) => {
     const emailData = emailContents.testEmail();
     const htmlContent = await templateEngine.renderEmail(emailData);
@@ -301,5 +322,6 @@ module.exports = {
     sendPostNotification,
     sendCommentNotification,
     sendVerificationEmail,
+    sendWelcomeEmail,
     sendSimpleTestEmail,
 };
