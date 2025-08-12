@@ -1,5 +1,5 @@
 const {body, validationResult} = require('express-validator');
-const {User} = require('../models/associations');
+const {User, ProjectMembership} = require('../models/associations');
 const {hashPassword, comparePassword} = require('../utils/password');
 const {generateToken} = require('../utils/jwt');
 const {
@@ -460,6 +460,27 @@ const deleteProfilePicture = async (req, res) => {
     }
 };
 
+const getProjectAssignmentStatus = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({error: 'Authentication required'});
+        }
+
+        const hasProjectAssignments = await ProjectMembership.findOne({
+            where: {
+                user_id: req.user.id
+            }
+        });
+
+        res.json({
+            hasProjectAssignments: !!hasProjectAssignments
+        });
+    } catch (error) {
+        console.error('Get project assignment status error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
 module.exports = {
     validateRegister,
     validateLogin,
@@ -476,4 +497,5 @@ module.exports = {
     setupFirstAdmin,
     verifyEmail,
     resendVerificationCode,
+    getProjectAssignmentStatus,
 };

@@ -13,6 +13,7 @@ import {
 import {useAuth} from '../contexts/AuthContext';
 import {useBranding} from '../contexts/BrandingContext';
 import {useViewMode} from '../contexts/ViewModeContext';
+import {useProjectAssignments} from '../hooks/use-project-assignments';
 import {LoginDialog} from './LoginDialog';
 import {OnboardingDialog} from './OnboardingDialog';
 import {ProfileDialog} from './ProfileDialog';
@@ -23,6 +24,7 @@ export const NavigationRouter = () => {
     const {user, logout, isAuthenticated, needsOnboarding} = useAuth();
     const {brandingConfig} = useBranding();
     const {viewMode, setViewMode} = useViewMode();
+    const {hasProjectAssignments} = useProjectAssignments();
     const location = useLocation();
     const navigate = useNavigate();
     const {projectId} = useParams<{ projectId: string }>();
@@ -117,7 +119,7 @@ export const NavigationRouter = () => {
                 </div>
 
                 <div className="ml-auto flex items-center space-x-4">
-                    {isAuthenticated && !isInProject && (
+                    {isAuthenticated && !isInProject && hasProjectAssignments && (
                         <Button
                             onClick={handleTodoClick}
                             size="sm"
@@ -186,14 +188,16 @@ export const NavigationRouter = () => {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-48 bg-popover border-border backdrop-blur-xl" align="end">
-                                <DropdownMenuItem
-                                    className="text-foreground focus:bg-accent focus:text-accent-foreground"
-                                    onClick={handleTodoClick}
-                                >
-                                    <CheckSquare className="h-4 w-4 mr-2"/>
-                                    My To-Do
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator className="bg-border"/>
+                                {hasProjectAssignments && (
+                                    <DropdownMenuItem
+                                        className="text-foreground focus:bg-accent focus:text-accent-foreground"
+                                        onClick={handleTodoClick}
+                                    >
+                                        <CheckSquare className="h-4 w-4 mr-2"/>
+                                        My To-Do
+                                    </DropdownMenuItem>
+                                )}
+                                {hasProjectAssignments && <DropdownMenuSeparator className="bg-border"/>}
                                 {user?.is_admin && (
                                     <DropdownMenuItem
                                         className="text-foreground focus:bg-accent focus:text-accent-foreground"

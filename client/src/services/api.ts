@@ -53,6 +53,9 @@ export const authApi = {
 
     setupFirstAdmin: (data: RegisterData) =>
         post<{ token: string; user: User }>('/auth/setup-first-admin', data),
+
+    getProjectAssignmentStatus: () =>
+        get<{ hasProjectAssignments: boolean }>('/auth/project-assignment-status'),
 };
 
 export const projectsApi = {

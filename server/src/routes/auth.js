@@ -15,7 +15,8 @@ const {
     checkOnboardingStatus, 
     setupFirstAdmin,
     verifyEmail,
-    resendVerificationCode
+    resendVerificationCode,
+    getProjectAssignmentStatus
 } = require('../controllers/authController');
 const {authenticateToken} = require('../middleware/auth');
 const {profileUploadMiddleware, handleProfileUploadError} = require('../middleware/profileUpload');
@@ -33,5 +34,7 @@ router.delete('/profile/picture', authenticateToken, deleteProfilePicture);
 
 router.get('/onboarding-status', checkOnboardingStatus);
 router.post('/setup-first-admin', validateRegister, setupFirstAdmin);
+
+router.get('/project-assignment-status', authenticateToken, getProjectAssignmentStatus);
 
 module.exports = router;
