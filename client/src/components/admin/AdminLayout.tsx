@@ -1,5 +1,5 @@
 import {Button} from '../ui/button';
-import {Users, FolderPlus, Mail, Palette} from 'lucide-react';
+import {Users, FolderPlus, Mail, Palette, Key} from 'lucide-react';
 import {Link, useLocation} from 'react-router-dom';
 
 interface AdminLayoutProps {
@@ -15,6 +15,7 @@ export const AdminLayout = ({children}: AdminLayoutProps) => {
         if (path.includes('/admin/projects')) return 'projects';
         if (path.includes('/admin/smtp')) return 'smtp';
         if (path.includes('/admin/branding')) return 'branding';
+        if (path.includes('/admin/oauth')) return 'oauth';
         return 'users';
     };
 
@@ -63,11 +64,22 @@ export const AdminLayout = ({children}: AdminLayoutProps) => {
                             Branding Configuration
                         </Link>
                     </Button>
+                    <Button
+                        variant={activeSection === 'oauth' ? 'default' : 'ghost'}
+                        className="w-full justify-start"
+                        asChild>
+                        <Link to="/admin/oauth">
+                            <Key className="h-4 w-4 mr-2"/>
+                            OAuth Configuration
+                        </Link>
+                    </Button>
                 </div>
             </div>
 
             <div className="flex-1 overflow-auto bg-background">
-                {children}
+                <div className="container max-w-7xl mx-auto p-6 lg:p-8">
+                    {children}
+                </div>
             </div>
         </div>
     );
