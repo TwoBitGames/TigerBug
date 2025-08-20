@@ -20,10 +20,6 @@ const BrandingConfig = sequelize.define('BrandingConfig', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-  tagline: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
   social_links: {
     type: DataTypes.JSON,
     allowNull: true,

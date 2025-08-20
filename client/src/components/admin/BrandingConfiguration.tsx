@@ -3,7 +3,6 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/c
 import {Button} from '../ui/button';
 import {Input} from '../ui/input';
 import {Label} from '../ui/label';
-import {Textarea} from '../ui/textarea';
 import {Separator} from '../ui/separator';
 import {useDialog} from '../../contexts/DialogContext';
 import {useBranding} from '../../contexts/BrandingContext';
@@ -33,8 +32,6 @@ export const BrandingConfiguration = () => {
     const [brandingForm, setBrandingForm] = useState<UpdateBrandingConfigData>({
         app_name: '',
         logo_url: null,
-        banner_url: null,
-        tagline: null,
         social_links: null,
         client_url: null,
     });
@@ -51,7 +48,6 @@ export const BrandingConfiguration = () => {
                 app_name: brandingData.app_name,
                 logo_url: brandingData.logo_url,
                 banner_url: brandingData.banner_url,
-                tagline: brandingData.tagline,
                 social_links: brandingData.social_links,
                 client_url: brandingData.client_url,
             });
@@ -182,12 +178,18 @@ export const BrandingConfiguration = () => {
 
     return (
         <div className="p-6">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Palette className="h-6 w-6"/>
-                    Branding Configuration
-                </h1>
-                <p className="text-muted-foreground">Customize your application's branding and social media presence</p>
+            <div className="space-y-2 mb-6">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <Palette className="h-6 w-6 text-primary"/>
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Branding Configuration</h1>
+                        <p className="text-muted-foreground text-lg">
+                            Customize your application's branding and social media presence.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <div className="space-y-6">
@@ -321,24 +323,6 @@ export const BrandingConfiguration = () => {
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Optional: Upload a banner image that will be displayed on the homepage.
-                                </p>
-                            </div>
-
-                            <div>
-                                <Label htmlFor="tagline">Tagline</Label>
-                                <Textarea
-                                    id="tagline"
-                                    value={brandingForm.tagline || ''}
-                                    onChange={(e) => setBrandingForm({
-                                        ...brandingForm,
-                                        tagline: e.target.value || null
-                                    })}
-                                    placeholder="Track bugs and manage feedback efficiently"
-                                    rows={2}
-                                    maxLength={500}
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Optional: A short description that appears in the footer
                                 </p>
                             </div>
 
