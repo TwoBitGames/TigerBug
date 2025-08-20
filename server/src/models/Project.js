@@ -27,6 +27,11 @@ const Project = sequelize.define('Project', {
       isIn: [['active', 'archived']]
     },
   },
+  disable_issue_creation: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

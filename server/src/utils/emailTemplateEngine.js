@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-const { getClientUrl } = require('./clientUrl');
+const {getClientUrl} = require('./clientUrl');
 
 class EmailTemplateEngine {
     constructor() {
@@ -173,6 +173,30 @@ const emailContents = {
             
             <div class="info-box">
                 <p><strong>Note:</strong> This is a test message sent from your TigerBug system. You can safely ignore it.</p>
+            </div>
+        `,
+        showCta: false
+    }),
+
+    passwordReset: (resetUrl) => ({
+        subject: 'Password Reset Request - TigerBug',
+        heroTitle: 'Reset Your Password',
+        heroSubtitle: 'You have requested to reset your password for your TigerBug account.',
+        mainContent: `
+            <div class="content-block">
+                <p>We received a request to reset the password for your TigerBug account. Click the button below to create a new password:</p>
+            </div>
+            
+            <div class="cta-section">
+                <a href="${resetUrl}" class="btn">Reset My Password</a>
+            </div>
+            
+            <div class="info-box warning">
+                <p><strong>Security Notice:</strong> This password reset link will expire in 1 hour for your security.</p>
+            </div>
+            
+            <div class="content-block">
+                <p>If you did not request a password reset, please ignore this email. Your account remains secure and no changes have been made.</p>
             </div>
         `,
         showCta: false

@@ -315,6 +315,32 @@ TigerBug Team
     return await sendEmail(email, emailData.subject, textContent, htmlContent);
 };
 
+const sendPasswordResetEmail = async (email, resetToken) => {
+    const clientUrl = await getClientUrl();
+    const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
+    const emailData = emailContents.passwordReset(resetUrl);
+    const htmlContent = await templateEngine.renderEmail(emailData);
+
+    const textContent = `
+Password Reset Request - TigerBug
+
+You have requested to reset your password for your TigerBug account.
+
+To reset your password, click the link below:
+${resetUrl}
+
+This link will expire in 1 hour for security reasons.
+
+If you did not request a password reset, please ignore this email. Your account remains secure.
+
+---
+TigerBug Team
+${clientUrl}
+  `.trim();
+
+    return await sendEmail(email, emailData.subject, textContent, htmlContent);
+};
+
 module.exports = {
     initializeMailer,
     refreshMailer,
@@ -324,4 +350,5 @@ module.exports = {
     sendVerificationEmail,
     sendWelcomeEmail,
     sendSimpleTestEmail,
+    sendPasswordResetEmail,
 };

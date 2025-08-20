@@ -34,6 +34,9 @@ const User = sequelize.define('User', {
   oauth_provider: {
     type: DataTypes.STRING,
     allowNull: true,
+    validate: {
+      isIn: [['google', 'discord']],
+    },
   },
   oauth_id: {
     type: DataTypes.STRING,
@@ -57,6 +60,14 @@ const User = sequelize.define('User', {
   },
   profile_picture: {
     type: DataTypes.STRING,
+    allowNull: true,
+  },
+  password_reset_token: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  password_reset_expires: {
+    type: DataTypes.DATE,
     allowNull: true,
   },
 });

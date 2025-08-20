@@ -1,15 +1,24 @@
-import {Github, Youtube, Gamepad2, Twitter, Linkedin, Facebook, Instagram, MessageSquare, Globe} from 'lucide-react';
+import {Globe, Linkedin} from 'lucide-react';
 import {useBranding} from '../contexts/BrandingContext';
+import {
+    SiGithub,
+    SiYoutube,
+    SiSteam,
+    SiX,
+    SiFacebook,
+    SiInstagram,
+    SiDiscord
+} from '@icons-pack/react-simple-icons';
 
 const SOCIAL_ICONS = {
-    github: Github,
-    youtube: Youtube,
-    steam: Gamepad2,
-    twitter: Twitter,
+    github: SiGithub,
+    youtube: SiYoutube,
+    steam: SiSteam,
+    twitter: SiX,
     linkedin: Linkedin,
-    facebook: Facebook,
-    instagram: Instagram,
-    discord: MessageSquare,
+    facebook: SiFacebook,
+    instagram: SiInstagram,
+    discord: SiDiscord,
     website: Globe,
 } as const;
 
@@ -38,6 +47,8 @@ export const Footer = () => {
                                 const IconComponent = SOCIAL_ICONS[platform as keyof typeof SOCIAL_ICONS];
                                 if (!IconComponent) return null;
 
+                                const isLucideIcon = platform === 'website' || platform === 'linkedin';
+
                                 return (
                                     <a
                                         key={platform}
@@ -47,7 +58,11 @@ export const Footer = () => {
                                         className="text-muted-foreground hover:text-foreground transition-colors"
                                         aria-label={platform.charAt(0).toUpperCase() + platform.slice(1)}
                                     >
-                                        <IconComponent className="h-5 w-5"/>
+                                        {isLucideIcon ? (
+                                            <IconComponent className="h-5 w-5"/>
+                                        ) : (
+                                            <IconComponent size={20} />
+                                        )}
                                     </a>
                                 );
                             })}

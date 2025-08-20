@@ -20,6 +20,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     clearPendingVerification: () => void;
     setUser: (user: User | null) => void;
+    setAuthToken: (token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -166,6 +167,10 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
         setPendingVerification(null);
     };
 
+    const setAuthTokenAndStore = (token: string) => {
+        setAuthToken(token);
+    };
+
     const value: AuthContextType = {
         user,
         isLoading,
@@ -182,6 +187,7 @@ export const AuthProvider = ({children}: AuthProviderProps) => {
         isAuthenticated: !!user,
         clearPendingVerification,
         setUser,
+        setAuthToken: setAuthTokenAndStore,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

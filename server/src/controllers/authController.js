@@ -7,7 +7,12 @@ const {
     generateVerificationExpiry,
     isVerificationCodeValid
 } = require('../utils/verification');
-const {sendVerificationEmail, sendWelcomeEmail} = require('../utils/email');
+const {
+    generatePasswordResetToken,
+    generatePasswordResetExpiry,
+    isPasswordResetTokenValid
+} = require('../utils/passwordReset');
+const {sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail} = require('../utils/email');
 const {Op} = require('sequelize');
 const fs = require('fs');
 const path = require('path');
@@ -40,6 +45,15 @@ const validateUpdateProfile = [
         min: 2,
         max: 30
     }).isAlphanumeric().withMessage('Username must be 2-30 characters and contain only letters and numbers'),
+];
+
+const validateForgotPassword = [
+    body('email').isEmail().normalizeEmail(),
+];
+
+const validateResetPassword = [
+    body('token').notEmpty().withMessage('Reset token is required'),
+    body('password').isLength({min: 6}).withMessage('Password must be at least 6 characters long'),
 ];
 
 const register = async (req, res) => {
@@ -481,12 +495,128 @@ const getProjectAssignmentStatus = async (req, res) => {
     }
 };
 
+const getUserProjectMemberships = async (req, res) => {
+    try {
+        const memberships = await ProjectMembership.findAll({
+            where: {
+                user_id: req.user.id
+            },
+            attributes: ['project_id']
+        });
+
+        const projectIds = memberships.map(m => m.project_id);
+
+        res.json({
+            projectIds
+        });
+    } catch (error) {
+        console.error('Get user project memberships error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
+const forgotPassword = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        const {email} = req.body;
+
+        const user = await User.findOne({where: {email}});
+
+        const successMessage = 'If an account with that email exists, we have sent a password reset link.';
+
+        if (!user) {
+            return res.json({message: successMessage});
+        }
+
+        if (user.oauth_provider && !user.password_hash) {
+            return res.json({message: successMessage});
+        }
+
+        const resetToken = generatePasswordResetToken();
+        const resetExpiry = generatePasswordResetExpiry();
+
+        await user.update({
+            password_reset_token: resetToken,
+            password_reset_expires: resetExpiry,
+        });
+
+        try {
+            await sendPasswordResetEmail(email, resetToken);
+            console.log(`Password reset email sent to ${email}`);
+        } catch (emailError) {
+            console.error('Failed to send password reset email:', emailError);
+            return res.status(500).json({error: 'Failed to send password reset email'});
+        }
+
+        res.json({message: successMessage});
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
+const resetPassword = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        const {token, password} = req.body;
+
+        const user = await User.findOne({
+            where: {
+                password_reset_token: token,
+                password_reset_expires: {
+                    [Op.gt]: new Date()
+                }
+            }
+        });
+
+        if (!user || !isPasswordResetTokenValid(token, user.password_reset_token, user.password_reset_expires)) {
+            return res.status(400).json({error: 'Invalid or expired password reset token'});
+        }
+
+        const passwordHash = await hashPassword(password);
+
+        await user.update({
+            password_hash: passwordHash,
+            password_reset_token: null,
+            password_reset_expires: null,
+        });
+
+        const authToken = generateToken(user);
+
+        res.json({
+            message: 'Password reset successful',
+            token: authToken,
+            user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                is_admin: user.is_admin,
+                is_verified: user.is_verified,
+                profile_picture: user.profile_picture,
+            },
+        });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
 module.exports = {
     validateRegister,
     validateLogin,
     validateVerifyEmail,
     validateResendVerification,
     validateUpdateProfile,
+    validateForgotPassword,
+    validateResetPassword,
     register,
     login,
     getProfile,
@@ -498,4 +628,7 @@ module.exports = {
     verifyEmail,
     resendVerificationCode,
     getProjectAssignmentStatus,
+    getUserProjectMemberships,
+    forgotPassword,
+    resetPassword,
 };

@@ -40,7 +40,6 @@ export const BrandingProvider = ({children}: BrandingProviderProps) => {
                 app_name: 'TigerBug',
                 logo_url: null,
                 banner_url: null,
-                tagline: null,
                 social_links: null,
                 client_url: null,
             });
