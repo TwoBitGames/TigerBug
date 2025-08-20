@@ -4,7 +4,7 @@ import {Button} from '../ui/button';
 import {Input} from '../ui/input';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../ui/table';
 import {Badge} from '../ui/badge';
-import {ChevronLeft, ChevronRight, Search, Loader} from 'lucide-react';
+import {ChevronLeft, ChevronRight, Search, Loader, User as UserIcon} from 'lucide-react';
 import {adminApi} from '@/services/api.ts';
 import type {User} from '@/types';
 import {useAuth} from '../../contexts/AuthContext';
@@ -106,9 +106,18 @@ export const UserManagement = () => {
 
     return (
         <div className="p-6">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold">User Management</h1>
-                <p className="text-muted-foreground">Manage user permissions and admin privileges</p>
+            <div className="space-y-2 mb-6">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <UserIcon className="h-6 w-6 text-primary"/>
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+                        <p className="text-muted-foreground text-lg">
+                            Manage user permissions and admin privileges across the system.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <Card>

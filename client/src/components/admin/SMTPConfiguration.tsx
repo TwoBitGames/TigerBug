@@ -3,6 +3,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/c
 import {Button} from '../ui/button';
 import {Input} from '../ui/input';
 import {Label} from '../ui/label';
+import {Mail} from 'lucide-react';
 import {useDialog} from '../../contexts/DialogContext';
 import {adminApi} from '../../services/api';
 import type {UpdateSMTPConfigData} from '../../types';
@@ -81,9 +82,18 @@ export const SMTPConfiguration = () => {
 
     return (
         <div className="p-6">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold">SMTP Configuration</h1>
-                <p className="text-muted-foreground">Configure email settings for system notifications</p>
+            <div className="space-y-2 mb-6">
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <Mail className="h-6 w-6 text-primary"/>
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">SMTP Configuration</h1>
+                        <p className="text-muted-foreground text-lg">
+                            Configure email settings for system notifications and user communications.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <Card>
