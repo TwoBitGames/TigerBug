@@ -2,7 +2,7 @@ import {defineConfig} from 'vitepress'
 
 export default defineConfig({
     title: 'TigerBug',
-    description: 'Lightweight game-focused issue tracker',
+    description: 'A simple issue tracker for game devs',
     cleanUrls: true,
     head: [
         ['link', {rel: 'icon', type: 'image/png', href: '/favicon.png'}]
