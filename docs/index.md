@@ -24,4 +24,3 @@ features:
   - title: Make it yours
     details: Customize branding, set up email, and add OAuth login through the admin panel.
 ---
-
