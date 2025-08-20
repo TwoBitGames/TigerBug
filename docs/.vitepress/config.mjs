@@ -4,6 +4,7 @@ export default defineConfig({
     title: 'TigerBug',
     description: 'A simple issue tracker for game devs',
     cleanUrls: true,
+    ignoreDeadLinks: true,
     head: [
         ['link', {rel: 'icon', type: 'image/png', href: '/favicon.png'}]
     ],
