@@ -33,10 +33,10 @@ import {useDebounce} from '../hooks/use-debounce';
 
 interface IssueListProps {
     project: Project;
-    filterType: 'all' | 'open' | 'closed';
+    filterType: 'all' | 'open' | 'in progress' | 'closed';
     viewMode: 'list' | 'kanban';
     votingPosts?: Set<number>;
-    onFilterChange: (filter: 'all' | 'open' | 'closed') => void;
+    onFilterChange: (filter: 'all' | 'open' | 'in progress' | 'closed') => void;
     onUpvote: (postId: number) => Promise<void>;
     onStatusChange: (postId: number, status: 'Open' | 'In Progress' | 'Closed') => void;
     onIssueClick: (postId: number) => void;
@@ -377,44 +377,58 @@ export const IssueList = ({
                         : pagination?.total || posts.length
                 })
                 </h2>
-                <div className="flex items-center space-x-1">
-                    <Button
-                        variant={filterType === "all" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => onFilterChange("all")}
-                        className={
-                            filterType === "all"
-                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                : "border-border text-muted-foreground hover:bg-accent hover:border-accent-foreground bg-transparent"
-                        }
-                    >
-                        All
-                    </Button>
-                    <Button
-                        variant={filterType === "open" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => onFilterChange("open")}
-                        className={
-                            filterType === "open"
-                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                : "border-border text-muted-foreground hover:bg-accent hover:border-accent-foreground bg-transparent"
-                        }
-                    >
-                        Open
-                    </Button>
-                    <Button
-                        variant={filterType === "closed" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => onFilterChange("closed")}
-                        className={
-                            filterType === "closed"
-                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                : "border-border text-muted-foreground hover:bg-accent hover:border-accent-foreground bg-transparent"
-                        }
-                    >
-                        Closed
-                    </Button>
-                </div>
+                {viewMode === 'list' && (
+                    <div className="flex items-center space-x-1">
+                        <Button
+                            variant={filterType === "all" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => onFilterChange("all")}
+                            className={
+                                filterType === "all"
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "border-border text-muted-foreground hover:bg-accent hover:border-accent-foreground bg-transparent"
+                            }
+                        >
+                            All
+                        </Button>
+                        <Button
+                            variant={filterType === "open" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => onFilterChange("open")}
+                            className={
+                                filterType === "open"
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "border-border text-muted-foreground hover:bg-accent hover:border-accent-foreground bg-transparent"
+                            }
+                        >
+                            Open
+                        </Button>
+                        <Button
+                            variant={filterType === "in progress" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => onFilterChange("in progress")}
+                            className={
+                                filterType === "in progress"
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "border-border text-muted-foreground hover:bg-accent hover:border-accent-foreground bg-transparent"
+                            }
+                        >
+                            In Progress
+                        </Button>
+                        <Button
+                            variant={filterType === "closed" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => onFilterChange("closed")}
+                            className={
+                                filterType === "closed"
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "border-border text-muted-foreground hover:bg-accent hover:border-accent-foreground bg-transparent"
+                            }
+                        >
+                            Closed
+                        </Button>
+                    </div>
+                )}
             </div>
 
             <div className="mb-6 space-y-4">
@@ -423,7 +437,7 @@ export const IssueList = ({
                         <Search
                             className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4"/>
                         <Input
-                            placeholder="Search issues by title, description, author, assignee, or labels..."
+                            placeholder="Search issues by title, description, or labels..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-10 bg-background border-border"

@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { CreateIssue } from '../components/CreateIssue';
-import { projectsApi, postsApi, attachmentsApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { projectsApi, postsApi, attachmentsApi, authApi } from '../services/api';
 import type { Project, CreatePostData, Post } from '../types';
 
 export const CreateIssuePage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [parentIssue, setParentIssue] = useState<Post | null>(null);
   const [isLoadingParent, setIsLoadingParent] = useState(false);
@@ -30,11 +33,31 @@ export const CreateIssuePage = () => {
   const loadProjects = async () => {
     setIsLoadingProjects(true);
     try {
-      const projectData = await projectsApi.getAll();
-      setProjects(Array.isArray(projectData) ? projectData : []);
+      const [projectData, membershipsData] = await Promise.all([
+        projectsApi.getAll(),
+        user ? authApi.getUserProjectMemberships() : Promise.resolve({ projectIds: [] })
+      ]);
+
+      const allProjects = Array.isArray(projectData) ? projectData : [];
+      const membershipIds = membershipsData.projectIds || [];
+      
+      setProjects(allProjects);
+      
+      const filtered = allProjects.filter(project => {
+        if (user?.is_admin) {
+          return true;
+        }
+        if (!project.disable_issue_creation) {
+          return true;
+        }
+        return membershipIds.includes(project.id);
+      });
+      
+      setFilteredProjects(filtered);
     } catch (error) {
       console.error('Failed to load projects:', error);
       setProjects([]);
+      setFilteredProjects([]);
     } finally {
       setIsLoadingProjects(false);
     }
@@ -93,7 +116,7 @@ export const CreateIssuePage = () => {
   return (
     <div className="container py-8 px-4">
       <CreateIssue
-        projects={projects}
+        projects={filteredProjects}
         selectedProject={parseInt(projectId)}
         parentIssue={parentIssue}
         onSubmit={handleSubmitIssue}

@@ -310,7 +310,6 @@ const getBrandingConfig = async (req, res) => {
                 id: 1,
                 app_name: 'TigerBug',
                 logo_url: null,
-                tagline: null,
                 social_links: null,
                 client_url: null,
             });
@@ -325,7 +324,7 @@ const getBrandingConfig = async (req, res) => {
 
 const updateBrandingConfig = async (req, res) => {
     try {
-        const {app_name, logo_url, tagline, social_links, client_url} = req.body;
+        const {app_name, logo_url, social_links, client_url} = req.body;
 
         if (!app_name || app_name.trim().length === 0) {
             return res.status(400).json({error: 'App name is required'});
@@ -333,10 +332,6 @@ const updateBrandingConfig = async (req, res) => {
 
         if (app_name.length > 255) {
             return res.status(400).json({error: 'App name must be 255 characters or less'});
-        }
-
-        if (tagline && tagline.length > 500) {
-            return res.status(400).json({error: 'Tagline must be 500 characters or less'});
         }
 
         if (logo_url && logo_url.length > 2000) {
@@ -368,7 +363,6 @@ const updateBrandingConfig = async (req, res) => {
         const updateData = {
             app_name: app_name.trim(),
             logo_url: logo_url || null,
-            tagline: tagline || null,
             social_links: social_links || null,
             client_url: client_url || null,
         };
@@ -412,7 +406,6 @@ const uploadBrandingAsset = async (req, res) => {
                 app_name: 'TigerBug',
                 logo_url: null,
                 banner_url: null,
-                tagline: null,
                 social_links: null,
                 client_url: null,
             });
@@ -444,7 +437,6 @@ const uploadBrandingAsset = async (req, res) => {
                 app_name: brandingConfig.app_name,
                 logo_url: brandingConfig.logo_url,
                 banner_url: brandingConfig.banner_url,
-                tagline: brandingConfig.tagline,
                 social_links: brandingConfig.social_links,
                 client_url: brandingConfig.client_url,
             },
@@ -493,7 +485,6 @@ const deleteBrandingAsset = async (req, res) => {
                 app_name: brandingConfig.app_name,
                 logo_url: brandingConfig.logo_url,
                 banner_url: brandingConfig.banner_url,
-                tagline: brandingConfig.tagline,
                 social_links: brandingConfig.social_links,
                 client_url: brandingConfig.client_url,
             },

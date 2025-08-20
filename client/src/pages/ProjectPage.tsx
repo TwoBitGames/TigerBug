@@ -15,7 +15,7 @@ export const ProjectPage = () => {
     const {viewMode} = useViewMode();
 
     const [project, setProject] = useState<Project | null>(null);
-    const [filterType, setFilterType] = useState<'all' | 'open' | 'closed'>('all');
+    const [filterType, setFilterType] = useState<'all' | 'open' | 'in progress' | 'closed'>('all');
     const [isLoadingProject, setIsLoadingProject] = useState(false);
     const [votingPosts, setVotingPosts] = useState<Set<number>>(new Set());
 
