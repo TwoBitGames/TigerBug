@@ -3,55 +3,42 @@
   TigerBug
 </h1>
 
-<p align="center"><strong>The open source bug reporting system designed specifically for video game development teams.</strong></p>
+<p align="center"><strong>A simple bug tracker built for game developers.</strong></p>
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/node.js-22+-green.svg)](https://nodejs.org)
-[![SQLite](https://img.shields.io/badge/database-SQLite-003B57.svg)](https://sqlite.org)
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![MIT License][license-shield]][license-url]
 
----
+## Why we built this
 
-### 💡 Why we built TigerBug
+We needed a bug tracker that didn't suck for game development. Most tools are built for web apps and don't handle the stuff we actually need - like sharing save files, crash logs, and screenshots. 
 
-As game developers ourselves, we were frustrated with existing bug tracking solutions.
-Enterprise solutions like Jira felt overwhelming for our use cases, while simple tools lacked the features we needed.
-We couldn't find a tool that:
+Jira is overkill and expensive. GitHub Issues is too basic. Everything else either costs too much or doesn't understand game development workflows.
 
-- **Understood our game development workflows** - Most tools were built for web development, not games
-- **Made it easy to share gameplay footage and save files** - Essential for reproducing game bugs
-- **Gather feedback from players** - We needed a way to involve our community in bug reporting
+So we built our own. It's got the basics done right:
 
-So we built TigerBug - our custom-made solution that combines the best of everything we wanted in a bug tracker,
-tailored specifically for game development teams.
-
-### 🎯 Core Features
-
-- **🏗️ Project-based Organization** - Organize bugs by game project
-- **🔐 Flexible Authentication** - Email/password or OAuth (Google, GitHub) - your choice
-- **💬 Rich Commenting System** - Thread discussions with file attachments for screenshots, logs, and saves
-- **👍 Community Voting** - Let your team and players upvote the most critical issues
-- **📧 Smart Notifications** - Stay informed via email when issues change or receive comments
-- **📎 File Attachments** - Upload crash logs, screenshots, save files, and reproduction steps
+- Project organization (one tracker per game)
+- File uploads for screenshots, logs, save files, whatever
+- Comments and discussions on issues  
+- Voting so you know what actually matters
+- Email notifications that don't spam you
+- OAuth login (Google, Discord) or just email/password
 
 ![Screenshot of detail view](https://i.imgur.com/aWbUzUP.png)
 
-### 🐛 Issue Tracking for Games
+## How it works
 
-Every bug report in TigerBug is designed to capture the full context of the issue:
-
-- **Clear titles and descriptions** help everyone understand the issue
-- **Priority through voting** - let the team highlight what breaks the game experience
-- **Rich discussions** with threaded comments and file uploads
+Each bug report has a title, description, priority level, and status. People can comment with attachments, vote on what's important, and discuss solutions. Nothing fancy, just the stuff you actually need.
 
 ![Screenshot of new issue](https://i.imgur.com/Ak2Qupw.png)
 
 ![Screenshot of kanban view](https://i.imgur.com/5MME37b.png)
 
-### 🐳 Quick Start with Docker
+## Running it
 
-The easiest way to get TigerBug running is with Docker Compose:
+Easiest way is with Docker:
 
-#### docker-compose.yml
 ```yaml
 services:
   tigerbug:
@@ -61,22 +48,39 @@ services:
     volumes:
       - ./data:/app/server/data
     environment:
-      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_SECRET=change-this-to-something-random
       - JWT_EXPIRES_IN=7d
     restart: unless-stopped
 ```
 
-### Why is there no Issues tab?
+Then go to http://localhost:9840 and create your admin account.
 
-This project has been made to meet our specific needs.
-We don't have the time and resources to maintain this project as a full-fledged issue tracker.  
-Feel free to fork and modify it for your own use cases.  
-For critical issues, please contact us directly at [contact@twobit-games.com](mailto:contact@twobit-games.com).
+## Issues and support
 
-### 📄 License
+We built this for our own use and open-sourced it in case it's useful to others. We don't have time to maintain it as a full project, so there's no Issues tab here.
 
-TigerBug is open source software licensed under the MIT License. See [LICENSE](LICENSE) for details.
+If you find a critical bug, email us at [contact@twobit-games.com](mailto:contact@twobit-games.com). Otherwise, feel free to fork it and make it work for your needs.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-**Built with ❤️ by TwoBit Games**
+Built with ❤️ by TwoBit Games
+
+[contributors-shield]: https://img.shields.io/github/contributors/TwoBitGames/TigerBug.svg?style=for-the-badge
+
+[contributors-url]: https://github.com/TwoBitGames/TigerBug/graphs/contributors
+
+[forks-shield]: https://img.shields.io/github/forks/TwoBitGames/TigerBug.svg?style=for-the-badge
+
+[forks-url]: https://github.com/TwoBitGames/TigerBug/network/members
+
+[stars-shield]: https://img.shields.io/github/stars/TwoBitGames/TigerBug.svg?style=for-the-badge
+
+[stars-url]: https://github.com/TwoBitGames/TigerBug/stargazers
+
+[license-shield]: https://img.shields.io/github/license/TwoBitGames/TigerBug.svg?style=for-the-badge
+
+[license-url]: https://github.com/TwoBitGames/TigerBug/blob/master/LICENSE
