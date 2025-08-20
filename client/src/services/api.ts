@@ -21,6 +21,9 @@ import type {
     UpdateBrandingConfigData,
     NotificationPreferences,
     UpdateNotificationPreferencesData,
+    CrashReport,
+    CrashReportFilters,
+    ConvertToIssueData,
 } from '@/types';
 
 export const authApi = {
@@ -35,6 +38,12 @@ export const authApi = {
 
     resendVerificationCode: (data: ResendVerificationData) =>
         post<{ message: string }>('/auth/resend-verification', data),
+
+    forgotPassword: (data: { email: string }) =>
+        post<{ message: string }>('/auth/forgot-password', data),
+
+    resetPassword: (data: { token: string; password: string }) =>
+        post<{ token: string; user: User; message: string }>('/auth/reset-password', data),
 
     getProfile: () =>
         get<{ user: User }>('/auth/profile').then(response => response.user),
@@ -56,6 +65,36 @@ export const authApi = {
 
     getProjectAssignmentStatus: () =>
         get<{ hasProjectAssignments: boolean }>('/auth/project-assignment-status'),
+
+    getUserProjectMemberships: () =>
+        get<{ projectIds: number[] }>('/auth/project-memberships'),
+
+    getOAuthProviders: () =>
+        get<{ providers: Array<{ provider: string; button_color?: string; text_color?: string }> }>('/auth/oauth/providers'),
+
+    getOAuthConfigs: () =>
+        get<{ configs: Array<{ 
+            id: number; 
+            provider: string; 
+            client_id: string; 
+            is_enabled: boolean;
+            button_color?: string; 
+            text_color?: string;
+            scope?: string; 
+            callback_url?: string;
+            has_client_secret?: boolean;
+        }> }>('/auth/oauth/admin/configs'),
+
+    updateOAuthConfig: (provider: string, data: {
+        client_id: string;
+        client_secret?: string;
+        is_enabled: boolean;
+        button_color?: string;
+        text_color?: string;
+        scope?: string;
+        callback_url?: string;
+    }) =>
+        put(`/auth/oauth/admin/configs/${provider}`, data),
 };
 
 export const projectsApi = {
@@ -296,12 +335,20 @@ export const todoApi = {
         priority?: string;
         project?: string;
         sort?: string;
+        search?: string;
+        page?: number;
+        limit?: number;
+        date_range?: string;
     }) => {
         const query = new URLSearchParams();
         if (params?.status) query.append('status', params.status);
         if (params?.priority) query.append('priority', params.priority);
         if (params?.project) query.append('project', params.project);
         if (params?.sort) query.append('sort', params.sort);
+        if (params?.search) query.append('search', params.search);
+        if (params?.page) query.append('page', params.page.toString());
+        if (params?.limit) query.append('limit', params.limit.toString());
+        if (params?.date_range) query.append('date_range', params.date_range);
 
         const queryString = query.toString();
         return get<{
@@ -315,6 +362,14 @@ export const todoApi = {
                 noDueDate: Post[];
             };
             projects: { id: number; name: string }[];
+            pagination: {
+                total: number;
+                page: number;
+                limit: number;
+                totalPages: number;
+                hasNext: boolean;
+                hasPrev: boolean;
+            };
             summary: {
                 total: number;
                 overdue: number;
@@ -322,6 +377,9 @@ export const todoApi = {
                 thisWeek: number;
                 open: number;
                 closed: number;
+                totalStoryPoints: number;
+                completedStoryPoints: number;
+                storyPointsProgress: number;
             };
         }>(`/todo${queryString ? `?${queryString}` : ''}`);
     },
@@ -333,4 +391,41 @@ export const notificationApi = {
 
     updatePreferences: (data: UpdateNotificationPreferencesData) =>
         put<{ preferences: NotificationPreferences; message: string }>('/notifications/preferences', data).then(response => response.preferences),
+};
+
+export const crashReportsApi = {
+    getAll: (projectId: number, filters?: CrashReportFilters) => {
+        const query = new URLSearchParams();
+        if (filters?.page) query.append('page', filters.page.toString());
+        if (filters?.limit) query.append('limit', filters.limit.toString());
+        if (filters?.status) query.append('status', filters.status);
+        if (filters?.search) query.append('search', filters.search);
+        if (filters?.sort) query.append('sort', filters.sort);
+        if (filters?.order) query.append('order', filters.order);
+
+        const queryString = query.toString();
+        return get<{
+            crash_reports: CrashReport[];
+            pagination: {
+                total: number;
+                page: number;
+                limit: number;
+                totalPages: number;
+                hasNext: boolean;
+                hasPrev: boolean;
+            };
+        }>(`/crash-reports/project/${projectId}${queryString ? `?${queryString}` : ''}`);
+    },
+
+    getById: (projectId: number, crashId: number) =>
+        get<{ crash_report: CrashReport }>(`/crash-reports/project/${projectId}/${crashId}`).then(response => response.crash_report),
+
+    updateStatus: (projectId: number, crashId: number, data: { status?: string; notes?: string }) =>
+        put<{ crash_report: CrashReport }>(`/crash-reports/project/${projectId}/${crashId}/status`, data).then(response => response.crash_report),
+
+    convertToIssue: (projectId: number, crashId: number, data: ConvertToIssueData) =>
+        post<{ issue: Post; crash_report: CrashReport }>(`/crash-reports/project/${projectId}/${crashId}/convert`, data),
+
+    delete: (projectId: number, crashId: number) =>
+        del<{ message: string; deleted_id: number }>(`/crash-reports/project/${projectId}/${crashId}`),
 };

@@ -1,6 +1,6 @@
 import {useState, useEffect} from 'react';
 import {useLocation, useNavigate, useParams} from 'react-router-dom';
-import {ArrowLeft, ChevronDown, Shield, User, LogOut, LogIn, Plus, List, LayoutGrid, CheckSquare} from 'lucide-react';
+import {ArrowLeft, ChevronDown, Shield, User, LogOut, LogIn, Plus, List, Columns3, CheckSquare, Bug} from 'lucide-react';
 import {Button} from './ui/button';
 import {UserAvatar} from './ui/user-avatar';
 import {
@@ -14,10 +14,11 @@ import {useAuth} from '../contexts/AuthContext';
 import {useBranding} from '../contexts/BrandingContext';
 import {useViewMode} from '../contexts/ViewModeContext';
 import {useProjectAssignments} from '../hooks/use-project-assignments';
+import {useDialog} from '../contexts/DialogContext';
 import {LoginDialog} from './LoginDialog';
 import {OnboardingDialog} from './OnboardingDialog';
 import {ProfileDialog} from './ProfileDialog';
-import {projectsApi} from '../services/api';
+import {projectsApi, authApi} from '../services/api';
 import type {Project} from '../types';
 
 export const NavigationRouter = () => {
@@ -25,11 +26,13 @@ export const NavigationRouter = () => {
     const {brandingConfig} = useBranding();
     const {viewMode, setViewMode} = useViewMode();
     const {hasProjectAssignments} = useProjectAssignments();
+    const {alert} = useDialog();
     const location = useLocation();
     const navigate = useNavigate();
     const {projectId} = useParams<{ projectId: string }>();
 
     const [project, setProject] = useState<Project | null>(null);
+    const [userProjectMemberships, setUserProjectMemberships] = useState<number[]>([]);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
 
@@ -39,7 +42,11 @@ export const NavigationRouter = () => {
         } else {
             setProject(null);
         }
-    }, [projectId]);
+        
+        if (isAuthenticated && user) {
+            loadUserMemberships();
+        }
+    }, [projectId, isAuthenticated, user]);
 
     const loadProject = async () => {
         if (!projectId) return;
@@ -54,6 +61,16 @@ export const NavigationRouter = () => {
         }
     };
 
+    const loadUserMemberships = async () => {
+        try {
+            const memberships = await authApi.getUserProjectMemberships();
+            setUserProjectMemberships(memberships.projectIds);
+        } catch (error) {
+            console.error('Failed to load user memberships:', error);
+            setUserProjectMemberships([]);
+        }
+    };
+
     const handleTodoClick = () => {
         navigate('/todo');
     };
@@ -62,10 +79,29 @@ export const NavigationRouter = () => {
         navigate('/');
     };
 
-    const handleCreateIssue = () => {
-        if (project) {
-            navigate(`/projects/${project.id}/create-issue`);
+    const handleCreateIssue = async () => {
+        if (!project) return;
+        
+        const canCreateIssue = user?.is_admin ||
+                              !project.disable_issue_creation || 
+                              userProjectMemberships.includes(project.id);
+        
+        if (!canCreateIssue) {
+            await alert('You need to be a project member to create issues in this project.');
+            return;
         }
+        
+        navigate(`/projects/${project.id}/create-issue`);
+    };
+
+    const handleCrashReports = () => {
+        if (!project) return;
+        navigate(`/projects/${project.id}/crash-reports`);
+    };
+
+    const handleIssues = () => {
+        if (!project) return;
+        navigate(`/projects/${project.id}`);
     };
 
     const handleAdminClick = () => {
@@ -90,6 +126,7 @@ export const NavigationRouter = () => {
 
     const isInProject = location.pathname.includes('/projects/') && project;
     const isInProjectList = location.pathname.includes('/projects/') && !location.pathname.includes('/issues/');
+    const isInCrashReports = location.pathname.includes('/crash-reports');
 
     return (
         <nav
@@ -131,46 +168,70 @@ export const NavigationRouter = () => {
                         </Button>
                     )}
 
-                    {isInProject && isInProjectList && (
+                    {isInProject && (isInProjectList || isInCrashReports) && (
                         <>
-                            <div className="flex items-center border border-border rounded-lg bg-secondary p-1">
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setViewMode('list')}
-                                    className={`h-7 px-3 ${
-                                        viewMode === 'list'
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                                    }`}
-                                >
-                                    <List className="h-3.5 w-3.5 mr-1.5"/>
-                                    List
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setViewMode('kanban')}
-                                    className={`h-7 px-3 ${
-                                        viewMode === 'kanban'
-                                            ? 'bg-primary text-primary-foreground'
-                                            : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                                    }`}
-                                >
-                                    <LayoutGrid className="h-3.5 w-3.5 mr-1.5"/>
-                                    Kanban
-                                </Button>
-                            </div>
+                            {!isInCrashReports && (
+                                <div className="flex items-center border border-border rounded-lg bg-secondary p-1">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setViewMode('list')}
+                                        className={`h-7 px-3 ${
+                                            viewMode === 'list'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                                        }`}
+                                    >
+                                        <List className="h-3.5 w-3.5 mr-1.5"/>
+                                        List
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setViewMode('kanban')}
+                                        className={`h-7 px-3 ${
+                                            viewMode === 'kanban'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                                        }`}
+                                    >
+                                        <Columns3 className="h-3.5 w-3.5 mr-1.5"/>
+                                        Kanban
+                                    </Button>
+                                </div>
+                            )}
 
                             {isAuthenticated && (
-                                <Button
-                                    onClick={handleCreateIssue}
-                                    size="sm"
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                                >
-                                    <Plus className="h-4 w-4 mr-2"/>
-                                    Create Issue
-                                </Button>
+                                <>
+                                    {userProjectMemberships.includes(project.id) && (
+                                        <Button
+                                            onClick={isInCrashReports ? handleIssues : handleCrashReports}
+                                            size="sm"
+                                            variant="outline"
+                                            className="bg-transparent border-border text-muted-foreground hover:bg-accent hover:text-foreground"
+                                        >
+                                            {isInCrashReports ? (
+                                                <>
+                                                    <List className="h-4 w-4 mr-2"/>
+                                                    Issues
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Bug className="h-4 w-4 mr-2"/>
+                                                    Crash Reports
+                                                </>
+                                            )}
+                                        </Button>
+                                    )}
+                                    <Button
+                                        onClick={handleCreateIssue}
+                                        size="sm"
+                                        className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                                    >
+                                        <Plus className="h-4 w-4 mr-2"/>
+                                        Create Issue
+                                    </Button>
+                                </>
                             )}
                         </>
                     )}

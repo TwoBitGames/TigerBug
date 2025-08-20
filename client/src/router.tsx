@@ -6,11 +6,15 @@ import { IssuePage } from './pages/IssuePage';
 import { CreateIssuePage } from './pages/CreateIssuePage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { EmailVerificationPage } from './pages/EmailVerificationPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 import { TodoPage } from './pages/TodoPage';
+import { CrashReportsPage } from './pages/CrashReportsPage';
 import { UserManagement } from './components/admin/UserManagement';
 import { ProjectManagement } from './components/admin/ProjectManagement';
 import { SMTPConfiguration } from './components/admin/SMTPConfiguration';
 import { BrandingConfiguration } from './components/admin/BrandingConfiguration';
+import { OAuthConfiguration } from './components/admin/OAuthConfiguration';
 
 export const router = createBrowserRouter([
   {
@@ -38,6 +42,10 @@ export const router = createBrowserRouter([
         element: <CreateIssuePage />
       },
       {
+        path: '/projects/:projectId/crash-reports',
+        element: <CrashReportsPage />
+      },
+      {
         path: '/admin',
         element: <AdminDashboard />,
         children: [
@@ -60,6 +68,10 @@ export const router = createBrowserRouter([
           {
             path: 'branding',
             element: <BrandingConfiguration />
+          },
+          {
+            path: 'oauth',
+            element: <OAuthConfiguration />
           }
         ]
       }
@@ -68,5 +80,13 @@ export const router = createBrowserRouter([
   {
     path: '/verify-email',
     element: <EmailVerificationPage />
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />
+  },
+  {
+    path: '/oauth/callback',
+    element: <OAuthCallbackPage />
   }
 ]);

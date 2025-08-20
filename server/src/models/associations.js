@@ -8,6 +8,8 @@ const Attachment = require('./Attachment');
 const SMTPConfig = require('./SMTPConfig');
 const BrandingConfig = require('./BrandingConfig');
 const UserNotificationPreferences = require('./UserNotificationPreferences');
+const OAuthConfig = require('./OAuthConfig');
+const CrashReport = require('./CrashReport');
 
 User.belongsToMany(Project, {
   through: ProjectMembership,
@@ -75,6 +77,15 @@ Comment.hasMany(Attachment, {
 User.hasOne(UserNotificationPreferences, { foreignKey: 'user_id', as: 'notificationPreferences' });
 UserNotificationPreferences.belongsTo(User, { foreignKey: 'user_id' });
 
+Project.hasMany(CrashReport, { foreignKey: 'project_id', as: 'crashReports' });
+CrashReport.belongsTo(Project, { foreignKey: 'project_id' });
+
+User.hasMany(CrashReport, { foreignKey: 'reviewed_by', as: 'reviewedCrashReports' });
+CrashReport.belongsTo(User, { foreignKey: 'reviewed_by', as: 'reviewer' });
+
+Post.hasMany(CrashReport, { foreignKey: 'converted_to_issue_id', as: 'originatingCrashReports' });
+CrashReport.belongsTo(Post, { foreignKey: 'converted_to_issue_id', as: 'convertedIssue' });
+
 module.exports = {
   User,
   Project,
@@ -85,5 +96,7 @@ module.exports = {
   Attachment,
   SMTPConfig,
   BrandingConfig,
-  UserNotificationPreferences
+  UserNotificationPreferences,
+  OAuthConfig,
+  CrashReport
 };

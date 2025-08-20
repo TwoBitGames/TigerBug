@@ -147,3 +147,5 @@ vite.config.ts.timestamp-*
 .idea
 
 attachments/
+
+crash-handler/target

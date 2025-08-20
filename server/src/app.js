@@ -2,11 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+const MigrationRunner = require("./utils/migrationRunner");
 const path = require('path');
 
 const sequelize = require('./config/database');
 const { initializeMailer } = require('./utils/email');
+const { initializeOAuthStrategies, passport } = require('./config/passport');
 
 require('./models/associations');
 
@@ -18,6 +19,8 @@ const attachmentRoutes = require('./routes/attachments');
 const adminRoutes = require('./routes/admin');
 const todoRoutes = require('./routes/todo');
 const notificationRoutes = require('./routes/notifications');
+const oauthRoutes = require('./routes/oauth');
+const crashReportRoutes = require('./routes/crashReports');
 
 const app = express();
 const PORT = process.env.PORT || 9840;
@@ -47,6 +50,8 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+app.use(passport.initialize());
+
 app.use('/attachments', express.static(process.env.UPLOAD_PATH || path.join(__dirname, '../attachments')));
 
 app.use('/api/profile-pictures', express.static(path.join(process.env.UPLOAD_PATH || path.join(__dirname, '../attachments'), 'profiles')));
@@ -58,6 +63,7 @@ app.use('/api/branding', express.static(path.join(process.env.UPLOAD_PATH || pat
 app.use(express.static(path.join(__dirname, '../../client/dist')));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/oauth', oauthRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/projects/:projectId/posts', postRoutes);
 app.use('/api/projects/:projectId/posts/:postId/comments', commentRoutes);
@@ -65,6 +71,7 @@ app.use('/api/attachments', attachmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/todo', todoRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/crash-reports', crashReportRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({
@@ -84,7 +91,6 @@ app.get('/api/branding-config', async (req, res) => {
         id: 1,
         app_name: 'TigerBug',
         logo_url: null,
-        tagline: null,
         social_links: null,
         client_url: null,
       };
@@ -116,12 +122,16 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('Database connection established successfully.');
 
-    console.log('Synchronizing database models...');
-    await sequelize.sync();
-    console.log('Database models synchronized.');
+    console.log('Running database migrations...');
+    const migrationRunner = new MigrationRunner();
+    await migrationRunner.runMigrations();
+    console.log('Database migrations completed successfully.');
 
     console.log('Initializing email service...');
     await initializeMailer();
+
+    console.log('Initializing OAuth strategies...');
+    await initializeOAuthStrategies();
 
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
