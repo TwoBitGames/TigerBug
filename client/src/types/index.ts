@@ -7,7 +7,6 @@ export interface User {
     oauth_provider?: string;
     oauth_id?: string;
     profile_picture?: string | null;
-    created_at: string;
     is_project_member?: boolean;
 }
 
@@ -16,6 +15,7 @@ export interface Project {
     name: string;
     description: string;
     logo_url?: string | null;
+    disable_issue_creation?: boolean;
     created_at: string;
 }
 
@@ -94,6 +94,7 @@ export interface UpdateProfileData {
 export interface CreateProjectData {
     name: string;
     description: string;
+    disable_issue_creation?: boolean;
 }
 
 export interface CreatePostData {
@@ -173,7 +174,6 @@ export interface BrandingConfig {
     app_name: string;
     logo_url: string | null;
     banner_url: string | null;
-    tagline: string | null;
     social_links: {
         github?: string;
         youtube?: string;
@@ -193,7 +193,6 @@ export interface UpdateBrandingConfigData {
     app_name: string;
     logo_url?: string | null;
     banner_url?: string | null;
-    tagline?: string | null;
     social_links?: {
         github?: string;
         youtube?: string;
@@ -232,3 +231,5 @@ export interface UpdateNotificationPreferencesData {
     added_to_project?: boolean;
     removed_from_project?: boolean;
 }
+
+export * from './crashReports';
