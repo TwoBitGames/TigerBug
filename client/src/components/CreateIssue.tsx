@@ -10,7 +10,7 @@ import {Badge} from './ui/badge';
 import {DatePicker} from './ui/date-picker';
 import {useDialog} from '../contexts/DialogContext';
 import {useAuth} from '../contexts/AuthContext';
-import {projectsApi} from '../services/api';
+import {projectsApi, authApi} from '../services/api';
 import type {Project, CreatePostData, User as UserType, Post} from '../types';
 
 interface CreateIssueProps {
@@ -40,8 +40,9 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);
     const [projectMembers, setProjectMembers] = useState<UserType[]>([]);
+    const [userProjectMemberships, setUserProjectMemberships] = useState<number[]>([]);
 
-    const canEditManagerFields = user?.is_admin || false;
+    const canEditManagerFields = user?.is_admin || (projectId && userProjectMemberships.includes(parseInt(projectId)));
 
     useEffect(() => {
         if (parentIssue) {
@@ -56,6 +57,21 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
             loadProjectMembers();
         }
     }, [projectId]);
+
+    useEffect(() => {
+        const loadUserProjectMemberships = async () => {
+            if (user && !user.is_admin) {
+                try {
+                    const result = await authApi.getUserProjectMemberships();
+                    setUserProjectMemberships(result.projectIds);
+                } catch (error) {
+                    console.error('Failed to load user project memberships:', error);
+                }
+            }
+        };
+
+        loadUserProjectMemberships();
+    }, [user]);
 
     const loadProjectMembers = async () => {
         try {
