@@ -61,12 +61,12 @@ const createPost = async (req, res) => {
             return res.status(404).json({error: 'Project not found'});
         }
 
-        if (!canCreatePost(req.user)) {
-            return res.status(403).json({error: 'Access denied'});
-        }
-
         const permission = await checkProjectPermission(req.user.id, projectId);
         const isProjectMember = permission.hasAccess;
+
+        if (!canCreatePost(req.user, project, isProjectMember)) {
+            return res.status(403).json({error: 'Access denied. Only project members can create issues for this project.'});
+        }
         const canEditMgrFields = canEditManagerFields(req.user, isProjectMember, req.user.is_admin);
 
         if (parent_issue_id) {
@@ -189,8 +189,6 @@ const getKanbanPosts = async (req, res) => {
                 {title: {[Op.like]: `%${search}%`}},
                 {description: {[Op.like]: `%${search}%`}},
                 {labels: {[Op.like]: `%${search}%`}},
-                {'$author.username$': {[Op.like]: `%${search}%`}},
-                {'$assignee.username$': {[Op.like]: `%${search}%`}},
             ];
         }
 
@@ -373,42 +371,36 @@ const getPosts = async (req, res) => {
             }
         }
 
+        let privacyConditions = null;
+        if (!req.user) {
+            privacyConditions = [{is_private: false}];
+        } else if (!req.user.is_admin) {
+            privacyConditions = [
+                {is_private: false},
+                {author_id: req.user.id, is_private: true},
+            ];
+        }
+
+        if (privacyConditions) {
+            where[Op.or] = privacyConditions;
+        }
+
         if (search) {
             const searchConditions = [
                 {title: {[Op.like]: `%${search}%`}},
                 {description: {[Op.like]: `%${search}%`}},
+                {labels: {[Op.like]: `%${search}%`}},
             ];
-
-            if (search) {
-                searchConditions.push({
-                    labels: {
-                        [Op.like]: `%${search}%`
-                    }
-                });
+            
+            if (where[Op.or]) {
+                where[Op.and] = [
+                    {[Op.or]: where[Op.or]},
+                    {[Op.or]: searchConditions}
+                ];
+                delete where[Op.or];
+            } else {
+                where[Op.or] = searchConditions;
             }
-
-            searchConditions.push({
-                '$author.username$': {[Op.like]: `%${search}%`}
-            });
-
-            searchConditions.push({
-                '$assignee.username$': {[Op.like]: `%${search}%`}
-            });
-
-            where[Op.or] = searchConditions;
-        }
-
-        if (!req.user) {
-            where.is_private = false;
-        } else if (!req.user.is_admin) {
-            where[Op.or] = where[Op.or] ? [
-                ...where[Op.or],
-                {is_private: false},
-                {author_id: req.user.id, is_private: true},
-            ] : [
-                {is_private: false},
-                {author_id: req.user.id, is_private: true},
-            ];
         }
 
         if (view_mode === 'kanban' && (!status || status === 'all' || status === 'Closed')) {
@@ -463,7 +455,12 @@ const getPosts = async (req, res) => {
             include: [
                 {model: User, as: 'author', attributes: ['id', 'username', 'email', 'profile_picture']},
                 {model: User, as: 'assignee', attributes: ['id', 'username', 'email', 'profile_picture']},
-                {model: PostVote, as: 'votes', attributes: ['user_id']},
+                {
+                    model: PostVote, 
+                    as: 'votes', 
+                    attributes: ['user_id'],
+                    separate: true
+                },
                 {
                     model: Comment,
                     as: 'comments',

@@ -3,6 +3,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../ui/c
 import {Button} from '../ui/button';
 import {Input} from '../ui/input';
 import {Label} from '../ui/label';
+import {Switch} from '../ui/switch';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../ui/table';
 import {Textarea} from '../ui/textarea';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger} from '../ui/dialog';
@@ -11,7 +12,23 @@ import {ProjectLogo} from '../ui/project-logo';
 import {useDialog} from '../../contexts/DialogContext';
 import {adminApi, projectsApi} from '@/services/api.ts';
 import type {Project, ProjectMembership, CreateProjectData, User} from '@/types';
-import {Plus, Calendar, Users, Eye, UserPlus, Trash2, MoreVertical, Edit, Trash, Upload, X, Search, Check, Loader} from 'lucide-react';
+import {
+    Plus,
+    Calendar,
+    Users,
+    Eye,
+    UserPlus,
+    Trash2,
+    MoreVertical,
+    Edit,
+    Trash,
+    Upload,
+    X,
+    Search,
+    Check,
+    Loader,
+    FolderPlus
+} from 'lucide-react';
 
 export const ProjectManagement = () => {
     const {confirm, toast} = useDialog();
@@ -20,9 +37,9 @@ export const ProjectManagement = () => {
     const [projectMembers, setProjectMembers] = useState<ProjectMembership[]>([]);
     const [loading, setLoading] = useState(true);
     const [membersLoading, setMembersLoading] = useState(false);
-    const [newProject, setNewProject] = useState<CreateProjectData>({name: '', description: ''});
+    const [newProject, setNewProject] = useState<CreateProjectData>({name: '', description: '', disable_issue_creation: false});
     const [editingProject, setEditingProject] = useState<Project | null>(null);
-    const [editProjectData, setEditProjectData] = useState<CreateProjectData>({name: '', description: ''});
+    const [editProjectData, setEditProjectData] = useState<CreateProjectData>({name: '', description: '', disable_issue_creation: false});
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isAddMemberDialogOpen, setIsAddMemberDialogOpen] = useState(false);
@@ -107,7 +124,6 @@ export const ProjectManagement = () => {
 
             await loadProjectMembers(selectedProject);
 
-            // Reset the search state
             setSelectedUser(null);
             setUserSearchTerm('');
             setSearchResults([]);
@@ -139,7 +155,7 @@ export const ProjectManagement = () => {
         try {
             const project = await projectsApi.create(newProject);
             setProjects([project, ...projects]);
-            setNewProject({name: '', description: ''});
+            setNewProject({name: '', description: '', disable_issue_creation: false});
             setIsCreateDialogOpen(false);
         } catch (error) {
             console.error('Failed to create project:', error);
@@ -148,7 +164,11 @@ export const ProjectManagement = () => {
 
     const handleEditProject = (project: Project) => {
         setEditingProject(project);
-        setEditProjectData({name: project.name, description: project.description});
+        setEditProjectData({
+            name: project.name, 
+            description: project.description,
+            disable_issue_creation: project.disable_issue_creation || false
+        });
         setIsEditDialogOpen(true);
     };
 
@@ -270,9 +290,16 @@ export const ProjectManagement = () => {
     return (
         <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold">Project Management</h1>
-                    <p className="text-muted-foreground">Manage projects and team members</p>
+                <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                        <FolderPlus className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight">Project Management</h1>
+                        <p className="text-muted-foreground text-lg">
+                            Manage projects and team members across your organization.
+                        </p>
+                    </div>
                 </div>
                 <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
                     <DialogTrigger asChild>
@@ -285,8 +312,7 @@ export const ProjectManagement = () => {
                         <DialogHeader>
                             <DialogTitle>Create New Project</DialogTitle>
                             <DialogDescription>
-                                Add a new project to the system. You can then add team members who will be able to
-                                create posts and issues.
+                                Add a new project to the system. You can then add team members who will be able to create posts and issues.
                             </DialogDescription>
                         </DialogHeader>
                         <form onSubmit={handleCreateProject} className="space-y-4 mt-4">
@@ -310,6 +336,16 @@ export const ProjectManagement = () => {
                                     required
                                     rows={3}
                                 />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="disable-issue-creation"
+                                    checked={newProject.disable_issue_creation || false}
+                                    onCheckedChange={(checked) => setNewProject({...newProject, disable_issue_creation: checked})}
+                                />
+                                <Label htmlFor="disable-issue-creation" className="text-sm">
+                                    Disable issue creation for non-members
+                                </Label>
                             </div>
                             <div className="flex justify-end gap-2">
                                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
@@ -351,6 +387,16 @@ export const ProjectManagement = () => {
                                 required
                                 rows={3}
                             />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Switch
+                                id="edit-disable-issue-creation"
+                                checked={editProjectData.disable_issue_creation || false}
+                                onCheckedChange={(checked) => setEditProjectData({...editProjectData, disable_issue_creation: checked})}
+                            />
+                            <Label htmlFor="edit-disable-issue-creation" className="text-sm">
+                                Disable issue creation for non-members
+                            </Label>
                         </div>
                         <div className="flex justify-end gap-2">
                             <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
@@ -486,13 +532,14 @@ export const ProjectManagement = () => {
                                         Add Member
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="sm:max-w-md"> <DialogHeader>
-                                    <DialogTitle>Add Team Member</DialogTitle>
-                                    <DialogDescription>
-                                        Add a new member to {selectedProject.name}. They will be able to create posts
-                                        and issues.
-                                    </DialogDescription>
-                                </DialogHeader>
+                                <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle>Add Team Member</DialogTitle>
+                                        <DialogDescription>
+                                            Add a new member to {selectedProject.name}. They will be able to create posts
+                                            and issues.
+                                        </DialogDescription>
+                                    </DialogHeader>
                                     <div className="space-y-4 mt-4">
                                         <div>
                                             <Label htmlFor="user-search">Search for User</Label>

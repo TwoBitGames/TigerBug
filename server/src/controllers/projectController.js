@@ -6,6 +6,7 @@ const fs = require('fs');
 const validateProject = [
     body('name').trim().isLength({min: 1}).withMessage('Project name is required'),
     body('description').optional().trim(),
+    body('disable_issue_creation').optional().isBoolean(),
 ];
 
 const createProject = async (req, res) => {
@@ -73,7 +74,7 @@ const updateProject = async (req, res) => {
         }
 
         const {id} = req.params;
-        const {name, description} = req.body;
+        const {name, description, disable_issue_creation} = req.body;
 
         if (!req.user.is_admin) {
             return res.status(403).json({error: 'Admin privileges required'});
@@ -84,7 +85,12 @@ const updateProject = async (req, res) => {
             return res.status(404).json({error: 'Project not found'});
         }
 
-        await project.update({name, description});
+        const updateData = {name, description};
+        if (disable_issue_creation !== undefined) {
+            updateData.disable_issue_creation = disable_issue_creation;
+        }
+
+        await project.update(updateData);
 
         res.json({
             message: 'Project updated successfully',

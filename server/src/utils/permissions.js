@@ -16,8 +16,14 @@ const checkProjectPermission = async (userId, projectId) => {
     }
 };
 
-const canCreatePost = (user) => {
-    return !!user;
+const canCreatePost = (user, project, isProjectMember = false) => {
+    if (!user) return false;
+    
+    if (project && project.disable_issue_creation) {
+        return user.is_admin || isProjectMember;
+    }
+    
+    return true;
 };
 
 const canEditPost = (user, post, isProjectMember = false, isAdmin = false) => {
