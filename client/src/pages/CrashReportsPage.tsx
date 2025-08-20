@@ -20,7 +20,7 @@ export const CrashReportsPage = () => {
 
     const [crashReports, setCrashReports] = useState<CrashReport[]>([]);
     const [selectedCrash, setSelectedCrash] = useState<CrashReport | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [showDetailDialog, setShowDetailDialog] = useState(false);
     const [showConvertDialog, setShowConvertDialog] = useState(false);
@@ -48,7 +48,6 @@ export const CrashReportsPage = () => {
         if (!projectId) return;
 
         try {
-            setLoading(true);
             const response = await crashReportsApi.getAll(parseInt(projectId), {
                 ...filters,
                 search: searchTerm
@@ -59,9 +58,11 @@ export const CrashReportsPage = () => {
             console.error('Failed to load crash reports:', error);
             toast('Failed to load crash reports', {variant: 'destructive'});
         } finally {
-            setLoading(false);
+            if (initialLoading) {
+                setInitialLoading(false);
+            }
         }
-    }, [projectId, filters, searchTerm, toast]);
+    }, [projectId, filters, searchTerm, toast, initialLoading]);
 
     useEffect(() => {
         loadCrashReports();
@@ -170,7 +171,7 @@ export const CrashReportsPage = () => {
         }
     };
 
-    if (loading && crashReports.length === 0) {
+    if (initialLoading) {
         return (
             <div className="container mx-auto px-4 py-8 max-w-7xl">
                 <div className="flex items-center justify-center h-64">
@@ -186,7 +187,6 @@ export const CrashReportsPage = () => {
     return (
         <div className="container mx-auto px-4 py-6 max-w-7xl space-y-6">
             <CrashReportsHeader
-                loading={loading}
                 onRefresh={loadCrashReports}
             />
 
@@ -204,7 +204,6 @@ export const CrashReportsPage = () => {
 
             <CrashReportsTable
                 crashReports={crashReports}
-                loading={loading}
                 pagination={pagination}
                 onViewDetails={handleViewDetails}
                 onDeleteCrashReport={handleDeleteCrashReport}

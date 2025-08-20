@@ -16,7 +16,6 @@ import type {CrashReport} from '@/types';
 
 interface CrashReportsTableProps {
     crashReports: CrashReport[];
-    loading: boolean;
     pagination: {
         total: number;
         page: number;
@@ -57,7 +56,6 @@ const getStatusBadge = (status: string) => (
 
 export const CrashReportsTable = ({
                                       crashReports,
-                                      loading,
                                       pagination,
                                       onViewDetails,
                                       onDeleteCrashReport,
@@ -185,7 +183,7 @@ export const CrashReportsTable = ({
                     </div>
                 )}
 
-                {crashReports.length === 0 && !loading && (
+                {crashReports.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-12">
                         <Bug className="h-12 w-12 text-muted-foreground mb-4"/>
                         <h3 className="text-lg font-semibold mb-2">No Crash Reports</h3>
