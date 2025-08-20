@@ -177,7 +177,7 @@ export const UserManagement = () => {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            {new Date(userData.created_at).toLocaleDateString()}
+                                            {userData.created_at ? new Date(userData.created_at).toLocaleDateString() : 'N/A'}
                                         </TableCell>
                                         <TableCell>
                                             <Button

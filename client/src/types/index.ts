@@ -8,6 +8,7 @@ export interface User {
     oauth_id?: string;
     profile_picture?: string | null;
     is_project_member?: boolean;
+    created_at?: string;
 }
 
 export interface Project {
