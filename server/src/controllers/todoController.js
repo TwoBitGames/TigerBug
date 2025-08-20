@@ -1,4 +1,5 @@
 const {Op} = require('sequelize');
+const sequelize = require('../config/database');
 const {Post, Project, User, PostVote} = require('../models/associations');
 
 const getTodoTasks = async (req, res) => {
@@ -7,7 +8,16 @@ const getTodoTasks = async (req, res) => {
             return res.status(401).json({error: 'Authentication required'});
         }
 
-        const {status, priority, project, sort = 'due_date'} = req.query;
+        const {
+            status, 
+            priority, 
+            project, 
+            sort = 'due_date',
+            search,
+            page = 1,
+            limit = 100,
+            date_range
+        } = req.query;
 
         const where = {
             assignee_id: req.user.id,
@@ -31,22 +41,79 @@ const getTodoTasks = async (req, res) => {
             where.project_id = project;
         }
 
+        if (search && search.trim()) {
+            where[Op.or] = [
+                {title: {[Op.like]: `%${search.trim()}%`}},
+                {description: {[Op.like]: `%${search.trim()}%`}}
+            ];
+        }
+
+        if (date_range) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            switch (date_range) {
+                case 'overdue':
+                    where.due_date = {[Op.lt]: today};
+                    break;
+                case 'today':
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    where.due_date = {[Op.between]: [today, tomorrow]};
+                    break;
+                case 'this_week':
+                    const nextWeek = new Date(today);
+                    nextWeek.setDate(nextWeek.getDate() + 7);
+                    where.due_date = {[Op.between]: [today, nextWeek]};
+                    break;
+                case 'no_due_date':
+                    where.due_date = {[Op.is]: null};
+                    break;
+            }
+        }
+
         let order = [];
         switch (sort) {
             case 'due_date':
-                order = [['due_date', 'ASC'], ['created_at', 'DESC']];
+                order = [
+                    [sequelize.literal("CASE WHEN due_date IS NULL THEN 1 ELSE 0 END"), 'ASC'],
+                    ['due_date', 'ASC'], 
+                    ['created_at', 'DESC']
+                ];
                 break;
             case 'priority':
-                order = [['priority', 'DESC'], ['created_at', 'DESC']];
+                order = [
+                    [sequelize.literal(`CASE 
+                        WHEN priority = 'Critical' THEN 1 
+                        WHEN priority = 'High' THEN 2 
+                        WHEN priority = 'Medium' THEN 3 
+                        WHEN priority = 'Low' THEN 4 
+                        ELSE 5 END`), 'ASC'],
+                    ['created_at', 'DESC']
+                ];
                 break;
             case 'story_points':
-                order = [['story_points', 'DESC'], ['created_at', 'DESC']];
+                order = [
+                    [sequelize.literal("CASE WHEN story_points IS NULL THEN 1 ELSE 0 END"), 'ASC'],
+                    ['story_points', 'DESC'], 
+                    ['created_at', 'DESC']
+                ];
                 break;
             case 'created_date':
                 order = [['created_at', 'DESC']];
                 break;
+            case 'updated_date':
+                order = [['updated_at', 'DESC']];
+                break;
+            case 'title':
+                order = [['title', 'ASC']];
+                break;
             default:
-                order = [['due_date', 'ASC'], ['created_at', 'DESC']];
+                order = [
+                    [sequelize.literal("CASE WHEN due_date IS NULL THEN 1 ELSE 0 END"), 'ASC'],
+                    ['due_date', 'ASC'], 
+                    ['created_at', 'DESC']
+                ];
         }
 
         const posts = await Post.findAll({
@@ -55,16 +122,16 @@ const getTodoTasks = async (req, res) => {
                 {
                     model: User,
                     as: 'author',
-                    attributes: ['id', 'username', 'email']
+                    attributes: ['id', 'username', 'email', 'profile_picture']
                 },
                 {
                     model: User,
                     as: 'assignee',
-                    attributes: ['id', 'username', 'email']
+                    attributes: ['id', 'username', 'email', 'profile_picture']
                 },
                 {
                     model: Project,
-                    attributes: ['id', 'name', 'description']
+                    attributes: ['id', 'name', 'description', 'logo_url']
                 },
                 {
                     model: PostVote,
@@ -73,7 +140,11 @@ const getTodoTasks = async (req, res) => {
                 }
             ],
             order,
+            offset: (page - 1) * limit,
+            limit: parseInt(limit)
         });
+
+        const totalCount = await Post.count({where});
 
         const summaryWhere = {
             assignee_id: req.user.id,
@@ -89,26 +160,14 @@ const getTodoTasks = async (req, res) => {
 
         const allUserTasks = await Post.findAll({
             where: summaryWhere,
-            attributes: ['id', 'status', 'due_date'],
+            attributes: ['id', 'status', 'due_date', 'priority', 'story_points'],
         });
 
         let postsWithVotes = posts.map(post => ({
             ...post.toJSON(),
-            vote_count: post.votes.length,
-            user_voted: post.votes.some(vote => vote.user_id === req.user.id),
+            vote_count: post.votes?.length || 0,
+            user_voted: post.votes?.some(vote => vote.user_id === req.user.id) || false,
         }));
-
-        if (sort === 'priority') {
-            const priorityOrder = {'Critical': 1, 'High': 2, 'Medium': 3, 'Low': 4};
-            postsWithVotes = postsWithVotes.sort((a, b) => {
-                const priorityA = priorityOrder[a.priority] || 5;
-                const priorityB = priorityOrder[b.priority] || 5;
-                if (priorityA !== priorityB) {
-                    return priorityA - priorityB;
-                }
-                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-            });
-        }
 
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -150,8 +209,17 @@ const getTodoTasks = async (req, res) => {
         let overdueCount = 0;
         let todayCount = 0;
         let thisWeekCount = 0;
+        let totalStoryPoints = 0;
+        let completedStoryPoints = 0;
 
         allUserTasks.forEach(task => {
+            if (task.story_points) {
+                totalStoryPoints += task.story_points;
+                if (task.status === 'Closed') {
+                    completedStoryPoints += task.story_points;
+                }
+            }
+
             if (task.due_date) {
                 const dueDate = new Date(task.due_date);
                 const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
@@ -186,13 +254,24 @@ const getTodoTasks = async (req, res) => {
             tasks: postsWithVotes,
             groupedTasks,
             projects,
+            pagination: {
+                total: totalCount,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalPages: Math.ceil(totalCount / limit),
+                hasNext: page * limit < totalCount,
+                hasPrev: page > 1
+            },
             summary: {
                 total: allUserTasks.length,
                 overdue: overdueCount,
                 today: todayCount,
                 thisWeek: thisWeekCount,
                 open: allUserTasks.filter(task => task.status !== 'Closed').length,
-                closed: allUserTasks.filter(task => task.status === 'Closed').length
+                closed: allUserTasks.filter(task => task.status === 'Closed').length,
+                totalStoryPoints,
+                completedStoryPoints,
+                storyPointsProgress: totalStoryPoints > 0 ? Math.round((completedStoryPoints / totalStoryPoints) * 100) : 0
             }
         });
     } catch (error) {
