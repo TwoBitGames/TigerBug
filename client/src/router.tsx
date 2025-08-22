@@ -10,6 +10,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage';
 import { TodoPage } from './pages/TodoPage';
 import { CrashReportsPage } from './pages/CrashReportsPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 import { UserManagement } from './components/admin/UserManagement';
 import { ProjectManagement } from './components/admin/ProjectManagement';
 import { SMTPConfiguration } from './components/admin/SMTPConfiguration';
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <Layout />,
+    errorElement: <NotFoundPage />,
     children: [
       {
         index: true,
@@ -74,6 +76,10 @@ export const router = createBrowserRouter([
             element: <OAuthConfiguration />
           }
         ]
+      },
+      {
+        path: '*',
+        element: <NotFoundPage />
       }
     ]
   },
