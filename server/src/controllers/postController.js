@@ -2,6 +2,8 @@ const {body, validationResult} = require('express-validator');
 const {Op} = require('sequelize');
 const {Post, Project, User, PostVote, Comment, Attachment, ProjectMembership} = require('../models/associations');
 const {sendPostNotification} = require('../utils/email');
+const {deleteAttachmentsForPost} = require('../utils/attachmentCleanup');
+const {trackPostChanges} = require('../middleware/activityTracker');
 
 const {
     checkProjectPermission,
@@ -35,7 +37,11 @@ const validateUpdatePost = [
     body('status').optional().isIn(['Open', 'In Progress', 'Closed']),
     body('priority').optional().isIn(['Low', 'Medium', 'High', 'Critical']),
     body('issue_type').optional().isIn(['Bug', 'Feature']),
-    body('assignee_id').optional().isInt(),
+    body('assignee_id').optional().custom((value) => {
+        if (value === null || value === undefined) return true;
+        if (Number.isInteger(value) && value > 0) return true;
+        throw new Error('assignee_id must be a positive integer or null');
+    }),
     body('story_points').optional().isInt({min: 1, max: 100}),
     body('time_estimate').optional().isInt({min: 0, max: 999}),
     body('due_date').optional().isISO8601(),
@@ -676,6 +682,7 @@ const updatePost = async (req, res) => {
                 });
             }
 
+            await trackPostChanges(post, filteredUpdates, req.user.id);
             await post.update(filteredUpdates);
         } else {
             const managerOnlyFields = ['priority', 'issue_type', 'assignee_id', 'story_points', 'time_estimate', 'due_date', 'labels'];
@@ -686,7 +693,8 @@ const updatePost = async (req, res) => {
                     error: `Only managers can update these fields: ${attemptedManagerFields.join(', ')}`
                 });
             }
-            
+
+            await trackPostChanges(post, updates, req.user.id);
             await post.update(updates);
         }
 
@@ -750,6 +758,13 @@ const deletePost = async (req, res) => {
 
         if (!canDeletePost(req.user, post, isProjectMember, req.user.is_admin)) {
             return res.status(403).json({error: 'Access denied'});
+        }
+
+        try {
+            const cleanupResult = await deleteAttachmentsForPost(id);
+            console.log(`Cleaned up ${cleanupResult.deletedFiles} attachment files and ${cleanupResult.deletedRecords} database records for post ${id}`);
+        } catch (cleanupError) {
+            console.error('Failed to cleanup attachments for post:', cleanupError);
         }
 
         await post.destroy();

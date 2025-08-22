@@ -2,6 +2,7 @@ const {body, validationResult} = require('express-validator');
 const {Op} = require('sequelize');
 const {Comment, Post, User, Project, Attachment, ProjectMembership} = require('../models/associations');
 const {sendCommentNotification} = require('../utils/email');
+const {deleteAttachmentsByEntity} = require('../utils/attachmentCleanup');
 const {
     checkProjectPermission,
     canViewPrivatePost,
@@ -291,6 +292,13 @@ const deleteComment = async (req, res) => {
 
         if (!canDeleteComment(req.user, comment, isProjectMember, req.user.is_admin)) {
             return res.status(403).json({error: 'Access denied'});
+        }
+
+        try {
+            const cleanupResult = await deleteAttachmentsByEntity('comment', id);
+            console.log(`Cleaned up ${cleanupResult.deletedFiles} attachment files and ${cleanupResult.deletedRecords} database records for comment ${id}`);
+        } catch (cleanupError) {
+            console.error('Failed to cleanup attachments for comment:', cleanupError);
         }
 
         await comment.destroy();
