@@ -27,43 +27,10 @@ export const TextEditorWithPreview = ({
     const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
 
     return (
-        <div className={cn("relative border border-border rounded-lg overflow-hidden bg-background", className)}>
-            <div
-                className="absolute top-2 right-2 z-10 flex bg-background/90 backdrop-blur-sm rounded border border-border shadow-sm overflow-hidden">
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setActiveTab('edit')}
-                    className={cn(
-                        "h-7 px-2 text-xs rounded-r-none border-r border-border transition-all",
-                        activeTab === 'edit'
-                            ? "bg-primary text-primary-foreground border-primary shadow-sm hover:bg-primary/90"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    )}
-                    disabled={disabled}
-                >
-                    <Edit3 className="h-3 w-3 mr-1"/>
-                    Edit
-                </Button>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setActiveTab('preview')}
-                    className={cn(
-                        "h-7 px-2 text-xs rounded-l-none transition-all",
-                        activeTab === 'preview'
-                            ? "bg-primary text-primary-foreground border-primary shadow-sm hover:bg-primary/90"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    )}
-                    disabled={disabled}
-                >
-                    <Eye className="h-3 w-3 mr-1"/>
-                    Preview
-                </Button>
-            </div>
-
+        <div className={cn(
+            "relative border border-border rounded-lg overflow-hidden bg-background transition-all focus-within:ring-2 focus-within:ring-primary focus-within:border-primary",
+            className
+        )}>
             <div className="relative">
                 {activeTab === 'edit' ? (
                     <Textarea
@@ -73,11 +40,11 @@ export const TextEditorWithPreview = ({
                         placeholder={placeholder}
                         rows={rows}
                         disabled={disabled}
-                        className="border-0 resize-none focus:ring-0 focus:ring-offset-0 rounded-lg bg-transparent pr-24"
+                        className="border-0 resize-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0 rounded-none bg-transparent outline-none p-3 min-h-[140px]"
                     />
                 ) : (
                     <div
-                        className="p-3 min-h-[140px] bg-background rounded-lg pr-24"
+                        className="p-3 min-h-[140px] bg-background rounded-t-lg"
                         style={{minHeight: `${rows * 1.5}em`}}
                     >
                         {value.trim() ? (
@@ -94,13 +61,49 @@ export const TextEditorWithPreview = ({
                 )}
             </div>
 
-            {activeTab === 'edit' && value.length > 0 && (
-                <div className="px-3 py-2 border-t border-border bg-muted/20">
+            {(activeTab === 'edit' && value.length > 0) || activeTab === 'preview' ? (
+                <div className="px-3 py-1.5 border-t border-border bg-muted/20 flex justify-between items-center">
                     <div className="text-xs text-muted-foreground">
-                        {value.length} characters • Supports markdown formatting
+                        {activeTab === 'edit' && `${value.length} characters • Supports markdown formatting`}
+                        {activeTab === 'preview' && 'Preview mode'}
+                    </div>
+                    <div
+                        className="flex bg-background/90 backdrop-blur-sm rounded border border-border shadow-sm overflow-hidden">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setActiveTab('edit')}
+                            className={cn(
+                                "h-6 px-2 text-xs rounded-r-none border-r border-border transition-all",
+                                activeTab === 'edit'
+                                    ? "bg-primary text-primary-foreground border-primary shadow-sm hover:bg-primary/90"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            )}
+                            disabled={disabled}
+                        >
+                            <Edit3 className="h-3 w-3 mr-1"/>
+                            Edit
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setActiveTab('preview')}
+                            className={cn(
+                                "h-6 px-2 text-xs rounded-l-none transition-all",
+                                activeTab === 'preview'
+                                    ? "bg-primary text-primary-foreground border-primary shadow-sm hover:bg-primary/90"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            )}
+                            disabled={disabled}
+                        >
+                            <Eye className="h-3 w-3 mr-1"/>
+                            Preview
+                        </Button>
                     </div>
                 </div>
-            )}
+            ) : null}
         </div>
     );
 };
