@@ -1,7 +1,7 @@
 import {Paperclip, X} from 'lucide-react';
 import {Button} from '../ui/button';
-import {Textarea} from '../ui/textarea';
 import {Label} from '../ui/label';
+import {TextEditorWithPreview} from '../TextEditorWithPreview';
 import {validateFiles, getFileIcon, formatFileSize} from './fileUtils';
 
 interface CommentFormProps {
@@ -42,12 +42,11 @@ export const CommentForm = ({
     return (
         <div className="space-y-4 p-7 bg-muted/40 rounded-xl border border-border">
             <div className="space-y-3">
-                <Textarea
+                <TextEditorWithPreview
                     value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
+                    onChange={setNewComment}
                     placeholder="Write a comment..."
                     rows={3}
-                    className="bg-input border-border text-foreground resize-none focus:border-primary/60 focus:ring-primary/20"
                 />
 
                 {commentAttachments.length > 0 && (
@@ -134,9 +133,6 @@ export const CommentForm = ({
                         <Paperclip className="h-4 w-4 mr-1"/>
                         Attach
                     </Button>
-                    <div className="text-xs text-zinc-500">
-                        {newComment.length > 0 && `${newComment.length} characters`}
-                    </div>
                 </div>
                 <Button
                     onClick={onSubmit}

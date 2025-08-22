@@ -10,7 +10,6 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
@@ -21,6 +20,7 @@ import {
     SelectValue,
 } from '../ui/select';
 import { DatePicker } from '../ui/date-picker';
+import { TextEditorWithPreview } from '../TextEditorWithPreview';
 import type { User as UserType } from '../../types';
 
 interface EditIssueSheetProps {
@@ -123,13 +123,12 @@ export const EditIssueSheet = ({
                             <Label htmlFor="edit-description" className="text-foreground font-medium">
                                 Description
                             </Label>
-                            <Textarea
+                            <TextEditorWithPreview
                                 id="edit-description"
-                                placeholder="Provide detailed information about the issue..."
                                 value={editDescription}
-                                onChange={(e) => setEditDescription(e.target.value)}
+                                onChange={setEditDescription}
+                                placeholder="Provide detailed information about the issue..."
                                 rows={6}
-                                className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:ring-primary/20"
                             />
                         </div>
 

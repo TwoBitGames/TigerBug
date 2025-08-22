@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { PriorityBadge } from '../ui/priority-badge';
 import { IssueTypeBadge } from '../ui/issue-type-badge';
+import { MarkdownRenderer } from '../MarkdownRenderer';
 import type { Post } from '../../types';
 
 interface IssueCardProps {
@@ -107,11 +108,10 @@ export const IssueCard = ({ issue, isAuthenticated, isVoting = false, onToggleVo
             </CardHeader>
 
             <CardContent>
-                <div className="prose prose-sm max-w-none overflow-hidden">
-                    <p className="text-foreground whitespace-pre-wrap leading-relaxed break-all word-break-break-all overflow-wrap-anywhere hyphens-auto">
-                        {issue.description}
-                    </p>
-                </div>
+                <MarkdownRenderer 
+                    content={issue.description} 
+                    className="overflow-hidden break-all word-break-break-all overflow-wrap-anywhere hyphens-auto"
+                />
             </CardContent>
         </Card>
     );

@@ -4,10 +4,10 @@ import {Button} from './ui/button';
 import {Card, CardContent} from './ui/card';
 import {Input} from './ui/input';
 import {Label} from './ui/label';
-import {Textarea} from './ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from './ui/select';
 import {Badge} from './ui/badge';
 import {DatePicker} from './ui/date-picker';
+import {TextEditorWithPreview} from './TextEditorWithPreview';
 import {useDialog} from '../contexts/DialogContext';
 import {useAuth} from '../contexts/AuthContext';
 import {projectsApi, authApi} from '../services/api';
@@ -110,17 +110,17 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
             }
         });
 
-        return { valid, invalid };
+        return {valid, invalid};
     };
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(event.target.files || []);
-        const { valid, invalid } = validateFiles(files);
-        
+        const {valid, invalid} = validateFiles(files);
+
         if (invalid.length > 0) {
-            await alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10*1024*1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
+            await alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10 * 1024 * 1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
         }
-        
+
         setAttachments(prev => [...prev, ...valid]);
 
         event.target.value = '';
@@ -139,14 +139,14 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
     const handleDrop = async (event: React.DragEvent) => {
         event.preventDefault();
         setIsDragOver(false);
-        
+
         const files = Array.from(event.dataTransfer.files);
-        const { valid, invalid } = validateFiles(files);
-        
+        const {valid, invalid} = validateFiles(files);
+
         if (invalid.length > 0) {
-            await alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10*1024*1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
+            await alert(`Some files were not added:\n${invalid.map(f => `- ${f.name} (${f.size > 10 * 1024 * 1024 ? 'too large' : 'invalid type'})`).join('\n')}`);
         }
-        
+
         setAttachments(prev => [...prev, ...valid]);
     };
 
@@ -220,32 +220,34 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                     {parentIssue ? 'Create Sub-Issue' : 'Create New Issue'}
                 </h1>
                 <p className="text-muted-foreground">
-                    {parentIssue 
-                        ? `Create a sub-issue for: ${parentIssue.title}` 
+                    {parentIssue
+                        ? `Create a sub-issue for: ${parentIssue.title}`
                         : 'Report a bug or request a new feature'
                     }
-                </p>                </div>
+                </p></div>
 
-                {parentIssue && (
-                    <div className="bg-accent/30 border border-accent/50 rounded-lg p-4 mb-6">
-                        <div className="flex items-center space-x-3">
-                            <div className="text-sm text-muted-foreground">Parent Issue:</div>
-                            <div className="flex-1">
-                                <div className="font-medium text-sm text-foreground">{parentIssue.title}</div>
-                                <div className="text-xs text-muted-foreground">#{parentIssue.id}</div>
-                            </div>
+            {parentIssue && (
+                <div className="bg-accent/30 border border-accent/50 rounded-lg p-4 mb-6">
+                    <div className="flex items-center space-x-3">
+                        <div className="text-sm text-muted-foreground">Parent Issue:</div>
+                        <div className="flex-1">
+                            <div className="font-medium text-sm text-foreground">{parentIssue.title}</div>
+                            <div className="text-xs text-muted-foreground">#{parentIssue.id}</div>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                <div className="space-y-6">
-                <div className={`grid gap-4 ${canEditManagerFields ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'}`}>
+            <div className="space-y-6">
+                <div
+                    className={`grid gap-4 ${canEditManagerFields ? 'sm:grid-cols-2 lg:grid-cols-3' : 'sm:grid-cols-2'}`}>
                     <div className="space-y-2">
                         <Label htmlFor="project-select" className="text-foreground font-medium">
                             Select Project
                         </Label>
                         <Select value={projectId} onValueChange={setProjectId} disabled={!!parentIssue}>
-                            <SelectTrigger className="bg-secondary border-border text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
+                            <SelectTrigger
+                                className="bg-secondary border-border text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed">
                                 <SelectValue placeholder="Choose a project"/>
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border backdrop-blur-xl">
@@ -351,7 +353,8 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                                     <div className="flex-1">
                                         <h3 className="font-semibold text-sm mb-1 text-card-foreground">Bug</h3>
                                         <p className="text-xs text-muted-foreground leading-relaxed">
-                                            Something isn't working as expected. Report crashes, errors, or unexpected behavior.
+                                            Something isn't working as expected. Report crashes, errors, or unexpected
+                                            behavior.
                                         </p>
                                     </div>
                                 </div>
@@ -399,13 +402,13 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                     <Label htmlFor="issue-description" className="text-foreground font-medium">
                         Description
                     </Label>
-                    <Textarea
+                    <TextEditorWithPreview
                         id="issue-description"
-                        placeholder="Provide detailed information about the issue. Include steps to reproduce for bugs or detailed requirements for features."
                         value={description}
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+                        onChange={setDescription}
+                        placeholder="Provide detailed information about the issue.
+Markdown is supported."
                         rows={6}
-                        className="bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary/60 focus:ring-primary/20"
                     />
                 </div>
 
@@ -434,7 +437,8 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                 {canEditManagerFields && (
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         <div className="space-y-2">
-                            <Label htmlFor="story-points" className="text-foreground font-medium flex items-center gap-2">
+                            <Label htmlFor="story-points"
+                                   className="text-foreground font-medium flex items-center gap-2">
                                 <Target className="h-4 w-4"/>
                                 Story Points
                             </Label>
@@ -451,7 +455,8 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="time-estimate" className="text-foreground font-medium flex items-center gap-2">
+                            <Label htmlFor="time-estimate"
+                                   className="text-foreground font-medium flex items-center gap-2">
                                 <Clock className="h-4 w-4"/>
                                 Time (hours)
                             </Label>
@@ -491,7 +496,8 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                         </Label>
                         <div className="flex flex-wrap gap-2 mb-2">
                             {labels.map((label) => (
-                                <Badge key={label} variant="secondary" className="bg-secondary/60 text-secondary-foreground">
+                                <Badge key={label} variant="secondary"
+                                       className="bg-secondary/60 text-secondary-foreground">
                                     {label}
                                     <Button
                                         variant="ghost"

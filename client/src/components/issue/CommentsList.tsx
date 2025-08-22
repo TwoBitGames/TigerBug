@@ -11,8 +11,9 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import {MarkdownRenderer} from '../MarkdownRenderer';
 import type {Comment, Attachment, User as UserType} from '../../types';
-import {getFileIcon} from './fileUtils';
+import {getFileIcon, isImageFile} from './fileUtils';
 
 interface CommentsListProps {
     comments: Comment[];
@@ -185,17 +186,18 @@ export const CommentsList = ({
                                                 </div>
                                             ) : (
                                                 <div className="space-y-3">
-                                                    <p className="text-foreground whitespace-pre-wrap leading-relaxed text-sm">
-                                                        {comment.message}
-                                                    </p>
+                                                    <MarkdownRenderer 
+                                                        content={comment.message} 
+                                                        className="text-sm"
+                                                    />
                                                     {comment.attachments && comment.attachments.length > 0 && (
                                                         <div className="border-t border-border pt-3 mt-3">
                                                             <div className="space-y-2">
-                                                                {comment.attachments.filter(att => att.original_filename.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 0 && (
+                                                                {comment.attachments.filter(att => isImageFile(att.original_filename)).length > 0 && (
                                                                     <div
                                                                         className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                                                         {comment.attachments
-                                                                            .filter(att => att.original_filename.match(/\.(jpg|jpeg|png|gif|webp)$/i))
+                                                                            .filter(att => isImageFile(att.original_filename))
                                                                             .map((attachment) => (
                                                                                 <div
                                                                                     key={attachment.id}
@@ -234,10 +236,10 @@ export const CommentsList = ({
                                                                     </div>
                                                                 )}
 
-                                                                {comment.attachments.filter(att => !att.original_filename.match(/\.(jpg|jpeg|png|gif|webp)$/i)).length > 0 && (
+                                                                {comment.attachments.filter(att => !isImageFile(att.original_filename)).length > 0 && (
                                                                     <div className="space-y-1">
                                                                         {comment.attachments
-                                                                            .filter(att => !att.original_filename.match(/\.(jpg|jpeg|png|gif|webp)$/i))
+                                                                            .filter(att => !isImageFile(att.original_filename))
                                                                             .map((attachment) => (
                                                                                 <div
                                                                                     key={attachment.id}
