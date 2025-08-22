@@ -34,6 +34,7 @@ export default defineConfig({
                         {text: 'Environment Variables', link: '/configuration/environment-variables'},
                         {text: 'SMTP & Email', link: '/configuration/email-smtp'},
                         {text: 'OAuth', link: '/configuration/oauth'},
+                        {text: 'Crash Reports', link: '/configuration/crash-reports'},
                     ]
                 }
             ]
