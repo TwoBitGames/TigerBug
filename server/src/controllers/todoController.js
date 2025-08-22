@@ -192,7 +192,7 @@ const getTodoTasks = async (req, res) => {
                 const dueDate = new Date(post.due_date);
                 const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
 
-                if (dueDateOnly < today) {
+                if (dueDateOnly < today && post.status !== 'Closed') {
                     groupedTasks.overdue.push(post);
                 } else if (dueDateOnly.getTime() === today.getTime()) {
                     groupedTasks.today.push(post);
@@ -224,11 +224,11 @@ const getTodoTasks = async (req, res) => {
                 const dueDate = new Date(task.due_date);
                 const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
 
-                if (dueDateOnly < today) {
+                if (dueDateOnly < today && task.status !== 'Closed') {
                     overdueCount++;
-                } else if (dueDateOnly.getTime() === today.getTime()) {
+                } else if (dueDateOnly.getTime() === today.getTime() && task.status !== 'Closed') {
                     todayCount++;
-                } else if (dueDateOnly <= nextWeek) {
+                } else if (dueDateOnly <= nextWeek && task.status !== 'Closed') {
                     thisWeekCount++;
                 }
             }

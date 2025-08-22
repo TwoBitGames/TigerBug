@@ -229,7 +229,7 @@ export const TodoPage = () => {
                     const dueDate = new Date(task.due_date);
                     const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
 
-                    if (dueDateOnly < today) {
+                    if (dueDateOnly < today && task.status !== 'Closed') {
                         groupedTasks.overdue.push(task);
                     } else if (dueDateOnly.getTime() === today.getTime()) {
                         groupedTasks.today.push(task);
