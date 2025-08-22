@@ -198,10 +198,16 @@ const getKanbanPosts = async (req, res) => {
             ];
         }
 
+        let isProjectMember = false;
+        if (req.user) {
+            const permission = await checkProjectPermission(req.user.id, projectId);
+            isProjectMember = permission.hasAccess;
+        }
+
         let privacyConditions = null;
         if (!req.user) {
             privacyConditions = [{is_private: false}];
-        } else if (!req.user.is_admin) {
+        } else if (!req.user.is_admin && !isProjectMember) {
             privacyConditions = [
                 {is_private: false},
                 {author_id: req.user.id, is_private: true},
@@ -377,10 +383,16 @@ const getPosts = async (req, res) => {
             }
         }
 
+        let isProjectMember = false;
+        if (req.user) {
+            const permission = await checkProjectPermission(req.user.id, projectId);
+            isProjectMember = permission.hasAccess;
+        }
+
         let privacyConditions = null;
         if (!req.user) {
             privacyConditions = [{is_private: false}];
-        } else if (!req.user.is_admin) {
+        } else if (!req.user.is_admin && !isProjectMember) {
             privacyConditions = [
                 {is_private: false},
                 {author_id: req.user.id, is_private: true},
