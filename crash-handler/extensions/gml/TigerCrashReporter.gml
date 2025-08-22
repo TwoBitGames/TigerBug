@@ -41,7 +41,17 @@ return true;
 #define tiger_send_report
 /// @description Send a crash report to the server
 /// @param {string} crash_data The crash data (will be base64 encoded automatically)
+/// @param {string} user_story [Optional] User story describing what the user was doing when the crash occurred (will be base64 encoded automatically)
 var crash_data = argument0;
+var user_story = "";
+
+if (argument_count >= 2) {
+    user_story = argument1;
+
+    if (argument1 == 0) {
+        user_story = "";
+    }
+}
 
 if (global.tiger_server_url == "") {
     show_debug_message("TigerCrashReporter Error: Server URL not set. Call tiger_set_server() first.");
@@ -72,6 +82,11 @@ ds_map_add(payload_map, "report", encoded_data);
 
 if (global.tiger_version != "") {
     ds_map_add(payload_map, "version", global.tiger_version);
+}
+
+if (user_story != "") {
+    var encoded_user_story = base64_encode(user_story);
+    ds_map_add(payload_map, "user_story", encoded_user_story);
 }
 
 var os_info = "";
