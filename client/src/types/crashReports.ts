@@ -6,6 +6,8 @@ export interface CrashReport {
   error_message?: string;
   application_version?: string;
   operating_system?: string;
+  script_line?: string;
+  user_story?: string;
   ip_address: string;
   user_agent?: string;
   status: 'New' | 'Reviewing' | 'Converted' | 'Ignored';
@@ -43,4 +45,5 @@ export interface ConvertToIssueData {
   description?: string;
   priority?: 'Low' | 'Medium' | 'High' | 'Critical';
   issue_type?: 'Bug' | 'Feature';
+  is_private?: boolean;
 }

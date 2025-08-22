@@ -15,14 +15,14 @@ struct Args {
     #[arg(long, value_name = "BASE64_DATA")]
     report: String,
 
-    #[arg(long, value_name = "CONTEXT")]
-    context: Option<String>,
-
     #[arg(long, value_name = "VERSION")]
     version: Option<String>,
 
     #[arg(long, value_name = "OS")]
     os: Option<String>,
+
+    #[arg(long, value_name = "BASE64_USER_STORY")]
+    user_story: Option<String>,
 
     #[arg(long, short)]
     verbose: bool,
@@ -37,7 +37,7 @@ struct CrashReportPayload {
     #[serde(skip_serializing_if = "Option::is_none")]
     os: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    context: Option<String>,
+    user_story: Option<String>,
 }
 
 async fn submit_crash_report(args: &Args) -> anyhow::Result<()> {
@@ -46,6 +46,9 @@ async fn submit_crash_report(args: &Args) -> anyhow::Result<()> {
         println!("Project ID: {}", args.id);
         println!("Server URL: {}", args.url);
         println!("Report size: {} characters", args.report.len());
+        if let Some(ref user_story) = args.user_story {
+            println!("User story size: {} characters", user_story.len());
+        }
     }
 
     let engine = base64::engine::general_purpose::STANDARD;
@@ -61,6 +64,20 @@ async fn submit_crash_report(args: &Args) -> anyhow::Result<()> {
         }
     }
 
+    if let Some(ref user_story) = args.user_story {
+        match base64::Engine::decode(&engine, user_story) {
+            Ok(decoded) => {
+                if args.verbose {
+                    println!("User story base64 data is valid ({} bytes decoded)", decoded.len());
+                }
+            }
+            Err(e) => {
+                println!("Error: Invalid base64 user story data - {}", e);
+                process::exit(1);
+            }
+        }
+    }
+
     let api_url = format!("{}/api/crash-reports/submit", args.url.trim_end_matches('/'));
     
     if args.verbose {
@@ -72,7 +89,7 @@ async fn submit_crash_report(args: &Args) -> anyhow::Result<()> {
         report: args.report.clone(),
         version: args.version.clone(),
         os: args.os.clone(),
-        context: args.context.clone(),
+        user_story: args.user_story.clone(),
     };
 
     let client = reqwest::Client::builder()
@@ -138,8 +155,11 @@ fn print_usage_examples() {
     println!();
     println!("With additional context:");
     println!("  CrashHandler --id 1 --url http://localhost:5173 --report \"VGVzdCByZXBvcnQ=\" \\");
-    println!("    --context \"Application crashed during file save\" \\");
     println!("    --version \"1.2.3\" --os \"Windows 10\"");
+    println!();
+    println!("With user story:");
+    println!("  CrashHandler --id 1 --url http://localhost:5173 --report \"VGVzdCByZXBvcnQ=\" \\");
+    println!("    --user-story \"SSB3YXMgdHJ5aW5nIHRvIG9wZW4gYSBmaWxl\"");
     println!();
     println!("Verbose output:");
     println!("  CrashHandler --id 1 --url http://localhost:5173 --report \"VGVzdCByZXBvcnQ=\" --verbose");

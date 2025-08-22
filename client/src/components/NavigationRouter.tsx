@@ -203,7 +203,7 @@ export const NavigationRouter = () => {
 
                             {isAuthenticated && (
                                 <>
-                                    {userProjectMemberships.includes(project.id) && (
+                                    {userProjectMemberships.includes(project.id) && project?.crash_reports_enabled && (
                                         <Button
                                             onClick={isInCrashReports ? handleIssues : handleCrashReports}
                                             size="sm"

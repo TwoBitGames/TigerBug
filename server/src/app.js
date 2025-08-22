@@ -21,6 +21,7 @@ const todoRoutes = require('./routes/todo');
 const notificationRoutes = require('./routes/notifications');
 const oauthRoutes = require('./routes/oauth');
 const crashReportRoutes = require('./routes/crashReports');
+const activityRoutes = require('./routes/activities');
 
 const app = express();
 const PORT = process.env.PORT || 9840;
@@ -72,6 +73,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/todo', todoRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/crash-reports', crashReportRoutes);
+app.use('/api', activityRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({

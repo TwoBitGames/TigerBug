@@ -6,11 +6,11 @@ import {
     Activity,
     Bug,
     Eye,
-    Monitor,
     Clock,
     Trash2,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    FileText
 } from 'lucide-react';
 import type {CrashReport} from '@/types';
 
@@ -79,7 +79,7 @@ export const CrashReportsTable = ({
                                 <TableHead className="w-[120px]">Status</TableHead>
                                 <TableHead className="w-[100px] text-center">Frequency</TableHead>
                                 <TableHead className="w-[150px]">Version</TableHead>
-                                <TableHead className="w-[120px]">OS</TableHead>
+                                <TableHead className="w-[120px]">Source Location</TableHead>
                                 <TableHead className="w-[160px]">Date</TableHead>
                                 <TableHead className="w-[140px] text-center">Actions</TableHead>
                             </TableRow>
@@ -111,10 +111,14 @@ export const CrashReportsTable = ({
                                         {crash.application_version || 'Unknown'}
                                     </TableCell>
                                     <TableCell className="text-sm">
-                                        <div className="flex items-center gap-1">
-                                            <Monitor className="h-3 w-3 text-muted-foreground"/>
-                                            {crash.operating_system || 'Unknown'}
-                                        </div>
+                                        {crash.script_line ? (
+                                            <div className="flex items-center gap-1">
+                                                <FileText className="h-3 w-3 text-muted-foreground"/>
+                                                <span className="font-mono">{crash.script_line}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-muted-foreground">Unknown</span>
+                                        )}
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">
                                         <div className="flex items-center gap-1">

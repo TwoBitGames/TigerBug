@@ -9,6 +9,7 @@ import {Textarea} from '../ui/textarea';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger} from '../ui/dialog';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '../ui/dropdown-menu';
 import {ProjectLogo} from '../ui/project-logo';
+import {CrashReportsConfigDialog} from './CrashReportsConfigDialog';
 import {useDialog} from '../../contexts/DialogContext';
 import {adminApi, projectsApi} from '@/services/api.ts';
 import type {Project, ProjectMembership, CreateProjectData, User} from '@/types';
@@ -27,7 +28,8 @@ import {
     Search,
     Check,
     Loader,
-    FolderPlus
+    FolderPlus,
+    Bug
 } from 'lucide-react';
 
 export const ProjectManagement = () => {
@@ -48,6 +50,8 @@ export const ProjectManagement = () => {
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const [isCrashReportsConfigOpen, setIsCrashReportsConfigOpen] = useState(false);
+    const [crashReportsConfigProject, setCrashReportsConfigProject] = useState<Project | null>(null);
 
     const [userSearchTerm, setUserSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState<User[]>([]);
@@ -277,6 +281,18 @@ export const ProjectManagement = () => {
         }
     };
 
+    const handleCrashReportsConfig = (project: Project) => {
+        setCrashReportsConfigProject(project);
+        setIsCrashReportsConfigOpen(true);
+    };
+
+    const handleCrashReportsConfigUpdate = (updatedProject: Project) => {
+        setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+        if (selectedProject?.id === updatedProject.id) {
+            setSelectedProject(updatedProject);
+        }
+    };
+
     if (loading) {
         return (
             <div className="p-6">
@@ -462,6 +478,13 @@ export const ProjectManagement = () => {
                                                     Remove Logo
                                                 </DropdownMenuItem>
                                             )}
+                                            <DropdownMenuItem onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCrashReportsConfig(project);
+                                            }}>
+                                                <Bug className="h-4 w-4 mr-2"/>
+                                                Crash Reports
+                                            </DropdownMenuItem>
                                             <DropdownMenuItem 
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -767,6 +790,13 @@ export const ProjectManagement = () => {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <CrashReportsConfigDialog
+                open={isCrashReportsConfigOpen}
+                onOpenChange={setIsCrashReportsConfigOpen}
+                project={crashReportsConfigProject}
+                onConfigUpdate={handleCrashReportsConfigUpdate}
+            />
         </div>
     );
 };

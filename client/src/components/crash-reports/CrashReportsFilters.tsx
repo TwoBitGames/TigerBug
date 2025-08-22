@@ -19,7 +19,7 @@ export const CrashReportsFilters = ({
 }: CrashReportsFiltersProps) => {
   return (
     <Card className="py-0">
-      <CardContent className="p-6">
+      <CardContent className="p-4">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">

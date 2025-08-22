@@ -6,7 +6,6 @@ import {Label} from '@/components/ui/label';
 import {Badge} from '@/components/ui/badge';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
-import {useDebounce} from '@/hooks/use-debounce';
 import {
     Bug,
     Eye,
@@ -28,7 +27,6 @@ interface CrashReportDetailDialogProps {
     onOpenChange: (open: boolean) => void;
     crashReport: CrashReport | null;
     loading: boolean;
-    notes: string;
     onNotesChange: (notes: string) => void;
     onStatusUpdate: (status: string) => void;
     onConvertToIssue: () => void;
@@ -59,7 +57,6 @@ export const CrashReportDetailDialog = ({
                                             onOpenChange,
                                             crashReport,
                                             loading,
-                                            notes,
                                             onNotesChange,
                                             onStatusUpdate,
                                             onConvertToIssue,
@@ -67,30 +64,32 @@ export const CrashReportDetailDialog = ({
                                         }: CrashReportDetailDialogProps) => {
     const [activeTab, setActiveTab] = useState('overview');
     const [localNotes, setLocalNotes] = useState('');
-    const [hasUserEditedNotes, setHasUserEditedNotes] = useState(false);
-    const debouncedNotes = useDebounce(localNotes, 1000);
+    const [lastSavedNotes, setLastSavedNotes] = useState('');
 
     useEffect(() => {
-        if (open && !hasUserEditedNotes) {
-            setLocalNotes(notes || '');
+        if (open && crashReport) {
+            const notesToLoad = crashReport.notes || '';
+            setLocalNotes(notesToLoad);
+            setLastSavedNotes(notesToLoad);
         }
-    }, [notes, open, hasUserEditedNotes]);
+    }, [open, crashReport]);
 
     useEffect(() => {
         if (!open) {
-            setHasUserEditedNotes(false);
+            setLocalNotes('');
+            setLastSavedNotes('');
         }
     }, [open]);
 
-    useEffect(() => {
-        if (hasUserEditedNotes && debouncedNotes !== notes) {
-            onNotesChange(debouncedNotes);
-        }
-    }, [debouncedNotes, notes, onNotesChange, hasUserEditedNotes]);
-
     const handleNotesChange = (value: string) => {
         setLocalNotes(value);
-        setHasUserEditedNotes(true);
+    };
+
+    const handleNotesBlur = () => {
+        if (localNotes !== lastSavedNotes) {
+            onNotesChange(localNotes);
+            setLastSavedNotes(localNotes);
+        }
     };
 
     if (!crashReport && !loading) return null;
@@ -211,13 +210,12 @@ export const CrashReportDetailDialog = ({
                                             <div className="flex items-center gap-3 py-4">
                                                 <div
                                                     className="p-2 bg-violet-100 dark:bg-violet-900 rounded-lg border border-violet-200 dark:border-violet-800">
-                                                    <Monitor className="h-5 w-5 text-violet-600 dark:text-violet-400"/>
+                                                    <FileText className="h-5 w-5 text-violet-600 dark:text-violet-400"/>
                                                 </div>
                                                 <div>
-                                                    <p className="text-xs font-medium text-violet-700 dark:text-violet-300 mb-1">Operating
-                                                        System</p>
-                                                    <p className="text-2xl font-bold text-violet-900 dark:text-violet-200">
-                                                        {crashReport.operating_system || 'Unknown'}
+                                                    <p className="text-xs font-medium text-violet-700 dark:text-violet-300 mb-1">Source Location</p>
+                                                    <p className="text-lg font-bold text-violet-900 dark:text-violet-200 font-mono">
+                                                        {crashReport.script_line || 'Unknown'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -304,6 +302,7 @@ export const CrashReportDetailDialog = ({
                                                         id="notes"
                                                         value={localNotes}
                                                         onChange={(e) => handleNotesChange(e.target.value)}
+                                                        onBlur={handleNotesBlur}
                                                         placeholder="Add notes about this crash investigation..."
                                                         className="min-h-[120px] resize-none"
                                                     />
@@ -333,6 +332,24 @@ export const CrashReportDetailDialog = ({
                                                             className="text-destructive/90 font-mono text-sm whitespace-pre-wrap leading-relaxed block">
                                                             {crashReport.error_message}
                                                         </code>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        )}
+
+                                        {crashReport.user_story && (
+                                            <Card className="border-blue-200 dark:border-blue-800">
+                                                <CardHeader className="pb-3">
+                                                    <CardTitle className="text-base flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                                                        <FileText className="h-4 w-4"/>
+                                                        User Story
+                                                    </CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                                                        <p className="text-blue-800 dark:text-blue-200 text-sm whitespace-pre-wrap leading-relaxed">
+                                                            {crashReport.user_story}
+                                                        </p>
                                                     </div>
                                                 </CardContent>
                                             </Card>
@@ -422,6 +439,24 @@ export const CrashReportDetailDialog = ({
                                                     <span
                                                         className="text-sm font-semibold text-foreground">{crashReport.application_version || 'Unknown'}</span>
                                                 </div>
+                                                {crashReport.script_line && (
+                                                    <div className="flex justify-between items-center py-2 border-b">
+                                                        <span className="text-sm font-medium text-muted-foreground">Source Location</span>
+                                                        <span className="text-sm font-semibold text-foreground font-mono">
+                                                            {crashReport.script_line}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {crashReport.user_story && (
+                                                    <div className="flex flex-col py-2 border-b">
+                                                        <span className="text-sm font-medium text-muted-foreground mb-2">User Story</span>
+                                                        <div className="bg-muted p-3 rounded border">
+                                                            <p className="text-xs text-foreground whitespace-pre-wrap">
+                                                                {crashReport.user_story}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <div className="flex justify-between items-center py-2 border-b">
                                                     <span className="text-sm font-medium text-muted-foreground">Crash Frequency</span>
                                                     <Badge variant="outline" className="font-mono">

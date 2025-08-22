@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 const {
   validateProject,
+  validateCrashReportsConfig,
   createProject,
   getProjects,
   getProject,
   updateProject,
+  updateCrashReportsConfig,
   deleteProject,
   addMember,
   removeMember,
@@ -23,6 +25,7 @@ router.get('/:id/members', authenticateToken, getProjectMembers);
 
 router.post('/', authenticateToken, requireAdmin, validateProject, createProject);
 router.put('/:id', authenticateToken, validateProject, updateProject);
+router.put('/:id/crash-reports-config', authenticateToken, requireAdmin, validateCrashReportsConfig, updateCrashReportsConfig);
 router.delete('/:id', authenticateToken, requireAdmin, deleteProject);
 
 router.post('/:id/members', authenticateToken, requireAdmin, addMember);

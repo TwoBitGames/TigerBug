@@ -32,6 +32,19 @@ const Project = sequelize.define('Project', {
     defaultValue: false,
     allowNull: false
   },
+  crash_reports_enabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    allowNull: false
+  },
+  crash_reports_template: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  crash_reports_min_version: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

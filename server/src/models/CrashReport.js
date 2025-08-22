@@ -30,6 +30,11 @@ const CrashReport = sequelize.define('CrashReport', {
         allowNull: true,
         comment: 'Extracted error message if available',
     },
+    error_signature: {
+        type: DataTypes.STRING(32),
+        allowNull: true,
+        comment: 'Hash signature for duplicate detection based on normalized error patterns',
+    },
     application_version: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -39,6 +44,16 @@ const CrashReport = sequelize.define('CrashReport', {
         type: DataTypes.STRING,
         allowNull: true,
         comment: 'Operating system information',
+    },
+    script_line: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: 'Script file and line number information (format: "script:line")',
+    },
+    user_story: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        comment: 'Optional user story describing what the user did before the crash',
     },
     ip_address: {
         type: DataTypes.STRING,

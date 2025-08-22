@@ -17,6 +17,9 @@ export interface Project {
     description: string;
     logo_url?: string | null;
     disable_issue_creation?: boolean;
+    crash_reports_enabled?: boolean;
+    crash_reports_template?: string | null;
+    crash_reports_min_version?: string | null;
     created_at: string;
 }
 
@@ -77,6 +80,17 @@ export interface Comment {
     can_delete?: boolean;
 }
 
+export interface Activity {
+    id: number;
+    post_id: number;
+    user_id: number;
+    activity_type: 'status_changed' | 'priority_changed' | 'assignee_changed' | 'labels_added' | 'labels_removed' | 'due_date_changed' | 'story_points_changed' | 'time_estimate_changed' | 'issue_type_changed';
+    old_value: string | null;
+    new_value: string | null;
+    created_at: string;
+    user?: User;
+}
+
 export interface LoginCredentials {
     identifier: string;
     password: string;
@@ -118,7 +132,7 @@ export interface UpdatePostData {
     status?: 'Open' | 'In Progress' | 'Closed';
     priority?: 'Low' | 'Medium' | 'High' | 'Critical';
     issue_type?: 'Bug' | 'Feature';
-    assignee_id?: number;
+    assignee_id?: number | null;
     story_points?: number;
     time_estimate?: number;
     due_date?: string;

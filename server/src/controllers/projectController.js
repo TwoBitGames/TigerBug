@@ -9,6 +9,12 @@ const validateProject = [
     body('disable_issue_creation').optional().isBoolean(),
 ];
 
+const validateCrashReportsConfig = [
+    body('crash_reports_enabled').optional().isBoolean(),
+    body('crash_reports_template').optional().trim(),
+    body('crash_reports_min_version').optional().trim(),
+];
+
 const createProject = async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -36,7 +42,7 @@ const createProject = async (req, res) => {
 const getProjects = async (req, res) => {
     try {
         const projects = await Project.findAll({
-            attributes: ['id', 'name', 'description', 'logo_url', 'created_at'],
+            attributes: ['id', 'name', 'description', 'logo_url', 'crash_reports_enabled', 'crash_reports_template', 'crash_reports_min_version', 'created_at'],
             order: [['created_at', 'DESC']],
         });
 
@@ -52,7 +58,7 @@ const getProject = async (req, res) => {
         const {id} = req.params;
 
         const project = await Project.findByPk(id, {
-            attributes: ['id', 'name', 'description', 'logo_url', 'created_at'],
+            attributes: ['id', 'name', 'description', 'logo_url', 'crash_reports_enabled', 'crash_reports_template', 'crash_reports_min_version', 'created_at'],
         });
 
         if (!project) {
@@ -74,7 +80,7 @@ const updateProject = async (req, res) => {
         }
 
         const {id} = req.params;
-        const {name, description, disable_issue_creation} = req.body;
+        const {name, description, disable_issue_creation, crash_reports_enabled, crash_reports_template, crash_reports_min_version} = req.body;
 
         if (!req.user.is_admin) {
             return res.status(403).json({error: 'Admin privileges required'});
@@ -89,6 +95,15 @@ const updateProject = async (req, res) => {
         if (disable_issue_creation !== undefined) {
             updateData.disable_issue_creation = disable_issue_creation;
         }
+        if (crash_reports_enabled !== undefined) {
+            updateData.crash_reports_enabled = crash_reports_enabled;
+        }
+        if (crash_reports_template !== undefined) {
+            updateData.crash_reports_template = crash_reports_template;
+        }
+        if (crash_reports_min_version !== undefined) {
+            updateData.crash_reports_min_version = crash_reports_min_version;
+        }
 
         await project.update(updateData);
 
@@ -98,6 +113,48 @@ const updateProject = async (req, res) => {
         });
     } catch (error) {
         console.error('Update project error:', error);
+        res.status(500).json({error: 'Internal server error'});
+    }
+};
+
+const updateCrashReportsConfig = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({errors: errors.array()});
+        }
+
+        const {id} = req.params;
+        const {crash_reports_enabled, crash_reports_template, crash_reports_min_version} = req.body;
+
+        if (!req.user.is_admin) {
+            return res.status(403).json({error: 'Admin privileges required'});
+        }
+
+        const project = await Project.findByPk(id);
+        if (!project) {
+            return res.status(404).json({error: 'Project not found'});
+        }
+
+        const updateData = {};
+        if (crash_reports_enabled !== undefined) {
+            updateData.crash_reports_enabled = crash_reports_enabled;
+        }
+        if (crash_reports_template !== undefined) {
+            updateData.crash_reports_template = crash_reports_template;
+        }
+        if (crash_reports_min_version !== undefined) {
+            updateData.crash_reports_min_version = crash_reports_min_version;
+        }
+
+        await project.update(updateData);
+
+        res.json({
+            message: 'Crash reports configuration updated successfully',
+            project,
+        });
+    } catch (error) {
+        console.error('Update crash reports config error:', error);
         res.status(500).json({error: 'Internal server error'});
     }
 };
@@ -234,7 +291,6 @@ const uploadProjectLogo = async (req, res) => {
             return res.status(404).json({error: 'Project not found'});
         }
 
-        // Delete old logo if it exists
         if (project.logo_url) {
             const oldFilePath = path.join(process.env.UPLOAD_PATH || './attachments', 'project-logos', path.basename(project.logo_url));
             if (fs.existsSync(oldFilePath)) {
@@ -283,7 +339,6 @@ const deleteProjectLogo = async (req, res) => {
             return res.status(400).json({error: 'No project logo to delete'});
         }
 
-        // Delete the logo file
         const filePath = path.join(process.env.UPLOAD_PATH || './attachments', 'project-logos', path.basename(project.logo_url));
         if (fs.existsSync(filePath)) {
             try {
@@ -313,10 +368,12 @@ const deleteProjectLogo = async (req, res) => {
 
 module.exports = {
     validateProject,
+    validateCrashReportsConfig,
     createProject,
     getProjects,
     getProject,
     updateProject,
+    updateCrashReportsConfig,
     deleteProject,
     addMember,
     removeMember,

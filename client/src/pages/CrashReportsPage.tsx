@@ -1,9 +1,9 @@
 import {useState, useEffect, useCallback} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
 import {Activity} from 'lucide-react';
-import {crashReportsApi} from '@/services/api';
+import {crashReportsApi, projectsApi} from '@/services/api';
 import {useDialog} from '@/contexts/DialogContext';
-import type {CrashReport, CrashReportFilters, ConvertToIssueData} from '@/types';
+import type {CrashReport, CrashReportFilters, ConvertToIssueData, Project} from '@/types';
 import {
     CrashReportsHeader,
     CrashReportsStats,
@@ -18,13 +18,13 @@ export const CrashReportsPage = () => {
     const navigate = useNavigate();
     const {toast, confirm} = useDialog();
 
+    const [project, setProject] = useState<Project | null>(null);
     const [crashReports, setCrashReports] = useState<CrashReport[]>([]);
     const [selectedCrash, setSelectedCrash] = useState<CrashReport | null>(null);
     const [initialLoading, setInitialLoading] = useState(true);
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [showDetailDialog, setShowDetailDialog] = useState(false);
     const [showConvertDialog, setShowConvertDialog] = useState(false);
-    const [notes, setNotes] = useState('');
     const [updatingStatus, setUpdatingStatus] = useState(false);
 
     const [filters, setFilters] = useState<CrashReportFilters>({
@@ -43,6 +43,18 @@ export const CrashReportsPage = () => {
         hasNext: false,
         hasPrev: false
     });
+
+    const loadProject = useCallback(async () => {
+        if (!projectId) return;
+
+        try {
+            const projectData = await projectsApi.getById(parseInt(projectId));
+            setProject(projectData);
+        } catch (error) {
+            console.error('Failed to load project:', error);
+            toast('Failed to load project information', {variant: 'destructive'});
+        }
+    }, [projectId, toast]);
 
     const loadCrashReports = useCallback(async () => {
         if (!projectId) return;
@@ -65,8 +77,16 @@ export const CrashReportsPage = () => {
     }, [projectId, filters, searchTerm, toast, initialLoading]);
 
     useEffect(() => {
+        loadProject();
         loadCrashReports();
-    }, [loadCrashReports]);
+    }, [loadProject, loadCrashReports]);
+
+    useEffect(() => {
+        if (project && project.crash_reports_enabled === false) {
+            navigate(`/projects/${projectId}`);
+            toast('Crash reports are disabled for this project', { variant: 'destructive' });
+        }
+    }, [project, projectId, navigate, toast]);
 
     const handleViewDetails = async (crash: CrashReport) => {
         if (!projectId) return;
@@ -75,7 +95,6 @@ export const CrashReportsPage = () => {
             setLoadingDetails(true);
             const details = await crashReportsApi.getById(parseInt(projectId), crash.id);
             setSelectedCrash(details);
-            setNotes(details.notes || '');
             setShowDetailDialog(true);
         } catch (error) {
             console.error('Failed to load crash details:', error);
@@ -93,7 +112,7 @@ export const CrashReportsPage = () => {
             const updatedCrash = await crashReportsApi.updateStatus(
                 parseInt(projectId),
                 selectedCrash.id,
-                {status, notes}
+                { status }
             );
             setSelectedCrash(updatedCrash);
             await loadCrashReports();
@@ -156,6 +175,30 @@ export const CrashReportsPage = () => {
         }
     };
 
+    const handleClearAllCrashReports = async () => {
+        if (!projectId) return;
+
+        const confirmed = await confirm(
+            `Are you sure you want to delete ALL ${pagination.total} crash reports for this project? This action cannot be undone and all crash report data will be permanently removed.`,
+            'Clear All Crash Reports'
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await crashReportsApi.clearAll(parseInt(projectId));
+            setCrashReports([]);
+            setShowDetailDialog(false);
+            setSelectedCrash(null);
+            
+            toast(response.message);
+            await loadCrashReports();
+        } catch (error) {
+            console.error('Failed to clear all crash reports:', error);
+            toast('Failed to clear all crash reports', {variant: 'destructive'});
+        }
+    };
+
     const handleFilterChange = (key: keyof CrashReportFilters, value: any) => {
         setFilters(prev => ({...prev, [key]: value, page: 1}));
     };
@@ -164,10 +207,20 @@ export const CrashReportsPage = () => {
         setFilters(prev => ({...prev, page: newPage}));
     };
 
-    const handleNotesChange = (newNotes: string) => {
-        setNotes(newNotes);
-        if (selectedCrash && newNotes !== selectedCrash.notes) {
-            handleUpdateStatus(selectedCrash.status);
+    const handleNotesChange = async (newNotes: string) => {
+        if (!selectedCrash || !projectId) return;
+
+        try {
+            const updatedCrash = await crashReportsApi.updateStatus(
+                parseInt(projectId),
+                selectedCrash.id,
+                { notes: newNotes }
+            );
+            
+            setSelectedCrash(updatedCrash);
+        } catch (error) {
+            console.error('Failed to save notes:', error);
+            toast('Failed to save notes', { variant: 'destructive' });
         }
     };
 
@@ -186,11 +239,12 @@ export const CrashReportsPage = () => {
 
     return (
         <div className="container mx-auto px-4 py-6 max-w-7xl space-y-6">
-            <CrashReportsHeader
-                onRefresh={loadCrashReports}
-            />
-
-            <CrashReportsStats
+                <CrashReportsHeader
+                    onRefresh={loadCrashReports}
+                    onClearAll={handleClearAllCrashReports}
+                    crashReportsCount={pagination.total}
+                    project={project}
+                />            <CrashReportsStats
                 crashReports={crashReports}
                 totalCount={pagination.total}
             />
@@ -215,7 +269,6 @@ export const CrashReportsPage = () => {
                 onOpenChange={setShowDetailDialog}
                 crashReport={selectedCrash}
                 loading={loadingDetails}
-                notes={notes}
                 onNotesChange={handleNotesChange}
                 onStatusUpdate={handleUpdateStatus}
                 onConvertToIssue={() => setShowConvertDialog(true)}
@@ -225,8 +278,7 @@ export const CrashReportsPage = () => {
             <ConvertToIssueDialog
                 open={showConvertDialog}
                 onOpenChange={setShowConvertDialog}
-                crashReportId={selectedCrash?.id}
-                crashError={selectedCrash?.error_message}
+                crashReport={selectedCrash}
                 onConvert={handleConvertToIssue}
             />
         </div>
