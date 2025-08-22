@@ -339,7 +339,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                     <Label className="text-foreground font-medium">Issue Type</Label>
                     <div className="grid gap-3 sm:grid-cols-2">
                         <Card
-                            className={`cursor-pointer transition-all bg-card border-border backdrop-blur-sm ${
+                            className={`py-0 cursor-pointer transition-all bg-card border-border backdrop-blur-sm ${
                                 issueType === "Bug"
                                     ? "ring-2 ring-red-500/60 bg-red-950/30 border-red-500/40"
                                     : "hover:border-accent hover:bg-accent/50"
@@ -362,7 +362,7 @@ export const CreateIssue = ({projects, selectedProject, parentIssue, onSubmit, o
                         </Card>
 
                         <Card
-                            className={`cursor-pointer transition-all bg-card border-border backdrop-blur-sm ${
+                            className={`py-0 cursor-pointer transition-all bg-card border-border backdrop-blur-sm ${
                                 issueType === "Feature"
                                     ? "ring-2 ring-primary/60 bg-orange-950/30 border-primary/40"
                                     : "hover:border-accent hover:bg-accent/50"
