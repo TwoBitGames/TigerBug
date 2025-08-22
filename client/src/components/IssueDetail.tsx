@@ -11,9 +11,12 @@ import {AttachmentsList} from './issue/AttachmentsList';
 import {AttachmentDialog} from './issue/AttachmentDialog';
 import {CommentsList} from './issue/CommentsList';
 import {CommentForm} from './issue/CommentForm';
+import {ActivitiesList} from './issue/ActivitiesList';
 import {EditIssueSheet} from './issue/EditIssueSheet';
 import {SubIssues} from './issue/SubIssues';
-import {isImageFile} from './issue/fileUtils';
+import {isImageFile, isTextFile} from './issue/fileUtils';
+import {Tabs, TabsContent, TabsList, TabsTrigger} from './ui/tabs';
+import {MessageSquare, Activity} from 'lucide-react';
 
 interface IssueDetailProps {
     issueId: number;
@@ -156,7 +159,7 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
             if (canEditManagerFields) {
                 updateData.priority = editPriority;
                 updateData.issue_type = editIssueType;
-                updateData.assignee_id = editAssigneeId && editAssigneeId !== 'unassigned' ? parseInt(editAssigneeId) : undefined;
+                updateData.assignee_id = editAssigneeId && editAssigneeId !== 'unassigned' ? parseInt(editAssigneeId) : null;
                 updateData.story_points = editStoryPoints ? parseInt(editStoryPoints) : undefined;
                 updateData.time_estimate = editTimeEstimate ? parseInt(editTimeEstimate) : undefined;
                 updateData.due_date = editDueDate ? editDueDate.toISOString().split('T')[0] : undefined;
@@ -291,7 +294,7 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
     };
 
     const handleAttachmentClick = (attachment: Attachment) => {
-        if (isImageFile(attachment.original_filename)) {
+        if (isImageFile(attachment.original_filename) || isTextFile(attachment.original_filename)) {
             setSelectedAttachment(attachment);
             setIsAttachmentDialogOpen(true);
         } else {
@@ -312,10 +315,10 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
     };
 
     const hasMetadata = Boolean(
-        issue?.assignee || 
-        issue?.story_points || 
-        issue?.time_estimate || 
-        issue?.due_date || 
+        issue?.assignee ||
+        issue?.story_points ||
+        issue?.time_estimate ||
+        issue?.due_date ||
         (issue?.labels && issue.labels.length > 0)
     );
 
@@ -383,29 +386,51 @@ export const IssueDetail = ({issueId, projectId, onBack, onNavigateToIssue, onCr
                 />
             )}
 
-            <CommentsList
-                comments={comments}
-                editingComment={editingComment}
-                editCommentText={editCommentText}
-                setEditingComment={setEditingComment}
-                setEditCommentText={setEditCommentText}
-                onEditComment={handleEditComment}
-                onDeleteComment={handleDeleteComment}
-                onAttachmentClick={handleAttachmentClick}
-                onDownloadAttachment={handleDownloadAttachment}
-            />
+            <Tabs defaultValue="comments" className="space-y-4">
+                <TabsList className="cursor-pointer">
+                    <TabsTrigger value="comments" className="flex items-center gap-2 cursor-pointer">
+                        <MessageSquare className="h-4 w-4"/>
+                        Comments ({comments.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="activities" className="flex items-center gap-2 cursor-pointer">
+                        <Activity className="h-4 w-4"/>
+                        Activities
+                    </TabsTrigger>
+                </TabsList>
 
-            {isAuthenticated && (
-                <CommentForm
-                    newComment={newComment}
-                    setNewComment={setNewComment}
-                    commentAttachments={commentAttachments}
-                    setCommentAttachments={setCommentAttachments}
-                    onSubmit={handleSubmitComment}
-                    isSubmitting={isSubmittingComment}
-                    onAlert={alert}
-                />
-            )}
+                <TabsContent value="comments" className="space-y-4">
+                    <CommentsList
+                        comments={comments}
+                        editingComment={editingComment}
+                        editCommentText={editCommentText}
+                        setEditingComment={setEditingComment}
+                        setEditCommentText={setEditCommentText}
+                        onEditComment={handleEditComment}
+                        onDeleteComment={handleDeleteComment}
+                        onAttachmentClick={handleAttachmentClick}
+                        onDownloadAttachment={handleDownloadAttachment}
+                    />
+
+                    {isAuthenticated && (
+                        <CommentForm
+                            newComment={newComment}
+                            setNewComment={setNewComment}
+                            commentAttachments={commentAttachments}
+                            setCommentAttachments={setCommentAttachments}
+                            onSubmit={handleSubmitComment}
+                            isSubmitting={isSubmittingComment}
+                            onAlert={alert}
+                        />
+                    )}
+                </TabsContent>
+
+                <TabsContent value="activities">
+                    <ActivitiesList
+                        projectId={projectId}
+                        postId={issueId}
+                    />
+                </TabsContent>
+            </Tabs>
 
             <AttachmentDialog
                 isOpen={isAttachmentDialogOpen}

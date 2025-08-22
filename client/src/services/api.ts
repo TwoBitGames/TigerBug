@@ -4,6 +4,7 @@ import type {
     Project,
     Post,
     Comment,
+    Activity,
     LoginCredentials,
     RegisterData,
     UpdateProfileData,
@@ -121,6 +122,13 @@ export const projectsApi = {
 
     deleteLogo: (id: number) =>
         del<{ project: Project }>(`/projects/${id}/logo`).then(response => response.project),
+
+    updateCrashReportsConfig: (id: number, config: {
+        crash_reports_enabled?: boolean;
+        crash_reports_template?: string;
+        crash_reports_min_version?: string;
+    }) =>
+        put<{ project: Project }>(`/projects/${id}/crash-reports-config`, config).then(response => response.project),
 };
 
 export const postsApi = {
@@ -428,4 +436,12 @@ export const crashReportsApi = {
 
     delete: (projectId: number, crashId: number) =>
         del<{ message: string; deleted_id: number }>(`/crash-reports/project/${projectId}/${crashId}`),
+
+    clearAll: (projectId: number) =>
+        del<{ message: string; deleted_count: number }>(`/crash-reports/project/${projectId}/clear-all`),
+};
+
+export const activitiesApi = {
+    getAll: (projectId: number, postId: number) =>
+        get<Activity[]>(`/projects/${projectId}/posts/${postId}/activities`),
 };

@@ -10,6 +10,7 @@ const BrandingConfig = require('./BrandingConfig');
 const UserNotificationPreferences = require('./UserNotificationPreferences');
 const OAuthConfig = require('./OAuthConfig');
 const CrashReport = require('./CrashReport');
+const Activity = require('./Activity');
 
 User.belongsToMany(Project, {
   through: ProjectMembership,
@@ -86,6 +87,12 @@ CrashReport.belongsTo(User, { foreignKey: 'reviewed_by', as: 'reviewer' });
 Post.hasMany(CrashReport, { foreignKey: 'converted_to_issue_id', as: 'originatingCrashReports' });
 CrashReport.belongsTo(Post, { foreignKey: 'converted_to_issue_id', as: 'convertedIssue' });
 
+Post.hasMany(Activity, { foreignKey: 'post_id', as: 'activities' });
+Activity.belongsTo(Post, { foreignKey: 'post_id' });
+
+User.hasMany(Activity, { foreignKey: 'user_id', as: 'activities' });
+Activity.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 module.exports = {
   User,
   Project,
@@ -98,5 +105,6 @@ module.exports = {
   BrandingConfig,
   UserNotificationPreferences,
   OAuthConfig,
-  CrashReport
+  CrashReport,
+  Activity
 };
