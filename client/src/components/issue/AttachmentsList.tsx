@@ -3,7 +3,7 @@ import {Paperclip, Download, X} from 'lucide-react';
 import {Card, CardContent, CardHeader, CardTitle} from '../ui/card';
 import {Button} from '../ui/button';
 import type {Attachment} from '@/types';
-import {isImageFile, getFileIcon} from './fileUtils';
+import {isImageFile, isTextFile, getFileIcon} from './fileUtils';
 
 interface AttachmentsListProps {
     attachments: Attachment[];
@@ -37,7 +37,7 @@ export const AttachmentsList = ({
                     <div
                         key={attachment.id}
                         className={`group relative overflow-hidden rounded-lg border border-border bg-muted/40 transition-colors hover:border-accent ${
-                            isImageFile(attachment.original_filename) ? 'cursor-pointer hover:bg-muted/60' : ''
+                            isImageFile(attachment.original_filename) || isTextFile(attachment.original_filename) ? 'cursor-pointer hover:bg-muted/60' : ''
                         }`}
                         onClick={() => onAttachmentClick(attachment)}
                     >
@@ -59,6 +59,14 @@ export const AttachmentsList = ({
                                 <div
                                     className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                     <div className="text-white text-sm font-medium">Click to view</div>
+                                </div>
+                            </div>
+                        ) : isTextFile(attachment.original_filename) ? (
+                            <div className="aspect-video bg-muted flex items-center justify-center relative">
+                                <span className="text-4xl">{getFileIcon(attachment.original_filename)}</span>
+                                <div
+                                    className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div className="text-white text-sm font-medium">Click to preview</div>
                                 </div>
                             </div>
                         ) : (

@@ -4,9 +4,24 @@ export const isImageFile = (filename: string): boolean => {
     return imageExtensions.includes(ext);
 };
 
+export const isTextFile = (filename: string): boolean => {
+    const textExtensions = [
+        '.txt', '.md', '.log', '.json', '.xml', '.csv', '.yaml', '.yml',
+        '.js', '.ts', '.jsx', '.tsx', '.html', '.css', '.scss', '.sass',
+        '.py', '.java', '.c', '.cpp', '.h', '.hpp', '.php', '.rb', '.go',
+        '.rs', '.sh', '.bat', '.ps1', '.sql', '.ini', '.conf', '.cfg',
+        '.properties', '.toml', '.gitignore', '.env', '.dockerfile'
+    ];
+    const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+    return textExtensions.includes(ext);
+};
+
 export const getFileIcon = (filename: string): string => {
     if (isImageFile(filename)) {
         return '🖼️';
+    }
+    if (isTextFile(filename)) {
+        return '📝';
     }
     const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
     switch (ext) {

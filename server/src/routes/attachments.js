@@ -108,6 +108,74 @@ router.get('/:id', optionalAuth, async (req, res) => {
     }
 });
 
+router.get('/:id/preview', optionalAuth, async (req, res) => {
+    try {
+        const {id} = req.params;
+
+        const attachment = await Attachment.findByPk(id);
+        if (!attachment) {
+            return res.status(404).json({error: 'Attachment not found'});
+        }
+
+        let projectId;
+        let relatedEntity;
+        if (attachment.related_type === 'post') {
+            relatedEntity = await Post.findByPk(attachment.related_id);
+            projectId = relatedEntity?.project_id;
+        } else {
+            relatedEntity = await Comment.findByPk(attachment.related_id, {
+                include: [{model: Post, attributes: ['project_id']}],
+            });
+            projectId = relatedEntity?.Post?.project_id;
+        }
+
+        if (!projectId) {
+            return res.status(404).json({error: 'Related entity not found'});
+        }
+
+        if (!fs.existsSync(attachment.file_path)) {
+            return res.status(404).json({error: 'File not found on disk'});
+        }
+
+        const textExtensions = [
+            '.txt', '.md', '.log', '.json', '.xml', '.csv', '.yaml', '.yml',
+            '.js', '.ts', '.jsx', '.tsx', '.html', '.css', '.scss', '.sass',
+            '.py', '.java', '.c', '.cpp', '.h', '.hpp', '.php', '.rb', '.go',
+            '.rs', '.sh', '.bat', '.ps1', '.sql', '.ini', '.conf', '.cfg',
+            '.properties', '.toml', '.gitignore', '.env', '.dockerfile'
+        ];
+        
+        const ext = attachment.original_filename.toLowerCase().substring(
+            attachment.original_filename.lastIndexOf('.')
+        );
+        
+        if (!textExtensions.includes(ext)) {
+            return res.status(400).json({error: 'File is not a text file'});
+        }
+
+        const stats = fs.statSync(attachment.file_path);
+        if (stats.size > 1024 * 1024) {
+            return res.status(400).json({error: 'File too large for preview (max 1MB)'});
+        }
+
+        const content = fs.readFileSync(attachment.file_path, 'utf8');
+        
+        res.json({
+            content,
+            filename: attachment.original_filename,
+            size: stats.size
+        });
+    } catch (error) {
+        console.error('Preview error:', error);
+        if (error.code === 'EISDIR') {
+            return res.status(400).json({error: 'Cannot preview directory'});
+        } else if (error.message.includes('Invalid character')) {
+            return res.status(400).json({error: 'File contains non-text content'});
+        }
+        res.status(500).json({error: 'Internal server error'});
+    }
+});
+
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {
         const {id} = req.params;
